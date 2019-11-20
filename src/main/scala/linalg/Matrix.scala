@@ -1,63 +1,65 @@
 /**
-  * LUL Factorisation - ETH Zurich
-  * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
-  */
+ * LUL Factorisation - ETH Zurich
+ * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+ */
 package linalg
 
+import linalg.Fields.F2
+
 /**
-  * Matrix is a class to describe matrices.
-  * It is immutable.
-  *
-  * @param m      number of columns (may be zero)
-  * @param n      number of rows (may be zero)
-  * @param values Vector containing the elements in row major order
-  * @tparam T Base field of the elements
-  */
+ * Matrix is a class to describe matrices.
+ * It is immutable.
+ *
+ * @param m      number of columns (may be zero)
+ * @param n      number of rows (may be zero)
+ * @param values Vector containing the elements in row major order
+ * @tparam T Base field of the elements
+ */
 case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) {
   assert(values.size == m * n)
   /**
-    * Transposed matrix
-    */
+   * Transposed matrix
+   */
   lazy val transpose = Matrix.tabulate(n, m)((i, j) => this (j, i))
   lazy val norm = math.sqrt(num.toDouble(values.map(x => {
-    val abs = num.abs(x)
-    num.times(abs, abs)
+    num.abs(x)
+//    num.times(abs, abs)
   }).sum))
   lazy val diag = {
     assert(m == n)
     Vec(Vector.tabulate(n)(i => this (i, i)))
   }
   /**
-    * Rank of the matrix
-    */
+   * Rank of the matrix
+   */
   lazy val rk = reducedColEchelonFormInt._2
   /**
-    * Provides the reduced Row Echelon Form of this matrix
-    */
+   * Provides the reduced Row Echelon Form of this matrix
+   */
   lazy val reducedRowEchelonForm = reducedRowEchelonFormInt._1
   /**
-    * Provides the reduced Column Echelon Form of this matrix
-    */
+   * Provides the reduced Column Echelon Form of this matrix
+   */
   lazy val reducedColEchelonForm = reducedColEchelonFormInt._1
   lazy val isFullRank = rk == Math.min(m, n)
   /**
-    * Returns whether the matrix is invertible
-    */
+   * Returns whether the matrix is invertible
+   */
   lazy val isInvertible = m == n && isFullRank
   /**
-    * Computes the inverse of the matrix
-    */
+   * Computes the inverse of the matrix
+   */
   lazy val inverse = {
     assert(isInvertible)
     (this :: Matrix.identity(n)).reducedRowEchelonForm(0 until n, n until 2 * n)
   }
   /**
-    * Returns the range of a matrix, i.e. a matrix witch columns are linear independent, and that spans the same subspace
-    */
+   * Returns the range of a matrix, i.e. a matrix witch columns are linear independent, and that spans the same subspace
+   */
   lazy val range = this.reducedColEchelonForm(0 until this.m, 0 until this.rk)
   /**
-    * Kernel of a matrix
-    */
+   * Kernel of a matrix
+   */
   lazy val ker = {
     val M = this / Matrix.identity[T](this.n)
     val M2 = M.reducedColEchelonForm
@@ -67,9 +69,9 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
     }
   }
   /**
-    * Returns a generalized pseudo inverse of the matrix, ie a matrix such that:
-    * this * pseudoInverse * this == this
-    */
+   * Returns a generalized pseudo inverse of the matrix, ie a matrix such that:
+   * this * pseudoInverse * this == this
+   */
   lazy val pseudoInverse = {
     if (this.isInvertible) this.inverse
     else {
@@ -80,18 +82,18 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
     }
   }
   /**
-    * True if the matrix has independent columns
-    */
+   * True if the matrix has independent columns
+   */
   lazy val hasIndepCols = this.rk == this.n
   /**
-    * Provides a complement of the space represented by the matrix
-    * Does not require the matrix to have independent columns
-    */
+   * Provides a complement of the space represented by the matrix
+   * Does not require the matrix to have independent columns
+   */
   lazy val complement = Matrix.identity[T](this.m) -- this
   lazy val trace = diag.values.sum
   /**
-    * Computes the reduced row echelon form of this matrix ans its rank, using gaussian elimination
-    */
+   * Computes the reduced row echelon form of this matrix ans its rank, using gaussian elimination
+   */
   private lazy val reducedRowEchelonFormInt = (0 until n).foldLeft((this, 0)) {
     case ((current, rank), column) =>
       (rank until m).find(i => current(i, column) != num.zero) match {
@@ -104,8 +106,8 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
       }
   }
   /**
-    * Computes the reduced column echelon form of this matrix and its rank, using gaussian elimination
-    */
+   * Computes the reduced column echelon form of this matrix and its rank, using gaussian elimination
+   */
   private lazy val reducedColEchelonFormInt = (0 until m).foldLeft((this, 0)) {
     case ((current, rank), row) =>
       (rank until n).find(j => current(row, j) != num.zero) match {
@@ -121,35 +123,46 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
 
   def isZero() = values.forall(_ == num.zero)
 
-  def isIdentity() = m == n && (0 until m).forall(j => (0 until m).forall(i => if (i == j) values(j * m + i) == num.one else values(j * m + i) == num.zero))
+  def isIdentity() = m == n && (0 until m).forall(j => (0 until m).forall(i => values(j*m+i)==(if (i == j)  num.one else  num.zero)))
+
+  def isReverseIdentity() =  m == n && (0 until m).forall(j => (0 until m).forall(i => values(j*m+i)==(if (i == n-j-1)  num.one else  num.zero)))
 
   /**
-    * Returns a submatrix
-    *
-    * @param rows A range of the rows of the submatrix
-    * @param cols A range of the columns of the submatrix
-    * @return the submatrix formed by the specified rows and columns
-    */
+   * Returns a submatrix
+   *
+   * @param rows A range of the rows of the submatrix
+   * @param cols A range of the columns of the submatrix
+   * @return the submatrix formed by the specified rows and columns
+   */
   def apply(rows: Range, cols: Range): Matrix[T] = Matrix(rows.size, cols.size, rows.flatMap(i => cols.map(j => this (i, j))).toVector)
 
   /**
-    * Returns a Vec formed by the elements of a specified row
-    *
-    * @param i row index
-    * @return a Vec formed by the elements of the specified row
-    */
+   * Returns a Vec formed by the elements of a specified row
+   *
+   * @param i row index
+   * @return a Vec formed by the elements of the specified row
+   */
   def row(i: Int) = Vec(Vector.tabulate(n)(j => this (i, j)))
 
   /**
-    * Returns a printable string representing the matrix
-    *
-    * @return A printable string representing the matrix
-    */
-  override def toString = if (n * m > 0) {
+   * Returns a printable string representing the matrix
+   *
+   * @return A printable string representing the matrix
+   */
+  override def toString = if(isIdentity())
+    "I"+n
+    else if (n*m==0)
+    n + "x" + m + " matrix"
+  else if (isZero())
+    n + "x" + m + " 0"
+    else if (isReverseIdentity())
+    "R"+n
+  else
+    {
     val elementsStr = (0 until m).map(i => (0 until n).map(j => if (this (i, j) != num.zero) this (i, j).toString else ""))
     val maxLength = elementsStr.map(_.map(_.length).max).max
     elementsStr.map(_.map(s => " " * (maxLength - s.length) + s).mkString("(", " ", ")\n")).mkString("")
-  } else n + "x" + m + " matrix"
+  }
 
   def toTex = {
     "\\begin{pmatrix}" +
@@ -158,42 +171,42 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
   }
 
   /**
-    * Returns the value of the element at row i and column j
-    *
-    * @param i row
-    * @param j column
-    * @return the element at the specified position
-    */
+   * Returns the value of the element at row i and column j
+   *
+   * @param i row
+   * @param j column
+   * @return the element at the specified position
+   */
   def apply(i: Int, j: Int) = values(i * n + j)
 
   /**
-    * Adds two matrices
-    *
-    * @param rhs A matrix with the same size
-    * @return the sum of two matrices
-    */
+   * Adds two matrices
+   *
+   * @param rhs A matrix with the same size
+   * @return the sum of two matrices
+   */
   def +(rhs: Matrix[T]) = {
     assert(m == rhs.m && n == rhs.n)
     new Matrix(m, n, Vector.tabulate(m * n)(i => num.plus(values(i), rhs.values(i))))
   }
 
   /**
-    * Removes a matrix to another one
-    *
-    * @param rhs A matrix with the same size
-    * @return the difference of this matrix with rhs
-    */
+   * Removes a matrix to another one
+   *
+   * @param rhs A matrix with the same size
+   * @return the difference of this matrix with rhs
+   */
   def -(rhs: Matrix[T]) = {
     assert(m == rhs.m && n == rhs.n)
     new Matrix(m, n, Vector.tabulate(m * n)(i => num.minus(values(i), rhs.values(i))))
   }
 
   /**
-    * Multiplies two matrices
-    *
-    * @param rhs A matrix with a compatible size
-    * @return the product of this matrix with rhs
-    */
+   * Multiplies two matrices
+   *
+   * @param rhs A matrix with a compatible size
+   * @return the product of this matrix with rhs
+   */
   def *(rhs: Vec[T]): Vec[T] = {
     assert(n == rhs.m)
     Vec[T](Vector.tabulate(m)(i => (0 until n).map(k => num.times(this (i, k), rhs(k))).sum))
@@ -204,73 +217,73 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
   }
 
   /**
-    * Multiplies two matrices
-    *
-    * @param rhs A matrix with a compatible size
-    * @return the product of this matrix with rhs
-    */
+   * Multiplies two matrices
+   *
+   * @param rhs A matrix with a compatible size
+   * @return the product of this matrix with rhs
+   */
   def *(rhs: Matrix[T]): Matrix[T] = {
     assert(n == rhs.m)
     Matrix.tabulate(m, rhs.n)((i, j) => (0 until n).map(k => num.times(this (i, k), rhs(k, j))).sum)
   }
 
   /**
-    * Returns this matrix with two rows swapped
-    *
-    * @param row1 index of the first row
-    * @param row2 index of the second row
-    * @return this matrix with row1 and row2 swapped
-    */
+   * Returns this matrix with two rows swapped
+   *
+   * @param row1 index of the first row
+   * @param row2 index of the second row
+   * @return this matrix with row1 and row2 swapped
+   */
   def swapRows(row1: Int, row2: Int) = Matrix.tabulate(m, n)((i, j) => if (i == row1) this (row2, j) else if (i == row2) this (row1, j) else this (i, j))
 
   /**
-    * Returns this matrix with two columns swapped
-    *
-    * @param col1 index of the first column
-    * @param col2 index of the second column
-    * @return this matrix with col1 and col2 swapped
-    */
+   * Returns this matrix with two columns swapped
+   *
+   * @param col1 index of the first column
+   * @param col2 index of the second column
+   * @return this matrix with col1 and col2 swapped
+   */
   def swapCols(col1: Int, col2: Int) = Matrix.tabulate(m, n)((i, j) => if (j == col1) this (i, col2) else if (j == col2) this (i, col1) else this (i, j))
 
   /**
-    * Returns the same matrix, with a row multiplied by a scalar added to another one
-    *
-    * @param row1 index of the first row
-    * @param l    scalar that will be multiplied to row1
-    * @param row2 index of the second row
-    * @return this matrix with row1 multiplied by a scalar added to row2
-    */
+   * Returns the same matrix, with a row multiplied by a scalar added to another one
+   *
+   * @param row1 index of the first row
+   * @param l    scalar that will be multiplied to row1
+   * @param row2 index of the second row
+   * @return this matrix with row1 multiplied by a scalar added to row2
+   */
   def addRowTo(row1: Int, l: T, row2: Int) = Matrix.tabulate(m, n)((i, j) => if (i == row2) num.plus(this (i, j), num.times(l, this (row1, j))) else this (i, j))
 
   /**
-    * Returns the same matrix, with a column multiplied by a scalar added to another one
-    *
-    * @param col1 index of the first column
-    * @param l    scalar that will be multiplied to col1
-    * @param col2 index of the second column
-    * @return the same matrix with column col1 multiplied by a scalar l added to col2
-    */
+   * Returns the same matrix, with a column multiplied by a scalar added to another one
+   *
+   * @param col1 index of the first column
+   * @param l    scalar that will be multiplied to col1
+   * @param col2 index of the second column
+   * @return the same matrix with column col1 multiplied by a scalar l added to col2
+   */
   def addColTo(col1: Int, l: T, col2: Int) = Matrix.tabulate(m, n)((i, j) => if (j == col2) num.plus(this (i, j), num.times(l, this (i, col1))) else this (i, j))
 
   /**
-    * Returns the same matrix, with a row multiplied by a scalar
-    *
-    * @param row index of the row
-    * @param l   scalar
-    * @return the same matrix, with row multiplied by l
-    */
+   * Returns the same matrix, with a row multiplied by a scalar
+   *
+   * @param row index of the row
+   * @param l   scalar
+   * @return the same matrix, with row multiplied by l
+   */
   def mulRow(row: Int, l: T) = {
     assert(l != num.zero)
     Matrix.tabulate(m, n)((i, j) => if (i == row) num.times(l, this (row, j)) else this (i, j))
   }
 
   /**
-    * Returns the same matrix, with a column multiplied by a scalar
-    *
-    * @param col index of the column
-    * @param l   scalar
-    * @return the same matrix, with column col multiplied by l
-    */
+   * Returns the same matrix, with a column multiplied by a scalar
+   *
+   * @param col index of the column
+   * @param l   scalar
+   * @return the same matrix, with column col multiplied by l
+   */
   def mulCol(col: Int, l: T) = {
     assert(l != num.zero)
     Matrix.tabulate(m, n)((i, j) => if (j == col) num.times(l, this (i, col)) else this (i, j))
@@ -286,13 +299,13 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
   override def hashCode = m
 
   /**
-    * Computes a matrix representing a complement of a subspace within another one and that has a trivial intersection with a third one
-    * * The matrices do not need to have independent columns
-    *
-    * @param B subspace of C, with a dimension smaller than this, with which the output will have a trivial intersection
-    * @param C a matrix representing a subspace
-    * @return a matrix representing a complement of this within C and that has a trivial intersection with B
-    */
+   * Computes a matrix representing a complement of a subspace within another one and that has a trivial intersection with a third one
+   * * The matrices do not need to have independent columns
+   *
+   * @param B subspace of C, with a dimension smaller than this, with which the output will have a trivial intersection
+   * @param C a matrix representing a subspace
+   * @return a matrix representing a complement of this within C and that has a trivial intersection with B
+   */
   def doubleComplement(B: Matrix[T], C: Matrix[T]) = {
     val A = this
     require(A.rk >= B.rk)
@@ -304,28 +317,28 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
   }
 
   /**
-    * Returns an iterator over the columns of the matrix
-    *
-    * @return an iterator over the columns of the matrix
-    */
+   * Returns an iterator over the columns of the matrix
+   *
+   * @return an iterator over the columns of the matrix
+   */
   def cols = (0 until n).map(col)
 
   /**
-    * Computes a matrix representing the sum of two subspaces
-    * It does not require the matrices to have independent columns
-    *
-    * @param rhs a matrix representing another subspace
-    * @return a matrix representing the sum of this and rhs
-    */
+   * Computes a matrix representing the sum of two subspaces
+   * It does not require the matrices to have independent columns
+   *
+   * @param rhs a matrix representing another subspace
+   * @return a matrix representing the sum of this and rhs
+   */
   def ++(rhs: Matrix[T]) = (this :: rhs).range
 
   /**
-    * Computes a matrix representing a complement of a subspace within another one
-    * The matrices do not need to have independent columns
-    *
-    * @param rhs a matrix representing another subspace
-    * @return a matrix representing a complement of rhs within this
-    */
+   * Computes a matrix representing a complement of a subspace within another one
+   * The matrices do not need to have independent columns
+   *
+   * @param rhs a matrix representing another subspace
+   * @return a matrix representing a complement of rhs within this
+   */
   def --(rhs: Matrix[T]) = {
     (Matrix(this.m, 0, Vector()) /: (0 until this.n).map(this.col)) ((acc, v) => {
       val cur = acc :: v
@@ -334,20 +347,20 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
   }
 
   /**
-    * Returns the jth column vector
-    *
-    * @param j column index
-    * @return the specified column
-    */
+   * Returns the jth column vector
+   *
+   * @param j column index
+   * @return the specified column
+   */
   def col(j: Int) = Vec(Vector.tabulate(m)(i => this (i, j)))
 
   /**
-    * Computes a matrix representing the intersection of two subspaces
-    * The matrices do not need to have independent columns
-    *
-    * @param rhs a matrix representing another subspace
-    * @return a matrix representing the intersection of this and rhs
-    */
+   * Computes a matrix representing the intersection of two subspaces
+   * The matrices do not need to have independent columns
+   *
+   * @param rhs a matrix representing another subspace
+   * @return a matrix representing the intersection of this and rhs
+   */
   def inter(rhs: Matrix[T]) = {
     val M = (this :: rhs) / (this :: Matrix.zeros[T](this.m, rhs.n))
     val M2 = M.reducedColEchelonForm
@@ -363,22 +376,22 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
   def oplus(rhs: Matrix[T]) = (this :: Matrix.zeros(this.m, rhs.n)) / (Matrix.zeros(rhs.m, this.n) :: rhs)
 
   /**
-    * Concatenates horizontally two matrices with the same number of rows
-    *
-    * @param lhs Matrix to be concatenated with
-    * @return The concatenation of this matrix with lhs
-    */
+   * Concatenates horizontally two matrices with the same number of rows
+   *
+   * @param lhs Matrix to be concatenated with
+   * @return The concatenation of this matrix with lhs
+   */
   def ::(lhs: Matrix[T]) = {
     assert(m == lhs.m)
     Matrix.tabulate(m, n + lhs.n)((i, j) => if (j < lhs.n) lhs(i, j) else this (i, j - lhs.n))
   }
 
   /**
-    * Concatenates vertically two matrices with the same number of columns
-    *
-    * @param rhs Lower matrix
-    * @return the vertical concatenation of this matrix with rhs on the bottom
-    */
+   * Concatenates vertically two matrices with the same number of columns
+   *
+   * @param rhs Lower matrix
+   * @return the vertical concatenation of this matrix with rhs on the bottom
+   */
   def /(rhs: Matrix[T]) = {
     assert(n == rhs.n)
     Matrix(m + rhs.m, n, values ++ rhs.values)
@@ -386,73 +399,73 @@ case class Matrix[T: Fractional](val m: Int, val n: Int, val values: Vector[T]) 
 }
 
 /**
-  * Companion object of Matrix
-  */
+ * Companion object of Matrix
+ */
 object Matrix {
   def apply(m: Int, n: Int, values: String) = new Matrix[F2](m, n, Vector.tabulate(m * n)(i => F2(values(i) == '1')))
 
   /**
-    * Creates a new matrix
-    *
-    * @param m      number of rows
-    * @param n      number of columns
-    * @param values elements of the matrix in row major order
-    * @tparam T Base field of the matrix elements
-    * @return a new matrix
-    */
+   * Creates a new matrix
+   *
+   * @param m      number of rows
+   * @param n      number of columns
+   * @param values elements of the matrix in row major order
+   * @tparam T Base field of the matrix elements
+   * @return a new matrix
+   */
   //def apply[T: Fractional](m: Int, n: Int, values: Vector[T]) = new Matrix(m, n, values)
 
   /**
-    * Creates a new Matrix by concatenating a collection of columns
-    *
-    * @param m      number of rows
-    * @param values a collection of Vecs of size m
-    * @tparam T Base field of the matrix elements
-    * @return a new matrix with the specified columns
-    */
+   * Creates a new Matrix by concatenating a collection of columns
+   *
+   * @param m      number of rows
+   * @param values a collection of Vecs of size m
+   * @tparam T Base field of the matrix elements
+   * @return a new matrix with the specified columns
+   */
   def fromVecs[T: Fractional](m: Int, values: Traversable[Vec[T]]) = {
     assert(values.forall(_.m == m))
     (Matrix[T](m, 0, Vector()) /: values) (_ :: _)
   }
 
   /**
-    * Returns a zero filled matrix
-    *
-    * @param m number of rows
-    * @param n number of columns
-    * @tparam T Base field of the elements
-    * @return a zero filled matrix with the specified size
-    */
+   * Returns a zero filled matrix
+   *
+   * @param m number of rows
+   * @param n number of columns
+   * @tparam T Base field of the elements
+   * @return a zero filled matrix with the specified size
+   */
   def zeros[T: Fractional](m: Int, n: Int) = tabulate(m, n)((_, _) => implicitly[Fractional[T]].zero)
 
   /**
-    * Returns a one filled matrix
-    *
-    * @param m number of rows
-    * @param n number of columns
-    * @tparam T Base field of the elements
-    * @return a matrix of the specified dimention filled with ones
-    */
+   * Returns a one filled matrix
+   *
+   * @param m number of rows
+   * @param n number of columns
+   * @tparam T Base field of the elements
+   * @return a matrix of the specified dimention filled with ones
+   */
   def ones[T: Fractional](m: Int, n: Int) = tabulate(m, n)((_, _) => implicitly[Fractional[T]].one)
 
   /**
-    * Builds a new matrix by tabulating the elements using a function
-    *
-    * @param m number of rows
-    * @param n number of columns
-    * @param f a function returning an element, given its position in the matrix
-    * @tparam T Base field of the matrix elements
-    * @return a matrix tabulated using f
-    */
+   * Builds a new matrix by tabulating the elements using a function
+   *
+   * @param m number of rows
+   * @param n number of columns
+   * @param f a function returning an element, given its position in the matrix
+   * @tparam T Base field of the matrix elements
+   * @return a matrix tabulated using f
+   */
   def tabulate[T: Fractional](m: Int, n: Int)(f: (Int, Int) => T) = new Matrix(m, n, Vector.tabulate(m * n)(x => f(x / n, x % n)))
 
   /**
-    * Returns a square matrix filled with ones in the anti-diagonal, and zeros elsewhere
-    *
-    * @param n size of the matrix
-    * @tparam T Base field of the elements
-    * @return a square matrix filled with ones in the anti-diagonal, and zeros elsewhere
-    */
+   * Returns a square matrix filled with ones in the anti-diagonal, and zeros elsewhere
+   *
+   * @param n size of the matrix
+   * @tparam T Base field of the elements
+   * @return a square matrix filled with ones in the anti-diagonal, and zeros elsewhere
+   */
   def reverseIdentity[T: Fractional](n: Int) = tabulate(n, n)((i, j) => if (n - i - 1 == j) implicitly[Fractional[T]].one else implicitly[Numeric[T]].zero)
 
   def element[T: Fractional](m: Int, n: Int, i: Int, j: Int) = tabulate(m, n)((x, y) => if (x == i && y == j) implicitly[Fractional[T]].one else implicitly[Fractional[T]].zero)
@@ -460,15 +473,15 @@ object Matrix {
   def invertibles(n: Int) = matrices(n, n).map(identity[F2](n) + _).filter(_.isInvertible)
 
   /**
-    * Returns the identity matrix
-    *
-    * @param n Size of the matrix
-    * @tparam T Base field of the elements
-    * @return the identity matrix of the specified size
-    */
+   * Returns the identity matrix
+   *
+   * @param n Size of the matrix
+   * @tparam T Base field of the elements
+   * @return the identity matrix of the specified size
+   */
   def identity[T: Fractional](n: Int) = tabulate(n, n)((i, j) => if (i == j) implicitly[Fractional[T]].one else implicitly[Numeric[T]].zero)
 
-  def matrices(m: Int, n: Int) = (0 until 1 << (n * m)).toIterator.map(i => fromBigInt(m, n, i))
+  def matrices(m: Int, n: Int) = (0 until 1 << (n * m)).toIterable.map(i => fromBigInt(m, n, i))
 
   def fromBigInt(m: Int, n: Int, value: BigInt) = Matrix(m, n, Vector.tabulate(m * n)(i => F2(value.testBit(m * n - i - 1))))
 
@@ -492,25 +505,25 @@ object Matrix {
 }
 
 /**
-  * Class that represents a column vector. It behaves as a regular matrix.
-  *
-  * @param values Vector containing the elements
-  * @tparam T Base field of the elements
-  */
+ * Class that represents a column vector. It behaves as a regular matrix.
+ *
+ * @param values Vector containing the elements
+ * @tparam T Base field of the elements
+ */
 class Vec[T: Fractional](override val values: Vector[T]) extends Matrix[T](values.size, 1, values) {
   /**
-    * Returns a printable string representing the vector
-    *
-    * @return A printable string representing the vector
-    */
+   * Returns a printable string representing the vector
+   *
+   * @return A printable string representing the vector
+   */
   override def toString = values.mkString("(", " ", ")^T")
 
   /**
-    * Returns an element of the vector
-    *
-    * @param i index of the element
-    * @return the element at index i
-    */
+   * Returns an element of the vector
+   *
+   * @param i index of the element
+   * @return the element at index i
+   */
   def apply(i: Int) = values(i)
 
   def apply(rows: Range): Vec[T] = Vec(rows.map(i => this (i)).toVector)
@@ -524,34 +537,34 @@ class Vec[T: Fractional](override val values: Vector[T]) extends Matrix[T](value
 }
 
 /**
-  * Companion object of vectors
-  */
+ * Companion object of vectors
+ */
 object Vec {
   /**
-    * Creates a new vector with the elements as arguments
-    *
-    * @param values Elements of the vector
-    * @tparam T Base field of the elements
-    * @return a new vector
-    */
+   * Creates a new vector with the elements as arguments
+   *
+   * @param values Elements of the vector
+   * @tparam T Base field of the elements
+   * @return a new vector
+   */
   def apply[T: Fractional](values: T*) = new Vec(values.toVector)
 
   /**
-    * Creates a new vector
-    *
-    * @param values Elements of the vector
-    * @tparam T Base field of the elements
-    * @return a new vector
-    */
+   * Creates a new vector
+   *
+   * @param values Elements of the vector
+   * @tparam T Base field of the elements
+   * @return a new vector
+   */
   def apply[T: Fractional](values: Vector[T]) = new Vec(values)
 
   /**
-    * Converts a one column matrix to a vector
-    *
-    * @param mat One column Matrix
-    * @tparam T Base field of the elements
-    * @return mat converted to a vector
-    */
+   * Converts a one column matrix to a vector
+   *
+   * @param mat One column Matrix
+   * @tparam T Base field of the elements
+   * @return mat converted to a vector
+   */
   implicit def apply[T: Fractional](mat: Matrix[T]): Vec[T] = {
     assert(mat.n == 1)
     new Vec(mat.values)

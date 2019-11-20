@@ -1,86 +1,86 @@
 /**
-  * LUL Factorisation - ETH Zurich
-  * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
-  */
+ * LUL Factorisation - ETH Zurich
+ * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+ */
 package linalg
 
 /**
-  * Class representing a block LUL factorisation problem
-  *
-  * @param P An invertible matrix over K
-  * @param m Size of the left upper block (P1)
-  * @param n Size of the right lower block (P4)
-  * @tparam K Base field of the elements of P
-  */
+ * Class representing a block LUL factorisation problem
+ *
+ * @param P An invertible matrix over K
+ * @param m Size of the left upper block (P1)
+ * @param n Size of the right lower block (P4)
+ * @tparam K Base field of the elements of P
+ */
 class LUL[K: Fractional](val P: Matrix[K], val m: Int, val n: Int) {
   assert(P.isInvertible && m + n == P.m)
 
 
   /**
-    * upper left block of P
-    */
+   * upper left block of P
+   */
   val P1 = P(0 until m, 0 until m)
   /**
-    * upper right block of P
-    */
+   * upper right block of P
+   */
   val P2 = P(0 until m, m until n + m)
   /**
-    * lower left block of P
-    */
+   * lower left block of P
+   */
   val P3 = P(m until n + m, 0 until m)
   /**
-    * lower right block of P
-    */
+   * lower right block of P
+   */
   val P4 = P(m until n + m, m until n + m)
   /**
-    * Rank of P1
-    */
+   * Rank of P1
+   */
   val p1 = P1.rk
   /**
-    * rank of P2
-    */
+   * rank of P2
+   */
   val p2 = P2.rk
   /**
-    * rank of P3
-    */
+   * rank of P3
+   */
   val p3 = P3.rk
   /**
-    * rank of P4
-    */
+   * rank of P4
+   */
   val p4 = P4.rk
   /**
-    * P2(ker P4)
-    */
+   * P2(ker P4)
+   */
   val P2kerP4 = P2 * P4.ker
   /**
-    * P1(ker P3)
-    */
+   * P1(ker P3)
+   */
   val P1kerP3 = P1 * P3.ker
   /**
-    * P4(ker P2)
-    */
+   * P4(ker P2)
+   */
   val P4kerP2 = P4 * P2.ker
   /**
-    * P3(ker P1)
-    */
+   * P3(ker P1)
+   */
   val P3kerP1 = P3 * P1.ker
   /**
-    * Minimal bound of rk R + rk L
-    */
+   * Minimal bound of rk R + rk L
+   */
   val bound = Math.max(p3, m + n - p1 - p4)
 
   /**
-    * Computes a solution that minimizes rk L and rk L + rk R
-    *
-    * @return an optimal L for the problem
-    */
+   * Computes a solution that minimizes rk L and rk L + rk R
+   *
+   * @return an optimal L for the problem
+   */
   def getSolution = if (p3 <= m + n - p1 - p4) solutionP3Smaller2() else solutionP3Bigger2()
 
   /**
-    * Computes a solution in the case where p3 <= m + n - p1 - p4
-    *
-    * @return an optimal L
-    */
+   * Computes a solution in the case where p3 <= m + n - p1 - p4
+   *
+   * @return an optimal L
+   */
   def solutionP3Smaller2() = {
     require(p3 <= m + n - p1 - p4)
     val Y1 = P3kerP1.doubleComplement(P4 inter P3, P3)
@@ -98,10 +98,10 @@ class LUL[K: Fractional](val P: Matrix[K], val m: Int, val n: Int) {
   }
 
   /**
-    * Computes a solution in the case where p3 >= m + n - p1 - p4
-    *
-    * @return an optimal L
-    */
+   * Computes a solution in the case where p3 >= m + n - p1 - p4
+   *
+   * @return an optimal L
+   */
   def solutionP3Bigger2() = {
     require(p3 >= m + n - p1 - p4)
     val Y = (P4 inter P3).doubleComplement(P3kerP1, P3)
@@ -118,11 +118,11 @@ class LUL[K: Fractional](val P: Matrix[K], val m: Int, val n: Int) {
   }
 
   /**
-    * Check whether a matrix is an optimal L for the problem
-    *
-    * @param S Solution (L) to try
-    * @return if S is an optimal L
-    */
+   * Check whether a matrix is an optimal L for the problem
+   *
+   * @param S Solution (L) to try
+   * @return if S is an optimal L
+   */
   def isSolution(S: Matrix[K]) = {
     (P4 - (S * P2)).isInvertible && (S.rk + (P3 - S * P1).rk) == bound
   }

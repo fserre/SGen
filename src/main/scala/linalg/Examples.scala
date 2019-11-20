@@ -1,9 +1,11 @@
 /**
-  * LUL Factorisation - ETH Zurich
-  * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
-  */
+ * LUL Factorisation - ETH Zurich
+ * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+ */
 
 package linalg
+
+import linalg.Fields.{F2, Q}
 
 object Examples extends App {
   println("First example of the article:")
