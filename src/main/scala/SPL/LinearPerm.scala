@@ -78,6 +78,8 @@ object LinearPerm {
 
   def Cmat(n: Int) = Matrix.tabulate[F2](n, n)((i, j) => F2((i + 1) % n == j))
 
+  def stream[T](matrices: Seq[Matrix[F2]], k: Int, hw: HW[T]) = LinearPerm[T](matrices).stream(k)(hw)
+
   //def L[DT](m: Int, n: Int) = LinearPerm[DT](Lmat(m, n))
 
   //def Linv[DT](m: Int, n: Int) = LinearPerm[DT](Lmat(m, n).inverse)

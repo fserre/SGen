@@ -6,7 +6,7 @@
 package SB.Signals
 
 import RTL.Component
-import SB.HW.HW
+import SB.HW.{ComplexHW, HW}
 import linalg.Fields.Complex
 
 case class Re[T:HW] private(input:SigRef[Complex[T]]) extends Sig[T](input){
@@ -14,6 +14,7 @@ case class Re[T:HW] private(input:SigRef[Complex[T]]) extends Sig[T](input){
   }
 object Re{
   def apply[T:HW](input:Sig[Complex[T]])=input match{
+    case Const(value) => Const(value.re)(input.hw.innerHW, input.sb)
     case Cpx(real,_)=>real
     case _ => new Re(input)
   }
@@ -31,6 +32,7 @@ case class Im[T:HW] private(input:SigRef[Complex[T]]) extends Sig[T](input){
 
 object Im{
   def apply[T:HW](input:Sig[Complex[T]])=input match{
+    case Const(value) => Const(value.im)(input.hw.innerHW, input.sb)
     case Cpx(_,im)=>im
     case _ => new Im(input)
   }
@@ -48,6 +50,7 @@ case class Cpx[T] private (real:SigRef[T], im:SigRef[T])(implicit hw:HW[Complex[
 }
 object Cpx{
   def apply[T](real:Sig[T],im:Sig[T])(implicit hw:HW[Complex[T]]):Sig[Complex[T]]= (real,im) match{
+    case (Const(re), Const(im)) => Const(Complex(re, im)(real.hw.num))(ComplexHW(real.hw), real.sb)
     case (Re(cpxReal),Im(cpxIm)) if cpxReal==cpxIm => cpxReal
     case _ => new Cpx(real,im)
   }

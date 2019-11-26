@@ -39,7 +39,11 @@ abstract class Sig[T](val parents: SigRef[_]*)(implicit val hw: HW[T],implicit v
 
   final lazy val ref=SigRef[T](sb.ref(this),sb)
 
+  def graphNode = parents.map(p => p.graphName + " -> " + graphName + ";")
 
+  def graphDeclaration = graphName + "[label=\"" + this.getClass.getSimpleName + "\"];"
+
+  def graphName = "s" + ref.i
  // override val hashCode=Seq(that.getClass.getSimpleName,parents).hashCode()
 }
 
@@ -86,6 +90,7 @@ abstract class AssociativeSig[T](val terms:Seq[SigRef[T]],op:String,override val
     case _ => false
   }
 
+  override def graphDeclaration = graphName + "[label=\"" + op + "\"];"
   override def toString(s: SigRef[_] => String): String = terms.map(t=>if(t.precedence>=precedence)"("+s(t)+")" else s(t)).mkString(op)
 
   override def toString: String = super[Sig].toString

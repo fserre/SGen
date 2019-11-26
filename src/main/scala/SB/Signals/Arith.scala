@@ -33,17 +33,32 @@ object Plus extends AssociativeSigCompanionT[Plus] {
   }
 }*/
 abstract class Plus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Sig[T](lhs, rhs)(lhs.hw,lhs.sb){
-
+  override def graphDeclaration = graphName + "[label=\"+\"];"
 }
 object Plus{
-  def apply[T: HW](lhs: Sig[T], rhs: Sig[T]) = implicitly[HW[T]].plus(lhs, rhs)
+  def apply[T](lhs: Sig[T], rhs: Sig[T]) = {
+    require(lhs.hw == rhs.hw)
+    implicit val hw = lhs.hw
+    implicit val sb = lhs.sb
+    import hw.num._
+    (lhs, rhs) match {
+      case (Const(vl), Const(vr)) => Const(vl + vr)
+      case (_, Zero()) => lhs
+      case (lhs: Const[T], _) => Times(rhs, lhs)
+      case (_, Opposite(rhs)) => lhs - rhs
+      case (Opposite(lhs), _) => rhs - lhs
+      case _ => hw.plus(lhs, rhs)
+    }
+  }
 
 }
 abstract class Minus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Sig[T](lhs, rhs)(lhs.hw,lhs.sb){
-
+  override def graphDeclaration = graphName + "[label=\"-\"];"
 }
 
-abstract class Times[T](lhs: Sig[T], rhs: Sig[T]) extends Sig[T](lhs, rhs)(lhs.hw,lhs.sb)
+abstract class Times[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Sig[T](lhs, rhs)(lhs.hw, lhs.sb) {
+  override def graphDeclaration = graphName + "[label=\"*\"];"
+}
 
 /*object Plus {
   def apply[T: HW](lhs: Sig[T], rhs: Sig[T]):Sig[T] = {
@@ -73,11 +88,48 @@ abstract class Times[T](lhs: Sig[T], rhs: Sig[T]) extends Sig[T](lhs, rhs)(lhs.h
 }*/
 
 object Minus {
-  def apply[T: HW](lhs: Sig[T], rhs: Sig[T]) = implicitly[HW[T]].minus(lhs, rhs)
+  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
+    require(lhs.hw == rhs.hw)
+    implicit val hw = lhs.hw
+    implicit val sb = lhs.sb
+    import hw.num._
+    (lhs, rhs) match {
+      case (Const(vl), Const(vr)) => Const(vl - vr)
+      case (_, Zero()) => lhs
+      case (_, Opposite(rhs)) => Plus(lhs, rhs)
+      case _ => hw.minus(lhs, rhs)
+    }
+  }
+
+  def unapply[T](arg: Minus[T]): Option[(Sig[T], Sig[T])] = arg match {
+    case arg: Minus[T] => Some(arg.lhs, arg.rhs)
+    case _ => None
+  }
 }
 
 object Times {
-  def apply[T: HW](lhs: Sig[T], rhs: Sig[T]) = implicitly[HW[T]].times(lhs, rhs)
+  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
+    implicit val hw = lhs.hw
+    implicit val sb = lhs.sb
+    import hw.num._
+    (lhs, rhs) match {
+      case (Const(vl), Const(vr)) => Const(vl * vr)
+      case (_, Zero()) => Zero[T]()
+      case (_, One()) => lhs
+      case (_, Opposite(One())) => Opposite(lhs)
+      case (_, Mux(address, inputs)) if inputs.forall(_ match {
+        case Zero() | One() | Opposite(One()) => true
+        case _ => false
+      }) => Mux(address, inputs.map(_ match {
+        case Zero() => Zero()
+        case One() => lhs
+        case Opposite(One()) => Opposite(lhs)
+        case _ => throw new Exception("Error")
+      }))
+      case (lhs: Const[T], _) if rhs.hw == lhs.hw => Times(rhs, lhs)
+      case _ => hw.times(lhs, rhs)
+    }
+  }
 }
 
 object Zero{
@@ -85,7 +137,11 @@ object Zero{
     val hw=implicitly[HW[T]]
 
     arg match{
-      case Const(value) if hw.valueOf(hw.bitsOf(value))==hw.num.zero => true
+      case Const(value) if hw.bitsOf(value) == hw.bitsOf(hw.num.zero) => true
+      /* case Const(value) =>
+         println(value)
+         println(hw.bitsOf(value))
+         false*/
       case _ => false
     }
   }
@@ -101,4 +157,25 @@ object One{
     }
   }
   def apply[T]()(implicit hw:HW[T],sb:SB[_])=Const(implicitly[HW[T]].num.one)
+}
+
+object Opposite {
+  def unapply[T: HW](arg: Sig[T]): Option[Sig[T]] = {
+    val hw = implicitly[HW[T]]
+    implicit val sb = arg.sb
+    arg match {
+      case Const(value) if hw.num.lt(value, hw.num.zero) => Some(Const(hw.num.negate(value)))
+      case Minus(Zero(), arg) => Some(arg)
+      case _ => None
+    }
+  }
+
+  def apply[T](arg: Sig[T]): Sig[T] = {
+    implicit val hw = arg.hw
+    implicit val sb = arg.sb
+    arg match {
+      case Opposite(arg) => arg
+      case _ => Zero[T]() - arg
+    }
+  }
 }

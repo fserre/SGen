@@ -45,7 +45,7 @@ class WHTTest extends PropSpec with  ScalaCheckDrivenPropertyChecks with Matcher
   ignore("WHT conforms to the definition") {
 
     for(n<-1 until 11) {
-      val sb = WHT[Double](n)// Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
+      val sb = WHT[Double](n, 1) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res=(0 until (1<<n)).map (j=> Vec(sb.eval(
         Seq.tabulate(1<<n)(i=>if(i==j)1.0 else 0.0)
       ).toVector)).reduce[Matrix[Double]](_ :: _)
@@ -59,7 +59,7 @@ class WHTTest extends PropSpec with  ScalaCheckDrivenPropertyChecks with Matcher
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
 
-  } yield WHT[Double](t+k).stream(k)(FixedPoint(16,0))
+  } yield WHT[Double](t + k, 1).stream(k)(FixedPoint(16, 0))
   property("Steady") {
 
     forAll(genSteady, minSuccessful(20)) { sb:StreamingModule[Double] =>

@@ -8,6 +8,8 @@ package SPL
 import SB.HW.HW
 import SB.SB
 import StreamingModule.StreamingModule
+import linalg.Fields.F2
+import linalg.Matrix
 
 
 case class ITensor[T] private (r:Int, factor:Repeatable[T]) extends SPL[T](factor.n+r) {
@@ -23,8 +25,11 @@ object ITensor{
     factor
   else
     factor match{
+      case Product(factors) => Product(factors.map(ITensor(r, _)))
+      case ITensor(r2, factor) => ITensor(r + r2, factor)
+      case LinearPerm(matrices) => LinearPerm(matrices.map(m => Matrix.identity[F2](r) oplus m))
     case factor:Repeatable[T] => new ITensor(r,factor)
-    case _ => throw new Exception("Non repeatable SPL used in ITensor")
+      case _ => throw new Exception("Non repeatable SPL used in ITensor: " + factor)
   }
 }
 

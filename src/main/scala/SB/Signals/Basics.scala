@@ -13,6 +13,10 @@ case class Input[T](input: Component,override val hw:HW[T],override val sb:SB[T]
   override def implement(implicit conv: SigRef[_] => Component): Component = input
 
   override def toString: String = input.toString
+
+  override def graphName = "inputs:i" + ref.i
+
+  override def graphDeclaration: String = ""
 }
 
 case class Next(override val sb:SB[_]) extends Sig()(Unsigned(1),sb) {
@@ -44,6 +48,17 @@ object Reset{
 case class Const[T](value: T,override val hw:HW[T], override val sb:SB[_]) extends Sig[T]()(hw,sb) {
   override def toString(s: SigRef[_] => String): String = value.toString
   override def implement(implicit conv: SigRef[_] => Component) = new RTL.Const(hw.size, hw.bitsOf(value))
+
+  override def graphDeclaration = "" //graphName + "[label=\""+value.toString+"\"];"
+
+  override def graphName: String = value.toString
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: Const[T] => other.hw == hw && other.sb == sb && hw.bitsOf(value) == hw.bitsOf(other.value)
+    case _ => false
+  }
+
+  override val hashCode: Int = hw.bitsOf(value).hashCode()
 }
 object Const{
   def apply[T](value:T)(implicit hw:HW[T],sb:SB[_]):Sig[T]=Const(value,hw,sb)

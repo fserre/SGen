@@ -5,6 +5,7 @@
 
 package SPL.WHT
 
+import SB.HW.HW
 import SPL.{ITensor, LinearPerm, Product, SPL}
 import _root_.SPL.FFT.DFT2
 import linalg.Fields.{Complex, F2}
@@ -17,10 +18,13 @@ object WHT {
     val mat = mat1 * mat2
     LinearPerm[T](mat)
   }
-def apply[T:Numeric](n:Int):SPL[T]={
+
+  def apply[T: Numeric](n: Int, r: Int): SPL[T] = {
   if (n == 1)
     DFT2[T]()
   else
-    LinearPerm(LinearPerm.Lmat(1, n)) * Product(n)(l => ITensor(n-1,DFT2[T]())  * Q(n, 1, l))
-}
+    LinearPerm(LinearPerm.Lmat(r, n)) * Product(n / r)(l => ITensor(n - r, WHT[T](r, 1)) * Q(n, r, l))
+  }
+
+  def stream[T](n: Int, r: Int, k: Int, hw: HW[T]) = WHT[T](n, r)(hw.num).stream(k)(hw)
 }

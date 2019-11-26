@@ -39,9 +39,14 @@ case class Not private(input: SigRef[Int]) extends Sig[Int](input)(input.hw) {
 }
 
 object Not{
-  def apply(input: Sig[Int])=input match{
-    case Not(input) => input
-    case _ => new Not(input)
+  def apply(input: Sig[Int]) = {
+    implicit val hw = input.hw
+    implicit val sb = input.sb
+    input match {
+      case Const(value) => Const(((1 << hw.size) - 1) ^ value)
+      case Not(input) => input
+      case _ => new Not(input)
+    }
   }
 
   def unapply(arg: Sig[Int]): Option[Sig[Int]] = arg match{

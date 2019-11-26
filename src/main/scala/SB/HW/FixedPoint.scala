@@ -6,10 +6,10 @@
 package SB.HW
 
 import RTL.Component
-import SB.Signals.{Minus, Plus, Sig, SigRef}
+import SB.Signals.{Minus, Plus, Sig, SigRef, Times}
 
 //todo:Check for negative numbers
-class FixPlus(override val lhs: SigRef[Double],override val rhs: SigRef[Double]) extends Plus(lhs,rhs) {
+case class FixPlus(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Plus(lhs, rhs) {
   //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
   override def pipeline = 1
 
@@ -22,16 +22,23 @@ case class FixMinus(override val lhs: SigRef[Double],override val rhs: SigRef[Do
 
   override def implement(implicit conv: SigRef[_] => Component) = new RTL.Minus(lhs,rhs)
 }
+
+case class FixTimes(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Times(lhs, rhs) {
+  //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
+  override def pipeline = 1
+
+  override def implement(implicit conv: SigRef[_] => Component) = ???
+}
+
 case class FixedPoint(magnitude: Int, fractional: Int) extends HW[Double](magnitude+fractional) {
 
 
+  override def plus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FixPlus(lhs, rhs)
 
-  override def plus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = new FixPlus(lhs,rhs)
 
+  override def minus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FixMinus(lhs, rhs)
 
-  override def minus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = new FixMinus(lhs,rhs)
-
-  override def times(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = ???
+  override def times(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FixTimes(lhs, rhs)
 
   override def bitsOf(const: Double): BigInt = if(const<0)
     (bitsOf(-const)^((BigInt(1)<<size)-1))+1

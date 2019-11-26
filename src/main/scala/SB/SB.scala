@@ -5,11 +5,14 @@
 
 package SB
 
+import java.io.PrintWriter
+
 import RTL.Component
 import SB.HW.HW
 import SPL.SPL
 import SB.Signals._
 import StreamingModule.StreamingModule
+import sys.process._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -87,6 +90,51 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     outputs.map(implementComp(0)(_))
   }
 
+  def toGraph = {
+    implicit val sb = this
+    val inputSigs = dataInputs.map(c => Input(c, hw, this))
+
+    val outputs = implement(inputSigs)
+    val toProcess = mutable.Queue[Int]()
+    val processed = mutable.BitSet()
+    assert(outputs.forall(_.sb == this))
+    toProcess.enqueueAll(outputs.map(_.ref.i))
+    processed.addAll(outputs.map(_.ref.i))
+    val res = new StringBuilder
+    res ++= "digraph " + name + " {\n"
+    res ++= "  rankdir=LR;\n"
+    res ++= "  ranksep=1.5;\n"
+    res ++= "  outputs[shape=record,label=\"" + (0 until outputs.size).map(i => "<o" + i + "> " + i + " ").mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
+    res ++= "  inputs[shape=record,label=\"" + inputSigs.zipWithIndex.map { case (p, i) => "<i" + p.ref.i + "> " + i + " " }.mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
+    while (!toProcess.isEmpty) {
+      val cur = toProcess.dequeue
+      val curSig = signal(cur)
+      curSig.parents.foreach(f =>
+        if (!processed(f.i)) {
+          processed.add(f.i)
+          toProcess.enqueue(f.i)
+        }
+
+      )
+    }
+    val nodes = processed.toSeq.map(signal)
+    res ++= nodes.map(s => s.graphDeclaration).mkString("\n")
+    res ++= nodes.flatMap(s => s.graphNode).mkString("\n")
+    res ++= outputs.zipWithIndex.map { case (s, i) => s.graphName + " -> outputs:o" + i + ";\n" }.mkString("")
+    res ++= "}\n"
+    res.toString()
+  }
+
+  def showGraph() = {
+    val graph = toGraph
+    new PrintWriter("graph.gv") {
+      write(graph);
+      close
+    }
+    "dot -Tpdf graph.gv -o graph.pdf".!!
+    "cmd /c start graph.pdf".!!
+
+  }
   private var _latency: Option[Int] = None
 
   final def latency = {

@@ -7,6 +7,7 @@ package SB.HW
 
 import RTL.Component
 import SB.Signals.{Plus, Sig}
+import linalg.Fields.Complex
 
 
 abstract class HW[T: Numeric](val size: Int) {
@@ -23,3 +24,13 @@ abstract class HW[T: Numeric](val size: Int) {
   def valueOf(const: BigInt): T
 }
 
+object HW {
+
+  implicit class compHW[T](x: HW[Complex[T]]) {
+    def innerHW = x match {
+      case x: ComplexHW[T] => x.hw
+      case _ => throw new Exception("Invalid complex HW datatype")
+    }
+  }
+
+}
