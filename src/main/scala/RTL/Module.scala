@@ -55,6 +55,7 @@ abstract class Module {
         case cur:Output => addComb("assign " ++ cur + " = " ++ cur.input + ";")
         case cur:Plus => addComb("assign " ++ cur + " = " ++ cur.terms.map(getName).mkString(" + ") + ";")
         case cur:Minus => addComb("assign " ++ cur + " = " ++ cur.lhs ++ " - "++ cur.rhs ++ ";")
+        case cur: Times => addComb("assign " ++ cur + " = $signed(" ++ cur.lhs ++ ") * $signed(" ++ cur.rhs ++ ");")
         case cur:And => addComb("assign " ++ cur + " = " ++ cur.terms.map(getName).mkString(" & ") + ";")
         case cur:Xor => addComb("assign " ++ cur + " = " ++ cur.inputs.map(getName).mkString(" ^ ") + ";")
         case cur:Equals => addComb("assign " ++ cur ++ " = " ++ cur.lhs ++ " == " ++ cur.rhs ++ ";")

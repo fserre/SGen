@@ -25,9 +25,12 @@ case class FixMinus(override val lhs: SigRef[Double],override val rhs: SigRef[Do
 
 case class FixTimes(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Times(lhs, rhs) {
   //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
-  override def pipeline = 1
+  override def pipeline = 3
 
-  override def implement(implicit conv: SigRef[_] => Component) = ???
+  override def implement(implicit conv: SigRef[_] => Component) = {
+    val shift = rhs.hw.asInstanceOf[FixedPoint].fractional
+    new RTL.Tap(new RTL.Times(lhs, rhs), shift until (shift + lhs.hw.size))
+  }
 }
 
 case class FixedPoint(magnitude: Int, fractional: Int) extends HW[Double](magnitude+fractional) {

@@ -71,7 +71,7 @@ object main extends App {
   val argsQ = mutable.Queue.from(args)
   var config = new Config()
 
-  def parseHW: Option[HW[_]] = argsQ.dequeue() match {
+  def parseHW: Option[HW[_]] = argsQ.dequeue().toLowerCase() match {
     case "unsigned" => Numeric[Int].parseString(argsQ.dequeue).map(Unsigned(_))
     case "fixedpoint" => for {
       magnitude <- Numeric[Int].parseString(argsQ.dequeue)

@@ -46,6 +46,8 @@ class Input(override val size: Int, val name: String) extends Component(size)
 class Output(val input: Component, val name: String) extends Component(input.size)
 class Plus(val terms: Seq[Component]) extends Component(terms.head.size)
 class Minus(val lhs:Component,val rhs:Component) extends Component(lhs.size)
+
+class Times(val lhs: Component, val rhs: Component) extends Component(lhs.size + rhs.size)
 class And(val terms: Seq[Component]) extends Component(terms.head.size)
 class Xor(val inputs: Seq[Component]) extends Component(inputs.head.size)
 class Not(val input: Component) extends Component(1)
