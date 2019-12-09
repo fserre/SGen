@@ -16,7 +16,7 @@ class And private (terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," 
   override val pipeline = 1
 }
 
-object And extends AssociativeSigCompanion[Int,And](arg => new And(arg.map(_.ref)),(lhs:Sig[Int],rhs:Sig[Int])=>{
+object And extends AssociativeSigCompanion[Int, And](arg => new And(arg.map(_.ref)), (lhs: Sig[Int], rhs: Sig[Int]) => {
   require(lhs.hw == rhs.hw)
   implicit val hw = lhs.hw
   implicit val sb=lhs.sb
@@ -33,8 +33,7 @@ object And extends AssociativeSigCompanion[Int,And](arg => new And(arg.map(_.ref
 })
 
 
-
-case class Not private(input: SigRef[Int]) extends Sig[Int](input)(input.hw) {
+case class Not private(input: SigRef[Int]) extends Operator[Int](input)(input.hw) {
   override def implement(implicit cp: SigRef[_] => Component): Component =new RTL.Not(input)
 }
 
@@ -61,7 +60,7 @@ class Xor private(terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms, " 
   override val pipeline = 1
 }
 
-object Xor extends AssociativeSigCompanion [Int,Xor](arg=>new Xor(arg.map(_.ref)),(lhs:Sig[Int],rhs:Sig[Int])=>{
+object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg.map(_.ref)), (lhs: Sig[Int], rhs: Sig[Int]) => {
 //println(lhs+" "+rhs)
 
   require(lhs.hw == rhs.hw)
@@ -85,7 +84,7 @@ class Concat private(terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms,
   override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Concat(terms.map(cp))
 }
 
-object Concat extends AssociativeSigCompanion[Int,Concat]({list:Seq[Sig[Int]]=>new Concat(list.map(_.ref))},(lhs:Sig[Int],rhs:Sig[Int])=>{
+object Concat extends AssociativeSigCompanion[Int, Concat]({ list: Seq[Sig[Int]] => new Concat(list.map(_.ref)) }, (lhs: Sig[Int], rhs: Sig[Int]) => {
   implicit val sb=lhs.sb
   (lhs,rhs) match{
     case (lhs:Const[Int], rhs:Const[Int]) => Left(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size),sb))
@@ -96,7 +95,7 @@ object Concat extends AssociativeSigCompanion[Int,Concat]({list:Seq[Sig[Int]]=>n
   }
 })
 
-case class Tap private(input: SigRef[Int], range: Range) extends Sig[Int](input)(Unsigned(range.size)) {
+case class Tap private(input: SigRef[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)) {
   override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Tap(input, range)
 }
 

@@ -9,7 +9,7 @@ import RTL.Component
 import SB.HW.{ComplexHW, HW}
 import linalg.Fields.Complex
 
-case class Re[T:HW] private(input:SigRef[Complex[T]]) extends Sig[T](input){
+case class Re[T: HW] private(input: SigRef[Complex[T]]) extends Operator[T](input) {
   override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Tap(input,0 until hw.size)
   }
 object Re{
@@ -25,7 +25,7 @@ object Re{
   }
 }
 
-case class Im[T:HW] private(input:SigRef[Complex[T]]) extends Sig[T](input){
+case class Im[T: HW] private(input: SigRef[Complex[T]]) extends Operator[T](input) {
   override def implement(implicit cp: SigRef[_] => Component): Component =new RTL.Tap(input,hw.size until (hw.size*2))
 
 }
@@ -44,12 +44,12 @@ object Im{
 }
 
 
-case class Cpx[T] private (real:SigRef[T], im:SigRef[T])(implicit hw:HW[Complex[T]]) extends Sig[Complex[T]](real,im){
+case class Cpx[T] private(real: SigRef[T], im: SigRef[T])(implicit hw: HW[Complex[T]]) extends Operator[Complex[T]](real, im) {
   override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Concat(Vector(im,real))
 
 }
 object Cpx{
-  def apply[T](real:Sig[T],im:Sig[T])(implicit hw:HW[Complex[T]]):Sig[Complex[T]]= (real,im) match{
+  def apply[T](real: Sig[T], im: Sig[T])(implicit hw: HW[Complex[T]]): Sig[Complex[T]] = (real, im) match {
     case (Const(re), Const(im)) => Const(Complex(re, im)(real.hw.num))(ComplexHW(real.hw), real.sb)
     case (Re(cpxReal),Im(cpxIm)) if cpxReal==cpxIm => cpxReal
     case _ => new Cpx(real,im)

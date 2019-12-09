@@ -32,7 +32,7 @@ object Plus extends AssociativeSigCompanionT[Plus] {
     }
   }
 }*/
-abstract class Plus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Sig[T](lhs, rhs)(lhs.hw,lhs.sb){
+abstract class Plus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
   override def graphDeclaration = graphName + "[label=\"+\"];"
 }
 object Plus{
@@ -52,11 +52,12 @@ object Plus{
   }
 
 }
-abstract class Minus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Sig[T](lhs, rhs)(lhs.hw,lhs.sb){
+
+abstract class Minus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
   override def graphDeclaration = graphName + "[label=\"-\"];"
 }
 
-abstract class Times[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Sig[T](lhs, rhs)(lhs.hw, lhs.sb) {
+abstract class Times[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
   override def graphDeclaration = graphName + "[label=\"*\"];"
 }
 

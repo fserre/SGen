@@ -155,5 +155,10 @@ object main extends App {
   //WHT[Complex[Int]](4).stream(4)(ComplexHW(Unsigned(16))).asInstanceOf[SB[Complex[Int]]].showGraph()
   //DiagE(5,1,1).stream(3)(ComplexHW(FixedPoint(16,0))).asInstanceOf[SB[Complex[Double]]].showGraph()
   //DFT.CTDFT(3,1).stream(2)(ComplexHW(FixedPoint(16,0))).asInstanceOf[SB[Complex[Double]]].showGraph()
+  //implicit val hw=FixedPoint(8,8)
+  //println((Temporal[Double](Matrix(2,2,"0100"),Matrix.identity[F2](2))* SwitchArray(Vec.fromInt(2,1),2)* SB.ITensor(3,DFT2[Double]().stream(1),2)).test(Vector.tabulate(2 << 4)(i => i)))
+
+
+
 }
 

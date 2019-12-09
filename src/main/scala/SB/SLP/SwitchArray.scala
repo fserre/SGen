@@ -26,8 +26,10 @@ case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) exte
 }
 
 object SwitchArray {
-  def apply[U: HW](v: Seq[Vec[F2]], k: Int) = if (v.forall(_.isZero()))
+  def apply[U: HW](v: Seq[Vec[F2]], k: Int): SB[U] = if (v.forall(_.isZero()))
     Identity(v.head.m, k)
   else
     new SwitchArray(v, k)
+
+  def apply[U: HW](v: Vec[F2], k: Int): SB[U] = apply(Seq(v), k)
 }

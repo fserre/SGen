@@ -42,7 +42,7 @@ class WHTTest extends PropSpec with  ScalaCheckDrivenPropertyChecks with Matcher
   }
 
 
-  ignore("WHT conforms to the definition") {
+  property("WHT conforms to the definition") {
 
     for(n<-1 until 11) {
       val sb = WHT[Double](n, 1) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))

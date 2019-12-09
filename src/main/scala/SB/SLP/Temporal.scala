@@ -58,10 +58,10 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
     val basisListWrite = basis.map(m => Concat(Vector.tabulate(t)(r => Const(m.row(r).toInt())(Unsigned(t),sb) scalar timerWrite1)))
 
 
-    val controlWrite = Counter(basis.size)
+    val controlWrite = LateCounter(basis.size, T)
     val basisWrite = Mux(controlWrite, basisListWrite)
 
-    val controlWrite2 = Counter(offsetLength)
+    val controlWrite2 = LateCounter(offsetLength, T)
     val offsetListWrite = offset2.map(i => ROM(i.map(x => x.toInt()), controlWrite2)(Unsigned(t),sb))
 
     val addressesWrite = offsetListWrite.map(_ ^ basisWrite)

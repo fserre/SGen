@@ -48,10 +48,12 @@ case class FixedPoint(magnitude: Int, fractional: Int) extends HW[Double](magnit
     else
     ((BigInt(1)<<fractional).toDouble*BigDecimal(const)).toBigInt
 
-  override def valueOf(const: BigInt): Double = if(const.testBit(size-1))
-    -valueOf((const^((BigInt(1)<<size)-1))+1)
+  override def valueOf(const: BigInt): Double = {
+    if (const.testBit(size - 1))
+      (-BigDecimal((const ^ ((BigInt(1) << size) - 1)) + 1, fractional)).toDouble
     else
-    (BigDecimal(const,fractional)).toDouble
+      BigDecimal(const, fractional).toDouble
+  }
 }
 
 

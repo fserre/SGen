@@ -9,8 +9,8 @@ import RTL.Component
 import SB.HW.{HW, Unsigned}
 import SB.SB
 
-case class Input[T](input: Component,override val hw:HW[T],override val sb:SB[T]) extends Sig[T]()(hw,sb) {
-  override def implement(implicit conv: SigRef[_] => Component): Component = input
+case class Input[T](input: Component, override val hw: HW[T], override val sb: SB[T]) extends Source[T](hw, sb) {
+  override def implement = input
 
   override def toString: String = input.toString
 
@@ -19,8 +19,8 @@ case class Input[T](input: Component,override val hw:HW[T],override val sb:SB[T]
   override def graphDeclaration: String = ""
 }
 
-case class Next(override val sb:SB[_]) extends Sig()(Unsigned(1),sb) {
-  override def implement(implicit conv: SigRef[_] => Component): Component = ???
+case class Next(override val sb: SB[_]) extends Source(Unsigned(1), sb) {
+  override def implement = ???
   override def toString="Next"
 }
 object Next{
@@ -31,8 +31,9 @@ object Next{
     case _ => false
   }
 }
-case class Reset(override val sb:SB[_]) extends Sig()(Unsigned(1),sb) {
-  override def implement(implicit conv: SigRef[_] => Component): Component = ???
+
+case class Reset(override val sb: SB[_]) extends Source(Unsigned(1), sb) {
+  override def implement = ???
 
 
 }
@@ -45,9 +46,10 @@ object Reset{
   }
 }
 
-case class Const[T](value: T,override val hw:HW[T], override val sb:SB[_]) extends Sig[T]()(hw,sb) {
+case class Const[T](value: T, override val hw: HW[T], override val sb: SB[_]) extends Source(hw, sb) {
   override def toString(s: SigRef[_] => String): String = value.toString
-  override def implement(implicit conv: SigRef[_] => Component) = new RTL.Const(hw.size, hw.bitsOf(value))
+
+  override def implement = new RTL.Const(hw.size, hw.bitsOf(value))
 
   override def graphDeclaration = "" //graphName + "[label=\""+value.toString+"\"];"
 

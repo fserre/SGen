@@ -35,7 +35,7 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     k <- Gen.choose(1, 5)
     p1 <- genInvertible(k)
   } yield Steady(Vector(p1), t)(Unsigned(16))
-  ignore("Steady") {
+  property("Steady") {
 
     forAll(genSteady, minSuccessful(20)) { sb =>
       println(sb)
@@ -47,7 +47,7 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     k <- Gen.choose(1, 5)
     p1 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(k))
   } yield Steady(p1, t)(Unsigned(16))
-  ignore("Steady2") {
+  property("Steady2") {
 
     forAll(genSteady2, minSuccessful(20)) { sb =>
       println(sb)
@@ -55,7 +55,7 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     }
   }
 
-  ignore("SwitchArray") {
+  property("SwitchArray") {
     forAll(genVec, Gen.choose(1, 5), minSuccessful(20)) { (v: Vec[F2], k) =>
       whenever(k > 0) {
         println(v + " " + k)
@@ -70,7 +70,7 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     k <- Gen.choose(1, 5)
     v <- Gen.containerOfN[Vector, Vec[F2]](2, genVec(t))
   } yield SwitchArray(v, k)(Unsigned(16))
-  ignore("SwitchArray 2") {
+  property("SwitchArray 2") {
     forAll(genSwitch2, minSuccessful(20)) { sb =>
       assert(sb.test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
     }
@@ -81,9 +81,9 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     p4 <- genInvertible(t)
     p3 <- genMatrix(t, k)
   } yield Temporal(Vector(p3), Vector(p4))(Unsigned(16))
-  ignore("Temporal") {
+  property("Temporal") {
     forAll(genTemporal, minSuccessful(20)) { sb =>
-      //println(sb)
+      println(sb)
       assert(sb.test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
     }
   }
@@ -118,7 +118,7 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
   } yield LinearPerm[Int](Seq(p)).stream(k)(Unsigned(16)) //(LinearPerm[Int](Seq(p)), k)
 
 
-  property("LinearPerm") {
+  ignore("LinearPerm") {
     forAll(genLinPerm, minSuccessful(200)) { sb =>
       //println(sb)
       println(sb)

@@ -169,7 +169,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
       close
     }
     val xvlog = (xDir + "xvlog" + ext + " test.v").!!
-    val xvlog2 = (xDir + "xvhdl" + ext + " flopoco.vhdl").!!
+    //    val xvlog2 = (xDir + "xvhdl" + ext + " flopoco.vhdl").!!
     val xelag = (xDir + "xelab" + ext + " test").!!
     val xsim = (xDir + "xsim" + ext + " work.test -R").!!
     if (!xsim.contains("Success.")) {
@@ -185,6 +185,15 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
         val pos3 = xsim.indexOf(" ", pos2)
         val res = implicitly[HW[U]].valueOf(BigInt(xsim.slice(pos2, pos3)))
         val diff = implicitly[HW[U]].num.minus(res, outputs(i))
+
+        if (diff != 0) {
+          println(i)
+          println("expecting " + outputs(i))
+          println(xsim.slice(pos2, pos3))
+          println(BigInt(xsim.slice(pos2, pos3)))
+          println(res)
+          println()
+        }
         implicitly[HW[U]].num.times(diff, diff)
       }).sum(implicitly[HW[U]].num))
 

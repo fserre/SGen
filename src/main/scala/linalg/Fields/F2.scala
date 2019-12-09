@@ -11,7 +11,7 @@ package linalg.Fields
  *
  * @param value a boolean set to true for 1, and false for 0
  */
-case class F2(value: Boolean) {
+case class F2(value: Boolean) extends AnyVal {
   /**
    * Returns a printable string representing the number
    *

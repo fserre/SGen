@@ -55,8 +55,8 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     while (!toImplement.isEmpty) {
       val cur = toImplement.dequeue
       val curSig = signal(cur)
-      curSig.parents.foreach { s: SigRef[_] =>
-        val time = synch(cur) + curSig.latency + s.pipeline
+      curSig.parents.foreach { case (s: SigRef[_], advance: Int) =>
+        val time = synch(cur) + advance + s.pipeline
         //println(time)
         synch.get(s.i) match {
           case Some(i) if i > time =>
@@ -73,21 +73,24 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     _latency = Some(latency)
     val implemented = new mutable.HashMap[(Int, Int), Component]()
 
-    def implementComp(time: Int)(ref: SigRef[_]): Component = ref.sig match {
-      case Next() => token(latency - time)
-      case Reset() => rst
-      case _: Const[_] => implemented.getOrElseUpdate((ref.i, time), ref.implement(implementComp(time + ref.latency)))
-      case _ => val diff = synch(ref.i) - time
-        assert(diff >= 0)
-        implemented.getOrElseUpdate((ref.i, time), if (diff == 0) {
-          val res = ref.implement(implementComp(time + ref.latency))
-          res.description = ref.sig.toString
-          res
-        } else
-          implementComp(time + 1)(ref).register)
+    def implementComp(time: Int)(ref: SigRef[_], advance: Int): Component = {
+      val advancedTime = time + advance
+      ref.sig match {
+        case Next() => token(latency - advancedTime)
+        case Reset() => rst
+        case _: Const[_] => implemented.getOrElseUpdate((ref.i, advancedTime), ref.implement(implementComp(advancedTime)))
+        case _ => val diff = synch(ref.i) - advancedTime
+          assert(diff >= 0)
+          implemented.getOrElseUpdate((ref.i, advancedTime), if (diff == 0) {
+            val res = ref.implement(implementComp(advancedTime))
+            res.description = ref.sig.toString
+            res
+          } else
+            implementComp(advancedTime)(ref, 1).register)
+      }
     }
 
-    outputs.map(implementComp(0)(_))
+    outputs.map(implementComp(0)(_, 0))
   }
 
   def toGraph = {
@@ -109,7 +112,7 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     while (!toProcess.isEmpty) {
       val cur = toProcess.dequeue
       val curSig = signal(cur)
-      curSig.parents.foreach(f =>
+      curSig.parents.map(_._1).foreach(f =>
         if (!processed(f.i)) {
           processed.add(f.i)
           toProcess.enqueue(f.i)

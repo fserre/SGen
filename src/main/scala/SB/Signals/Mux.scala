@@ -10,7 +10,7 @@ import SB.HW.{ComplexHW, HW, Unsigned}
 import SB.SB
 import linalg.Fields.Complex
 
-case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Sig[U](address +: inputs: _*)(inputs.head.hw) {
+case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(inputs.head.hw) {
   def isRom = inputs.forall(_.sig.isInstanceOf[Const[_]])
   override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Mux(address, inputs.map(cp))
 
