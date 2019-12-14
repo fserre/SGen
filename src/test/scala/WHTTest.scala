@@ -47,7 +47,7 @@ class WHTTest extends PropSpec with  ScalaCheckDrivenPropertyChecks with Matcher
     for(n<-1 until 11) {
       val sb = WHT[Double](n, 1) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res=(0 until (1<<n)).map (j=> Vec(sb.eval(
-        Seq.tabulate(1<<n)(i=>if(i==j)1.0 else 0.0)
+        Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Double]](_ :: _)
       val wht=Matrix.tabulate[Double](1<<n,1<<n)((i,j)=>if((Vec.fromInt(n,i) scalar Vec.fromInt(n,j)).value) -1 else 1)
       assert((res-wht).norm==0)

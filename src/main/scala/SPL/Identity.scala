@@ -8,7 +8,7 @@ import SB.HW.HW
 import StreamingModule.StreamingModule
 
 case class Identity[T](override val n:Int) extends SPL[T](n) {
-  override def eval(inputs: Seq[T]): Seq[T] = inputs
+  override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs
 
   override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = ???
 }

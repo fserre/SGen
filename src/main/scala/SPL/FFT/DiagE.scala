@@ -17,7 +17,7 @@ case class DiagE(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
 
   def coef(i: Int) = DFT.omega(n, pow(i))
 
-  override def eval(inputs: Seq[Complex[Double]]): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
+  override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
 
   override def stream(k: Int)(implicit hw: HW[Complex[Double]]) = new SB(n - k, k) {
     override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[_]): Seq[Sig[Complex[Double]]] = {

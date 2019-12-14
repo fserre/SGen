@@ -34,6 +34,30 @@ case class RAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency
 
 }
 
+case class RAMNG[U: HW](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
+  val timeRd = T + 1
+
+  override def parents: Seq[(SigRef[_], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
+
+  override val hw: HW[U] = implicitly
+  override val sb: SB[_] = input.sb
+  override val pipeline = 1
+
+  override def implement(cp: (SigRef[_], Int) => Component): Component = {
+    val mem = new RTL.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
+    new RTL.RAMRd(mem, cp(addrWr, timeRd))
+  }
+
+  override def graphDeclaration = graphName + "[label=\"RAM bank (" + (1 << addrWr.hw.size) + " × " + hw.size + " bits, latency=" + latency + ") |<data> Data|<wr> Write address\",shape=record];"
+
+  override def graphNode = {
+    List(addrWr.graphName + " -> " + graphName + ":wr;",
+      //m.we.sigDef.graphName + " -> " + graphName + ":we;",
+      input.graphName + " -> " + graphName + ":data;"
+    )
+  }
+
+}
 /*
 object RAM {
 

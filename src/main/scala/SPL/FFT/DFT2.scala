@@ -13,7 +13,7 @@ import StreamingModule.StreamingModule
 import linalg.Fields.Complex
 
 class DFT2[T](implicit val num:Numeric[T]) extends SPL[T](1) with Repeatable[T]{
-  override def eval(inputs: Seq[T]) = inputs.grouped(2).toSeq.flatMap(i=>Seq(num.plus(i(0),i(1)),num.minus(i(0),i(1))))
+  override def eval(inputs: Seq[T], set: Int) = inputs.grouped(2).toSeq.flatMap(i => Seq(num.plus(i(0), i(1)), num.minus(i(0), i(1))))
 
   override def stream(k: Int)(implicit hw: HW[T]) = {
     require(k==1)

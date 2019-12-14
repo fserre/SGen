@@ -3,7 +3,7 @@
  * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
  */
 
-import SB.SLP.{SLP, Steady, SwitchArray, Temporal}
+import SB.SLP.{SLP, Steady, SwitchArray, Temporal, TemporalNG}
 import SB.Signals.Null
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
@@ -80,7 +80,7 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     k <- Gen.choose(1, 5)
     p4 <- genInvertible(t)
     p3 <- genMatrix(t, k)
-  } yield Temporal(Vector(p3), Vector(p4))(Unsigned(16))
+  } yield TemporalNG(Vector(p3), Vector(p4))(Unsigned(16))
   property("Temporal") {
     forAll(genTemporal, minSuccessful(20)) { sb =>
       println(sb)
@@ -93,8 +93,8 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     k <- Gen.choose(1, 5)
     p4 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(t))
     p3 <- Gen.containerOfN[Vector, Matrix[F2]](2, genMatrix(t, k))
-  } yield Temporal(p3, p4)(Unsigned(16))
-  ignore("Temporal2") {
+  } yield TemporalNG(p3, p4)(Unsigned(16))
+  property("Temporal2") {
     forAll(genTemporal2, minSuccessful(100)) { sb =>
       //println(sb)
       assert(sb.test(Vector.tabulate(5 << sb.n)(i => i)) == Some(0))
@@ -118,7 +118,7 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
   } yield LinearPerm[Int](Seq(p)).stream(k)(Unsigned(16)) //(LinearPerm[Int](Seq(p)), k)
 
 
-  ignore("LinearPerm") {
+  property("LinearPerm") {
     forAll(genLinPerm, minSuccessful(200)) { sb =>
       //println(sb)
       println(sb)
@@ -132,33 +132,33 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     (0 until sb.P.size).toStream.map(i => (LinearPerm[Int]((sb.P.take(i)) ++ (sb.P.drop(i + 1))), k))
   else
     Stream()*/
+  /*
 
-
-  /*  val genMulLinPerm = for {
-      t <- Gen.choose(1, 2)
-      k <- Gen.choose(1, 2)
-      n = t + k
-      p <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(n))
-      //if p.size>0
-    } yield(LinearPerm[Int](p).stream(k)(Unsigned(16)))
-    property("MulLinearPermDecomp") {
-      forAll(genMulLinPerm, minSuccessful(200)) { case (sb, k) =>
-        println(sb)
-        whenever(k > 0) {
-          val inputs = Vector.tabulate(2 << sb.n)(i => i)
-          assert(sb.eval(inputs) == sb.stream(k)(Unsigned(16)).spl.eval(inputs))
+      val genMulLinPerm = for {
+        t <- Gen.choose(1, 2)
+        k <- Gen.choose(1, 2)
+        n = t + k
+        p <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(n))
+        //if p.size>0
+      } yield(LinearPerm[Int](p).stream(k)(Unsigned(16)))
+      property("MulLinearPermDecomp") {
+        forAll(genMulLinPerm, minSuccessful(200)) { case (sb, k) =>
+          println(sb)
+          whenever(k > 0) {
+            val inputs = Vector.tabulate(2 << sb.n)(i => i)
+            assert(sb.eval(inputs) == sb.stream(k)(Unsigned(16)).spl.eval(inputs))
+          }
         }
       }
-    }
 
-    property("MulLinearPerm") {
-      forAll(genMulLinPerm, minSuccessful(20)) { case (sb, k) =>
-        println(sb)
-        if (k > 0) {
-          val inputs = Vector.tabulate(2 << sb.n)(i => i)
-          assert(sb.eval(inputs) == sb.stream(k)(Unsigned(16)).spl.eval(inputs))
-          assert(sb.stream(k)(Unsigned(16)).test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
+      property("MulLinearPerm") {
+        forAll(genMulLinPerm, minSuccessful(20)) { case (sb, k) =>
+          println(sb)
+          if (k > 0) {
+            val inputs = Vector.tabulate(2 << sb.n)(i => i)
+            assert(sb.eval(inputs) == sb.stream(k)(Unsigned(16)).spl.eval(inputs))
+            assert(sb.stream(k)(Unsigned(16)).test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
+          }
         }
-      }
-    }*/
+      }*/
 }

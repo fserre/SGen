@@ -6,7 +6,7 @@
 package SPL
 
 import SB.HW.HW
-import SB.SLP.{Spatial, Temporal}
+import SB.SLP.{Spatial, Temporal, TemporalNG}
 import SB.Signals._
 import StreamingModule.StreamingModule
 import linalg.Fields.F2
@@ -18,7 +18,7 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
   assert(P.forall(_.isInvertible))
   assert(P.forall(m => m.m == n))
 
-  override def eval(inputs: Seq[T]): Seq[T] = inputs.grouped(N).toSeq.zipWithIndex.flatMap { case (inputs, s) => LinearPerm.permute(P(s % P.size), inputs) }
+  override def eval(inputs: Seq[T], set: Int): Seq[T] = LinearPerm.permute(P(set % P.size), inputs) //inputs.grouped(N).toSeq.zipWithIndex.flatMap { case (inputs, s) => LinearPerm.permute(P(s % P.size), inputs) }
 
   override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = {
     def unblock(P: Matrix[F2], t: Int) = {
@@ -47,7 +47,7 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
 
 
       Spatial(L1, L2) *
-        Temporal(C3, C4) *
+        TemporalNG(C3, C4) *
         Spatial(Vector.fill(P.size)(Matrix.identity[F2](k)), R2)
     }
     else {
@@ -56,9 +56,9 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
       val R4 = p4(0) + L * p2(0)
       val C2 = p2(0) * R4.inverse
       val C1 = p1(0) + C2 * R3
-      Temporal(L, Matrix.identity[F2](t)) *
+      TemporalNG(L, Matrix.identity[F2](t)) *
         Spatial(C1, C2) *
-        Temporal(R3, R4)
+        TemporalNG(R3, R4)
     }
   }
 }

@@ -68,7 +68,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     _nextAt.get
   }
 
-  def eval(inputs: Seq[BigInt]) = spl.eval(inputs.map(hw.valueOf)).map(hw.bitsOf)
+  def eval(inputs: Seq[BigInt], set: Int) = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
 
   def getTestBench(input: Seq[BigInt]): String = {
 
@@ -104,9 +104,9 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     res ++= "        rst <= 0;\n"
     (Math.min(nextAt, 0) until Math.max((T + minGap) * repeat, (T + minGap) * (repeat - 1) + nextAt + 4)).foreach(cycle => {
       res ++= "        @(posedge clk); //cycle " ++= cycle.toString ++= "\n"
-      if ((cycle - nextAt) >= 0 && (cycle - nextAt) % (T + minGap) == 0)
+      if ((cycle - nextAt) >= 0 && (cycle - nextAt) % (T + minGap) == 0 && (cycle - nextAt) / (T + minGap) < repeat)
         res ++= "        next <= 1;\n"
-      if ((cycle - nextAt + 1) >= 0 && (cycle - nextAt) % (T + minGap) == 1)
+      if ((cycle - nextAt + 1) >= 0 && (cycle - nextAt) % (T + minGap) == 1 && (cycle - nextAt) / (T + minGap) < repeat)
         res ++= "        next <= 0;\n"
       val set = cycle / (T + minGap)
       val c = cycle % (T + minGap)
@@ -123,7 +123,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     res ++= "        @(posedge next_out);//#100;\n"
     res ++= "        #50;\n"
     //if (check) {
-    val output = eval(input)
+    val output = input.grouped(N).toSeq.zipWithIndex.map { case (input, set) => eval(input, set) }.flatten
     (0 until repeat).foreach(r => {
       (0 until T).foreach(c => {
         (0 until K).foreach(i => {
@@ -162,7 +162,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     val xDir = if (System.getProperty("os.name") == "Windows 10") "C:\\Xilinx\\Vivado\\2018.1\\bin\\" else "/home/serref/Xilinx/Vivado/2014.4/bin/"
     val ext = if (System.getProperty("os.name") == "Windows 10") ".bat" else ""
     val inputsBits = inputs.map(implicitly[HW[U]].bitsOf)
-    val outputs = eval(inputsBits).map(implicitly[HW[U]].valueOf)
+    val outputs = inputsBits.grouped(N).toSeq.zipWithIndex.map { case (input, set) => eval(input, set) }.flatten.map(implicitly[HW[U]].valueOf)
     new PrintWriter("test.v") {
       write(getTestBench(inputsBits))
       write(toVerilog)
@@ -199,5 +199,6 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
 
 
   }
+
 }
 

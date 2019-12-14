@@ -13,7 +13,7 @@ import Utils.{AssociativeNode, AssociativeNodeCompanionT}
 class Product[T] private(override val list: Seq[SPL[T]]) extends SPL[T](list.head.n) with AssociativeNode[SPL[T]]{
   assert(list.forall(_.n == n))
 
-  override def eval(inputs: Seq[T]): Seq[T] = list.foldRight(inputs)((spl, ins) => spl.eval(ins))
+  override def eval(inputs: Seq[T], set: Int): Seq[T] = list.foldRight(inputs)((spl, ins) => spl.eval(ins, set))
 //TODO: Handle when SB
   override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = StreamingModule.Product(list.map(_.stream(k)))
 }
