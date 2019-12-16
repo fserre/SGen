@@ -4,27 +4,28 @@
  */
 package RTL
 
+/**
+ * Class that represent a node on an RTL graph
+ *
+ * @param size Size of the node in bits
+ * @param _parents Parent nodes
+ */
 abstract sealed class Component(val size: Int, _parents: Component*) {
+  /**
+   * Parent nodes
+   */
   def parents: Seq[Component] = _parents.toSeq
+  /**
+   * Node description
+   */
   var description: String = ""
-
-  //def +(rhs: Component) = Plus(this, rhs)
-
- // def +(rhs: Int) = Plus(this, Const(size, rhs))
-
-//  def ?(choice: (Component, Component)) = Mux(this, Vector(choice._2, choice._1))
-
- // def ::(lhs: Component) = Concat(lhs, this)
-
- // def ===(rhs: Component) = Equals(this, rhs)
-
-//  def ===(rhs: Int) = Equals(this, Const(size, rhs))
-
+  /**
+   * Returns a register node of the current node
+   */
   def register = new Register(this)
 }
 
 class Const(override val size: Int, val value: BigInt) extends Component(size)
-
 class Register(val input: Component) extends Component(input.size, input)
 class Wire(override val size: Int) extends Component(size) {
   var _input: Option[Component] = None

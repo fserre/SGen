@@ -9,6 +9,10 @@ import java.io.PrintWriter
 
 import scala.collection.mutable
 import sys.process._
+
+/**
+ * Class that represents a RTL module
+ */
 abstract class Module {
   def inputs: Seq[Input]
 
@@ -16,7 +20,7 @@ abstract class Module {
 
   lazy val name: String = this.getClass.getSimpleName.toLowerCase
 
-  def toVerilog = {
+  final def toVerilog = {
     val names = mutable.AnyRefMap[Component, String]()
     val toImplement = mutable.Queue[Component]()
     toImplement.enqueueAll(outputs)
@@ -92,7 +96,7 @@ abstract class Module {
     result.toString()
   }
 
-  def toRTLGraph = {
+  final def toRTLGraph = {
     val names = mutable.AnyRefMap[Component, String]()
     val toImplement = mutable.Queue[Component]()
     toImplement.enqueueAll(outputs)
@@ -123,9 +127,17 @@ abstract class Module {
     while (!toImplement.isEmpty) {
       val cur = toImplement.dequeue
       cur match {
-        case _: Output | _: Input =>
+        case _: Output | _: Input | _:RAMWr =>
         case _: Register => addNode("" ++ cur ++ "[label=\"\",shape=square];")
+        case _: Plus => addNode("" ++ cur ++ "[label=\"+\",shape=circle];")
+        case _: Or => addNode("" ++ cur ++ "[label=\"|\",shape=circle];")
+        case _: Xor => addNode("" ++ cur ++ "[label=\"^\",shape=circle];")
+        case _: And => addNode("" ++ cur ++ "[label=\"&\",shape=circle];")
+        case _: Minus => addNode("" ++ cur ++ "[label=\"-\",shape=circle];")
+        case cur: Tap => addNode("" ++ cur ++ "[label=\"[" ++ (if (cur.range.size > 1) cur.range.last + ":" else "") ++ cur.range.start.toString ++ "]\",shape=triangle,orientation=270];")
         case cur: Const => addNode("" ++ cur ++ "[label=\"" ++ cur.value.toString() ++ "\",shape=none];")
+        case cur: Mux => addNode("" ++ cur ++ "[label=\"\",shape=invhouse,orientation=90];")
+        case cur:RAMRd => addNode("" ++ cur ++ "[label=\"RAM bank (" ++ (1 << cur.rdAddress.size).toString ++ " × " ++ cur.size.toString ++ " bits) |<data> Data|<wr> Write address |<rd> Read address \",shape=record];")
         case _ => addNode("" ++ cur ++ "[label=\"" + cur.getClass.getSimpleName + "\"];")
       }
 
@@ -144,7 +156,7 @@ abstract class Module {
     res.toString()
   }
 
-  def showRTLGraph() = {
+  final def showRTLGraph() = {
     val graph = toRTLGraph
     new PrintWriter("rtl.gv") {
       write(graph);

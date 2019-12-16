@@ -12,7 +12,10 @@ import Utils.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanio
 import linalg.Fields.F2
 import linalg._
 
-
+/**
+ * Class that represent a node in a streaming block internal graph. These nodes are comparable to RTL nodes, but abstract the hardware representation, and timing.
+ * @param T Equivalent software datatype of the node
+ */
 abstract class Sig[T] {
   that =>
   def parents: Seq[(SigRef[_], Int)]
