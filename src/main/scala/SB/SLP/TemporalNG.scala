@@ -12,9 +12,9 @@ import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
 case class TemporalNG[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]]) extends SLP(P3.head.m, P3.head.n, P3.size) {
-  println(P3.head)
-  println(P4.head)
-  println("----")
+  //println(P3.head)
+  //println(P4.head)
+  //println("----")
 
   override def implement(inputs: Seq[Sig[U]])(implicit sb: SB[_]): Seq[Sig[U]] = {
 

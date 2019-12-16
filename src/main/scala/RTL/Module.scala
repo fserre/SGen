@@ -118,8 +118,8 @@ abstract class Module {
     def addNode(line: String*) = line.foreach(nodes ++= "      " ++= _ ++= "\n")
 
     def addEdge(dest: Component, origins: Seq[Component]): Unit = origins.foreach(o => o match {
-      case o: Wire => edges ++= "  " ++= o.input ++= " -> " ++= dest ++= "[constraint=false];\n"
-      case _ => edges ++= "  " ++= o ++= " -> " ++= dest ++= ";\n"
+      case o: Wire => edges ++= "  " ++= o.input ++= " -> " ++= dest ++= "[constraint=false,penwidth="++ (1+BigInt(o.size).bitLength).toString ++"];\n"
+      case _ => edges ++= "  " ++= o ++= " -> " ++= dest ++= "[penwidth="++ (1+BigInt(o.size).bitLength).toString ++"];\n"
     })
 
 
