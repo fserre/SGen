@@ -26,6 +26,7 @@ object main extends App {
   class Config {
     var testbench: Boolean = false
     var graph: Boolean = false
+    var rtlgraph:Boolean = false
 
     private var _n: Option[Int] = None
 
@@ -81,10 +82,13 @@ object main extends App {
     case _ => None
   }
 
-  def finisher[T](imp: StreamingModule[T]) = if (config.graph) imp match {
+  def finisher[T](imp: StreamingModule[T]) = if (config.graph)
+    imp match {
     case imp: SB[T] => println(imp.toGraph)
     case _ => println("Graphs can only be generated for non iterative designs.")
   }
+  else if (config.rtlgraph)
+    println(imp.toRTLGraph)
   else
     println(imp.toVerilog)
 
@@ -92,6 +96,8 @@ object main extends App {
     case "-n" => config.n = Numeric[Int].parseString(argsQ.dequeue)
     case "-k" => config.k = Numeric[Int].parseString(argsQ.dequeue)
     case "-testbench" => config.testbench = true
+    case "-graph" => config.graph=true
+    case "-rtlgraph" => config.rtlgraph=true
     case "-hw" => config.hw = parseHW
     case "lp" =>
       val matrices = mutable.Queue[Matrix[F2]]()
