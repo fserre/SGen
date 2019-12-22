@@ -36,7 +36,7 @@ class WHTTest extends PropSpec with  ScalaCheckDrivenPropertyChecks with Matcher
 
         (0 until factors.size).toStream.map(i => SB.Product[T]( (factors.take(i)) ++ (factors.drop(i + 1))))
       case SB.ITensor(r,factor,k) if k>factor.n => (1 to k-factor.n).toStream.map(i=>SB.ITensor(r-i,factor,k-i))
-      case StreamingModule.ItProduct(r, factor) => (1 until r).reverse.toStream.map(i => StreamingModule.ItProduct(i, factor))
+      case StreamingModule.ItProduct(r, factor, endLoop) => (1 until r).reverse.toStream.map(i => StreamingModule.ItProduct(i, factor, endLoop))
       //case slp:SLP[Int] if slp.size>1 =>
       case _ => (1 until input.k).reverse.toStream.map(k => input.spl.stream(k)(input.hw))
     }

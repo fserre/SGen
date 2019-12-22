@@ -41,5 +41,13 @@ object DFT {
     else
       LinearPerm(LinearPerm.Rmat(r, n)) * ItProduct(n / r, StreamDiagC(n, r) * ITensor(n - r, CTDFT(r, 1)) * LinearPerm(LinearPerm.Lmat(r, n).inverse))
   }
+
+  def ItPeaseFused(n: Int, r: Int): SPL[Complex[Double]] = {
+    assert(n % r == 0)
+    if (n == 1)
+      DFT2()
+    else
+      ItProduct(n / r + 1, LinearPerm(Seq.fill(n / r)(LinearPerm.Lmat(r, n).inverse) :+ LinearPerm.Rmat(r, n)), Some(StreamDiagC(n, r) * ITensor(n - r, CTDFT(r, 1))))
+  }
   def stream(n: Int, r: Int, k: Int, hw: HW[Complex[Double]]) = CTDFT(n, r).stream(k)(hw)
 }
