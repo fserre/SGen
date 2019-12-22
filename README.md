@@ -28,3 +28,10 @@ Fourier transforms (with full-throughput, i.e. without delay between datasets) c
 # generates a Fourier transform on 16 points, streamed on 4 ports, with fixed-point complex datatype with a mantissa of 8 bits and an exponent of 8 bits.
 sbt "run -n 4 -k 2 -hw complex fixedpoint 8 8 dft"
 ```
+
+### Fourier Transforms (compact design)
+Fourier transforms (with an architecture that reuses several times the same hardware) can be generated using the `dftcompact` command:
+```
+# generates a Fourier transform on 1024 points, streamed on 8 ports, with fixed-point complex datatype with a mantissa of 8 bits and an exponent of 8 bits.
+sbt "run -n 10 -k 3 -hw complex fixedpoint 8 8 dftcompact"
+```

@@ -85,7 +85,7 @@ object main extends App {
   def finisher[T](imp: StreamingModule[T]) = if (config.graph)
     imp match {
     case imp: SB[T] => println(imp.toGraph)
-    case _ => println("Graphs can only be generated for non iterative designs.")
+    case _ => println("Graphs can only be generated for non-iterative designs.")
   }
   else if (config.rtlgraph)
     println(imp.toRTLGraph)
@@ -126,6 +126,11 @@ object main extends App {
     case "dft" => config.hw match {
       case hw: ComplexHW[Double] if hw.innerHW.num.zero.isInstanceOf[Double] => finisher(DFT.stream(config.n, config.r, config.k, hw))
       case _ => println("DFT requires a complex of fractional hardware datatype.")
+        System.exit(-1)
+    }
+    case "dftcompact" => config.hw match {
+      case hw: ComplexHW[Double] if hw.innerHW.num.zero.isInstanceOf[Double] => finisher(DFT.ItPeaseFused(config.n, config.r).stream(config.k)(hw))
+      case _ => println("Compact DFT requires a complex of fractional hardware datatype.")
         System.exit(-1)
     }
 
