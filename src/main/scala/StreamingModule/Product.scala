@@ -25,6 +25,7 @@ class Product[U] private (override val list: Seq[StreamingModule[U]]) extends St
 //    terms.foldRight(inputs)((sm, ins) => sm.implement(rst, token, ins))
   }
 
+  override def minGap: Int = list.map(_.minGap).max
   override def latency: Int = list.map(_.latency).sum
 }
 

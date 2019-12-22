@@ -6,7 +6,7 @@
 package SPL.WHT
 
 import SB.HW.HW
-import SPL.{ITensor, LinearPerm, Product, SPL}
+import SPL.{ITensor, ItProduct, LinearPerm, Product, SPL}
 import _root_.SPL.FFT.DFT2
 import linalg.Fields.{Complex, F2}
 import linalg.Matrix
@@ -24,6 +24,22 @@ object WHT {
     DFT2[T]()
   else
     LinearPerm(LinearPerm.Lmat(r, n)) * Product(n / r)(l => ITensor(n - r, WHT[T](r, 1)) * Q(n, r, l))
+  }
+
+  def Pease[T: Numeric](n: Int, r: Int): SPL[T] = {
+    assert(n % r == 0)
+    if (n == 1)
+      DFT2[T]()
+    else
+      Product(n / r)(l => ITensor(n - r, apply(r, 1)) * LinearPerm(LinearPerm.Lmat(r, n).inverse))
+  }
+
+  def ItPease[T: Numeric](n: Int, r: Int): SPL[T] = {
+    assert(n % r == 0)
+    if (n == 1)
+      DFT2[T]()
+    else
+      ItProduct(n / r, ITensor(n - r, apply(r, 1)) * LinearPerm(LinearPerm.Lmat(r, n).inverse))
   }
 
   def stream[T](n: Int, r: Int, k: Int, hw: HW[T]) = WHT[T](n, r)(hw.num).stream(k)(hw)

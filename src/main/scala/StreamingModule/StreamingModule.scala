@@ -70,7 +70,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
 
   def eval(inputs: Seq[BigInt], set: Int) = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
 
-  def getTestBench(input: Seq[BigInt]): String = {
+  def getTestBench(input: Seq[BigInt], addedGap: Int = 0): String = {
 
     val repeat = input.length / N
 
@@ -102,14 +102,14 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     res ++= "        @(posedge clk);\n"
     res ++= "        @(posedge clk);\n"
     res ++= "        rst <= 0;\n"
-    (Math.min(nextAt, 0) until Math.max((T + minGap) * repeat, (T + minGap) * (repeat - 1) + nextAt + 4)).foreach(cycle => {
+    (Math.min(nextAt, 0) until Math.max((T + minGap + addedGap) * repeat, (T + minGap + addedGap) * (repeat - 1) + nextAt + 4)).foreach(cycle => {
       res ++= "        @(posedge clk); //cycle " ++= cycle.toString ++= "\n"
-      if ((cycle - nextAt) >= 0 && (cycle - nextAt) % (T + minGap) == 0 && (cycle - nextAt) / (T + minGap) < repeat)
+      if ((cycle - nextAt) >= 0 && (cycle - nextAt) % (T + minGap + addedGap) == 0 && (cycle - nextAt) / (T + minGap + addedGap) < repeat)
         res ++= "        next <= 1;\n"
-      if ((cycle - nextAt + 1) >= 0 && (cycle - nextAt) % (T + minGap) == 1 && (cycle - nextAt) / (T + minGap) < repeat)
+      if ((cycle - nextAt + 1) >= 0 && (cycle - nextAt) % (T + minGap + addedGap) == 1 && (cycle - nextAt) / (T + minGap + addedGap) < repeat)
         res ++= "        next <= 0;\n"
-      val set = cycle / (T + minGap)
-      val c = cycle % (T + minGap)
+      val set = cycle / (T + minGap + addedGap)
+      val c = cycle % (T + minGap + addedGap)
       if (set < repeat && cycle >= 0 && c < T) {
         if (c == 0)
           res ++= "        //dataset " + set + " enters.\n"
@@ -136,7 +136,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
         res ++= "        #100;\n"
       })
 
-      res ++= "        #" + (100 * minGap) + "; //gap\n"
+      res ++= "        #" + (100 * (minGap + addedGap)) + "; //gap\n"
     })
     //}
     /*else {
@@ -158,13 +158,14 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     res.toString
   }
 
-  def test(inputs: Seq[U]): Option[U] = {
+  def test(inputs: Seq[U], addedGap: Int = 0): Option[U] = {
     val xDir = if (System.getProperty("os.name") == "Windows 10") "C:\\Xilinx\\Vivado\\2018.1\\bin\\" else "/home/serref/Xilinx/Vivado/2014.4/bin/"
     val ext = if (System.getProperty("os.name") == "Windows 10") ".bat" else ""
     val inputsBits = inputs.map(implicitly[HW[U]].bitsOf)
+
     val outputs = inputsBits.grouped(N).toSeq.zipWithIndex.map { case (input, set) => eval(input, set) }.flatten.map(implicitly[HW[U]].valueOf)
     new PrintWriter("test.v") {
-      write(getTestBench(inputsBits))
+      write(getTestBench(inputsBits, addedGap))
       write(toVerilog)
       close
     }

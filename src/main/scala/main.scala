@@ -10,11 +10,11 @@ import _root_.SB.HW.{ComplexHW, FixedPoint, HW, Unsigned}
 import _root_.SB.SLP.{Steady, SwitchArray, Temporal, TemporalNG}
 import SPL._
 import _root_.SPL._
-import _root_.SPL.FFT.{DFT, DFT2, DiagE}
+import _root_.SPL.FFT.{DFT, DFT2, DiagE, StreamDiagC}
 import Signals._
-import StreamingModule.StreamingModule
+import StreamingModule.{Delay, StreamingModule}
 import linalg.Fields.{Complex, F2}
-import linalg.{Matrix, Vec}
+import linalg._
 import java.lang.System.{currentTimeMillis => currentTime}
 
 import _root_.SPL.WHT.WHT
@@ -162,11 +162,21 @@ object main extends App {
   //DiagE(5,1,1).stream(3)(ComplexHW(FixedPoint(16,0))).asInstanceOf[SB[Complex[Double]]].showGraph()
   //DFT.CTDFT(3,1).stream(2)(ComplexHW(FixedPoint(16,0))).asInstanceOf[SB[Complex[Double]]].showGraph()
   implicit val hw = Unsigned(16)
-  implicit val hw2 = ComplexHW(FixedPoint(16, 0))
+  implicit val hw3 = FixedPoint(8, 8)
+  implicit val hw2 = ComplexHW(FixedPoint(8, 8))
   //DFT.CTDFT(3,1).stream(1).asInstanceOf[SB[Complex[Double]]].showRTLGraph()
   //ItProduct(2,LinearPerm[Int](Matrix.reverseIdentity[F2](3))).stream(1).showRTLGraph()
   //println(ItProduct(3,LinearPerm[Int](Seq(Matrix.reverseIdentity[F2](3),Matrix.identity[F2](3)))).stream(1).test(Vector.tabulate(1 << 3)(i => i)))
+  //Product(SwitchArray(Vector((. 1)^T),2), SwitchArray(Vector((1 .)^T),2))
+  //val test=SB.Product[Double](SwitchArray[Double](Vec.fromInt(2,1),2), SwitchArray[Double](Vec.fromInt(2,2),2))
+  //println(test.test(Vector.tabulate(2 << test.n)(i => i)))
+  //test.showRTLGraph()
 
-
+  //println(FixedPoint(8,8).valueOf(BigInt(256)))
+  //val test=StreamingModule.ItProduct(2,TemporalNG[Int](Vec.fromInt(3,1),Matrix(3,3,"010001100"))*SwitchArray[Int](Vec.fromInt(3,1),1)*Delay[Int](3,1,64))
+  //val test=TemporalNG[Int](Vec.fromInt(3,1),Matrix(3,3,"010001100"))*Delay[Int](3,1,0)
+  //val test=StreamingModule.ItProduct(1,StreamDiagC(4,2).stream(1))
+  //    println(test.test(Vector.tabulate(2 << test.n)(i => Complex(1)),1))
+  //test.showRTLGraph()
 }
 

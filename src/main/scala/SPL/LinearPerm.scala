@@ -47,7 +47,7 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
 
 
       Spatial(L1, L2) *
-        TemporalNG(C3, C4) *
+        Temporal(C3, C4) *
         Spatial(Vector.fill(P.size)(Matrix.identity[F2](k)), R2)
     }
     else {
@@ -56,9 +56,9 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
       val R4 = p4(0) + L * p2(0)
       val C2 = p2(0) * R4.inverse
       val C1 = p1(0) + C2 * R3
-      TemporalNG(L, Matrix.identity[F2](t)) *
+      Temporal(L, Matrix.identity[F2](t)) *
         Spatial(C1, C2) *
-        TemporalNG(R3, R4)
+        Temporal(R3, R4)
     }
   }
 }

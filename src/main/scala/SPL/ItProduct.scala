@@ -8,3 +8,7 @@ case class ItProduct[T](r: Int, factor: SPL[T]) extends SPL[T](factor.n) {
 
   override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = StreamingModule.ItProduct(r, factor.stream(k))
 }
+
+object ItProduct {
+  def apply[T](r: Int, factor: SPL[T]) = if (r == 1) factor else new ItProduct[T](r, factor)
+}

@@ -37,9 +37,9 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
   } yield Steady(Vector(p1), t)(Unsigned(16))
   property("Steady") {
 
-    forAll(genSteady, minSuccessful(20)) { sb =>
+    forAll(genSteady, Gen.choose(0, 10), minSuccessful(20)) { (sb, gap) =>
       println(sb)
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
+      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
     }
   }
   val genSteady2 = for {
@@ -49,19 +49,19 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
   } yield Steady(p1, t)(Unsigned(16))
   property("Steady2") {
 
-    forAll(genSteady2, minSuccessful(20)) { sb =>
+    forAll(genSteady2, Gen.choose(0, 10), minSuccessful(20)) { (sb, gap) =>
       println(sb)
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
+      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
     }
   }
 
   property("SwitchArray") {
-    forAll(genVec, Gen.choose(1, 5), minSuccessful(20)) { (v: Vec[F2], k) =>
+    forAll(genVec, Gen.choose(1, 5), Gen.choose(0, 10), minSuccessful(20)) { (v: Vec[F2], k, gap) =>
       whenever(k > 0) {
         println(v + " " + k)
         val sb = SwitchArray(Vector(v), k)(Unsigned(4))
         val n = v.m + k
-        assert(sb.test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
+        assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
       }
     }
   }
@@ -71,20 +71,20 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     v <- Gen.containerOfN[Vector, Vec[F2]](2, genVec(t))
   } yield SwitchArray(v, k)(Unsigned(16))
   property("SwitchArray 2") {
-    forAll(genSwitch2, minSuccessful(20)) { sb =>
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
+    forAll(genSwitch2, Gen.choose(0, 10), minSuccessful(20)) { (sb, gap) =>
+      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
     }
   }
   val genTemporal = for {
-    t <- Gen.choose(1, 5)
-    k <- Gen.choose(1, 5)
+    t <- Gen.choose(1, 2)
+    k <- Gen.choose(1, 2)
     p4 <- genInvertible(t)
     p3 <- genMatrix(t, k)
   } yield TemporalNG(Vector(p3), Vector(p4))(Unsigned(16))
   property("Temporal") {
-    forAll(genTemporal, minSuccessful(20)) { sb =>
+    forAll(genTemporal, Gen.choose(0, 10), minSuccessful(20)) { (sb, gap) =>
       println(sb)
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i)) == Some(0))
+      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
     }
   }
 

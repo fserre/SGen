@@ -24,15 +24,18 @@ case class DiagE(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
       (0 until K).map(p => {
         val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
         val twiddleHW = hw match {
-          case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(1, magnitude + fractional - 1))
+          case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
           case _ => hw
         }
         val control = Timer(T)
+        /*println(twiddles)
+        println(twiddles.map(twiddleHW.bitsOf).map(twiddleHW.valueOf))*/
         val twiddle = ROM(twiddles, control)(twiddleHW, sb)
         inputs(p) * twiddle
       })
     }
 
+    override def toString: String = "DiagE(" + n + "," + r + "," + l + "," + k + ")"
     override def spl: SPL[Complex[Double]] = DiagE(n, r, l)
   }
 }

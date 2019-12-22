@@ -39,7 +39,7 @@ object Complex {
   /**
    * Defines the operations oncomplex numbers
    */
-  implicit def ComplexIsFractional[T:Numeric]:Numeric[Complex[T]] =new Numeric[Complex[T]] {
+  implicit def ComplexIsFractional[T: Numeric]: Fractional[Complex[T]] = new Fractional[Complex[T]] {
   val num=implicitly[Numeric[T]]
 
     override def plus(x: Complex[T], y: Complex[T]): Complex[T] = Complex(num.plus(x.re, y.re), num.plus(x.im, y.im))
@@ -68,7 +68,8 @@ object Complex {
     override def compare(x: Complex[T], y: Complex[T]): Int = ???
 
     //override def div(x: Complex[T], y: Complex[T]): Complex[T] = ???
+    override def div(x: Complex[T], y: Complex[T]): Complex[T] = ???
   }
 
-  implicit def numericOps[T: Numeric](lhs: Complex[T]) = ComplexIsFractional.mkNumericOps(lhs)
+  implicit def NumericOps[T: Numeric](lhs: Complex[T]) = ComplexIsFractional.mkNumericOps(lhs)
 }

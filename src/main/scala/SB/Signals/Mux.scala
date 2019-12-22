@@ -33,7 +33,7 @@ object Mux {
       case Const(value) => (inputs(value))
       case _ => inputs match {
         case _ if inputs.toSet.size == 1 => inputs(0)
-        case Seq(Mux(adrl, Seq(ll, lr)), Mux(adrr, Seq(rl, rr))) if adrl.hw.size == 1 && adrr.hw.size == 1 => Mux(adrl :: adrr, Seq(rl, rr, ll, lr))
+        case Seq(Mux(adrl, Seq(ll, lr)), Mux(adrr, Seq(rl, rr))) if adrl.hw.size == 1 && address.hw.size == 1 && adrr == adrl => Mux(address :: adrr, Seq(ll, lr, rl, rr))
 
         case _ => (0 until address.hw.size).find(pos => (0 until inputs.size).forall(i => {
           val j = i | (1 << pos)

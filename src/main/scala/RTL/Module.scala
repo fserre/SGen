@@ -136,12 +136,18 @@ abstract class Module {
         case _: Minus => addNode("" ++ cur ++ "[label=\"-\",shape=circle];")
         case cur: Tap => addNode("" ++ cur ++ "[label=\"[" ++ (if (cur.range.size > 1) cur.range.last + ":" else "") ++ cur.range.start.toString ++ "]\",shape=triangle,orientation=270];")
         case cur: Const => addNode("" ++ cur ++ "[label=\"" ++ cur.value.toString() ++ "\",shape=none];")
-        case cur: Mux => addNode("" ++ cur ++ "[label=\"\",shape=invhouse,orientation=90];")
+        case cur: Mux => if (cur.inputs.forall(_.isInstanceOf[Const]))
+          addNode("" ++ cur ++ " [label=\"<title>ROM (" ++ cur.inputs.size.toString ++ " × " ++ cur.size.toString ++ " bits) |" ++ cur.inputs.map(_.asInstanceOf[Const].value.toString).mkString("|") ++ "\",shape=record];")
+        else
+          addNode("" ++ cur ++ "[label=\"\",shape=invhouse,orientation=90];")
         case cur:RAMRd => addNode("" ++ cur ++ "[label=\"RAM bank (" ++ (1 << cur.rdAddress.size).toString ++ " × " ++ cur.size.toString ++ " bits) |<data> Data|<wr> Write address |<rd> Read address \",shape=record];")
         case _ => addNode("" ++ cur ++ "[label=\"" + cur.getClass.getSimpleName + "\"];")
       }
 
-      addEdge(cur, cur.parents)
+      cur match {
+        case cur: Mux if cur.inputs.forall(_.isInstanceOf[Const]) => addEdge(cur, Seq(cur.address))
+        case _ => addEdge(cur, cur.parents)
+      }
     }
 
     var res = new StringBuilder
