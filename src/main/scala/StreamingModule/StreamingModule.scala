@@ -170,7 +170,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
       close
     }
     val xvlog = (xDir + "xvlog" + ext + " test.v").!!
-        val xvlog2 = (xDir + "xvhdl" + ext + " flopoco.vhdl").!!
+    dependencies.foreach(filename => (xDir + "xvhdl" + ext + " " + filename).!!)
     val xelag = (xDir + "xelab" + ext + " test").!!
     val xsim = (xDir + "xsim" + ext + " work.test -R").!!
     if (!xsim.contains("Success.")) {

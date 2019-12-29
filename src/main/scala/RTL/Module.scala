@@ -8,7 +8,7 @@ package RTL
 import java.io.PrintWriter
 
 import scala.collection.mutable
-import sys.process._
+import scala.sys.process._
 
 /**
  * Class that represents a RTL module
@@ -19,7 +19,7 @@ abstract class Module {
   def outputs: Seq[Output]
 
   lazy val name: String = this.getClass.getSimpleName.toLowerCase
-
+  val dependencies = mutable.Set[String]()
   final def toVerilog = {
     val names = mutable.AnyRefMap[Component, String]()
     val toImplement = mutable.Queue[Component]()
@@ -78,6 +78,7 @@ abstract class Module {
         case cur:RAMWr => addSeq(cur + " [" ++ cur.wrAddress ++ "] <= " ++ cur.input ++ ";")
         case cur:RAMRd => addSeq(cur + " <= " + getName(cur.mem) + " [" ++ cur.rdAddress ++ "];")
         case cur:Extern => addComb(cur.module++" ext_"++cur++"("++cur.inputs.map{case (name, comp)=>"."++ name ++ "(" ++ comp ++ "),"}.mkString+"."++cur.outputName++"("++cur++"));")
+          dependencies.add(cur.filename)
         case _ =>
       }
     }
