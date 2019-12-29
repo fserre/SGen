@@ -12,6 +12,9 @@ import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
 case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]]) extends SLP(P3.head.m, P3.head.n, P3.size) {
+  println(P3.head)
+  println(P4.head)
+  println
   override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[_]): Seq[Sig[U]] = {
 
     //val outInst = (0 until K).map.( p => (0 until P4.size).map(i => (0 until (1 << t)).map(c => c - Vec(P4(i) * Vec.fromInt(t, c) + P3(i) * Vec.fromInt(k, p)).toInt()).max).max)

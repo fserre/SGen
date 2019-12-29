@@ -113,7 +113,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
       if (set < repeat && cycle >= 0 && c < T) {
         if (c == 0)
           res ++= "        //dataset " + set + " enters.\n"
-        dataInputs.zipWithIndex.foreach(i => res ++= "        " ++= i._1.name ++= " <= " ++= input(set * N + c * K + i._2).toString ++= ";\n")
+        dataInputs.zipWithIndex.foreach(i => res ++= "        " ++= i._1.name ++= " <= " ++= hw.size.toString ++= "'d" ++=  input(set * N + c * K + i._2).toString ++= ";\n")
       }
     })
 
@@ -170,7 +170,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
       close
     }
     val xvlog = (xDir + "xvlog" + ext + " test.v").!!
-    //    val xvlog2 = (xDir + "xvhdl" + ext + " flopoco.vhdl").!!
+        val xvlog2 = (xDir + "xvhdl" + ext + " flopoco.vhdl").!!
     val xelag = (xDir + "xelab" + ext + " test").!!
     val xsim = (xDir + "xsim" + ext + " work.test -R").!!
     if (!xsim.contains("Success.")) {

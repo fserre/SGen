@@ -76,3 +76,5 @@ class Tap(val input: Component, val range: Range) extends Component(range.size, 
 class RAMWr(val wrAddress: Component, val input: Component) extends Component(input.size, wrAddress, input)
 
 class RAMRd(val mem: RAMWr, val rdAddress: Component) extends Component(mem.size, mem, rdAddress)
+
+class Extern(size:Int, val filename:String, val module:String, val outputName:String, val inputs:(String,Component)*) extends Component(size,inputs.map(_._2):_*)

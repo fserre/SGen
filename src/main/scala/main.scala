@@ -6,7 +6,7 @@
 //import SB.Signals._
 
 import SB._
-import _root_.SB.HW.{ComplexHW, FixedPoint, HW, Unsigned}
+import _root_.SB.HW.{ComplexHW, FixedPoint, Flopoco, HW, Unsigned}
 import _root_.SB.SLP.{Steady, SwitchArray, Temporal, TemporalNG}
 import SPL._
 import _root_.SPL._
@@ -92,7 +92,7 @@ object main extends App {
   else
     println(imp.toVerilog)
 
-  while (!argsQ.isEmpty) argsQ.dequeue.toLowerCase match {
+  while (false && !argsQ.isEmpty) argsQ.dequeue.toLowerCase match {
     case "-n" => config.n = Numeric[Int].parseString(argsQ.dequeue)
     case "-k" => config.k = Numeric[Int].parseString(argsQ.dequeue)
     case "-testbench" => config.testbench = true
@@ -168,7 +168,8 @@ object main extends App {
   //DFT.CTDFT(3,1).stream(2)(ComplexHW(FixedPoint(16,0))).asInstanceOf[SB[Complex[Double]]].showGraph()
   implicit val hw = Unsigned(16)
   implicit val hw3 = FixedPoint(8, 8)
-  implicit val hw2 = ComplexHW(FixedPoint(8, 8))
+  //implicit val hw2 = ComplexHW(FixedPoint(8, 8))
+  implicit val hw2 = ComplexHW(Flopoco(8, 23))
   //DFT.CTDFT(3,1).stream(1).asInstanceOf[SB[Complex[Double]]].showRTLGraph()
   //ItProduct(2,LinearPerm[Int](Matrix.reverseIdentity[F2](3))).stream(1).showRTLGraph()
   //println(ItProduct(3,LinearPerm[Int](Seq(Matrix.reverseIdentity[F2](3),Matrix.identity[F2](3)))).stream(1).test(Vector.tabulate(1 << 3)(i => i)))
@@ -180,8 +181,12 @@ object main extends App {
   //println(FixedPoint(8,8).valueOf(BigInt(256)))
   //val test=StreamingModule.ItProduct(2,TemporalNG[Int](Vec.fromInt(3,1),Matrix(3,3,"010001100"))*SwitchArray[Int](Vec.fromInt(3,1),1)*Delay[Int](3,1,64))
   //val test=TemporalNG[Int](Vec.fromInt(3,1),Matrix(3,3,"010001100"))*Delay[Int](3,1,0)
-  //val test=StreamingModule.ItProduct(1,StreamDiagC(4,2).stream(1))
-  //    println(test.test(Vector.tabulate(2 << test.n)(i => Complex(1)),1))
+  //val test=DFT.CTDFT(3,1).stream(1)
+  //println(test.test(Vector.tabulate(2 << test.n)(i => Complex(i)),1))
   //test.showRTLGraph()
+
+  //val test2=Flopoco(8,23)
+  //println(test2.bitsOf(1))
+  //println(test2.valueOf(test2.bitsOf(1)))
 }
 

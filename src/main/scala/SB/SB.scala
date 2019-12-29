@@ -105,7 +105,7 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     processed.addAll(outputs.map(_.ref.i))
     val res = new StringBuilder
     res ++= "digraph " + name + " {\n"
-    res ++= "  rankdir=LR;\n"
+    res ++= "  rankdir=RL;\n"
     res ++= "  ranksep=1.5;\n"
     res ++= "  outputs[shape=record,label=\"" + (0 until outputs.size).map(i => "<o" + i + "> " + i + " ").mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
     res ++= "  inputs[shape=record,label=\"" + inputSigs.zipWithIndex.map { case (p, i) => "<i" + p.ref.i + "> " + i + " " }.mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"

@@ -77,6 +77,7 @@ abstract class Module {
         case cur:Register => addSeq(cur + " <= " ++ cur.input + ";")
         case cur:RAMWr => addSeq(cur + " [" ++ cur.wrAddress ++ "] <= " ++ cur.input ++ ";")
         case cur:RAMRd => addSeq(cur + " <= " + getName(cur.mem) + " [" ++ cur.rdAddress ++ "];")
+        case cur:Extern => addComb(cur.module++" ext_"++cur++"("++cur.inputs.map{case (name, comp)=>"."++ name ++ "(" ++ comp ++ "),"}.mkString+"."++cur.outputName++"("++cur++"));")
         case _ =>
       }
     }
@@ -141,6 +142,7 @@ abstract class Module {
         else
           addNode("" ++ cur ++ "[label=\"\",shape=invhouse,orientation=90];")
         case cur:RAMRd => addNode("" ++ cur ++ "[label=\"RAM bank (" ++ (1 << cur.rdAddress.size).toString ++ " × " ++ cur.size.toString ++ " bits) |<data> Data|<wr> Write address |<rd> Read address \",shape=record];")
+        case cur:Extern => addNode("" ++ cur ++ "[label=\"" + cur.module + "\"];")
         case _ => addNode("" ++ cur ++ "[label=\"" + cur.getClass.getSimpleName + "\"];")
       }
 
@@ -152,7 +154,7 @@ abstract class Module {
 
     var res = new StringBuilder
     res ++= "digraph " + name + " {\n"
-    res ++= "  rankdir=LR;\n"
+    res ++= "  rankdir=RL;\n"
     res ++= "  ranksep=1.5;\n"
     res ++= "  outputs[shape=record,label=\"" + outputs.map(i => "<" + i.name + "> " + i.name + " ").mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
     res ++= "  inputs[shape=record,label=\"" + inputs.map { i => "<" + i.name + "> " + i.name + " " }.mkString("|") + "\",height=" + (inputs.size * 1.5) + "];\n"
