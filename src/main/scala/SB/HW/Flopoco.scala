@@ -13,8 +13,6 @@ import scala.io.Source
 
 
 case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE+wF+3) {
-  require(wE==8)
-  require(wF==23)
   private val filename = "flopoco/flopoco_" + wE + "_" + wF + ".vhdl"
   private val (latPlus, latDiff, latMult) = {
     val path = java.nio.file.Paths.get(filename)
@@ -23,7 +21,7 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE+wF+3) {
       println("Error: Flopoco file not found for wE=" + wE + " and wF=" + wF)
       println("Please execute the command:")
       println()
-      println("flopoco outputFile=" + path.toAbsolutePath + " target=Virtex6 frequency=700 name=mult FPMult wE=8 wF=23 name=add FPAdd wE=8 wF=23 sub=false name=diff FPAdd wE=8 wF=23 sub=true")
+      println("flopoco outputFile=" + path.toAbsolutePath + " target=Virtex6 frequency=700 FPMult name=mult wE=" + wE + " wF=" + wF + " FPAdd name=add wE=" + wE + " wF=" + wF + " sub=false FPAdd name=diff wE=" + wE + " wF=" + wF + " sub=true")
       throw new Exception("Flopoco file not found for wE=" + wE + " and wF=" + wF)
     }
     val source = Source.fromFile(filename)

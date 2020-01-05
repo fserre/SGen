@@ -6,18 +6,13 @@
 //import SB.Signals._
 
 import SB._
-import _root_.SB.HW.{ComplexHW, FixedPoint, Flopoco, HW, Unsigned}
-import _root_.SB.SLP.{Steady, SwitchArray, Temporal, TemporalNG}
-import SPL._
-import _root_.SPL._
-import _root_.SPL.FFT.{DFT, DFT2, DiagE, StreamDiagC}
-import Signals._
-import StreamingModule.{Delay, StreamingModule}
-import linalg.Fields.{Complex, F2}
-import linalg._
-import java.lang.System.{currentTimeMillis => currentTime}
-
+import StreamingModule.StreamingModule
+import _root_.SB.HW.{HW => _, _}
+import _root_.SPL.FFT.DFT
 import _root_.SPL.WHT.WHT
+import _root_.SPL._
+import linalg.Fields.F2
+import linalg._
 
 import scala.collection.mutable
 
@@ -71,16 +66,8 @@ object main extends App {
 
   val argsQ = mutable.Queue.from(args)
   var config = new Config()
-
-  def parseHW: Option[HW[_]] = argsQ.dequeue().toLowerCase() match {
-    case "unsigned" => Numeric[Int].parseString(argsQ.dequeue).map(Unsigned(_))
-    case "fixedpoint" => for {
-      magnitude <- Numeric[Int].parseString(argsQ.dequeue)
-      fractional <- Numeric[Int].parseString(argsQ.dequeue)
-    } yield FixedPoint(magnitude, fractional)
-    case "complex" => parseHW.map(ComplexHW(_))
-    case _ => None
-  }
+  //implicit val hw2 = ComplexHW(FixedPoint(8, 8))
+  implicit val hw2 = ComplexHW(IEEE754(8, 23))
 
   def finisher[T](imp: StreamingModule[T]) = if (config.graph)
     imp match {
@@ -168,8 +155,29 @@ object main extends App {
   //DFT.CTDFT(3,1).stream(2)(ComplexHW(FixedPoint(16,0))).asInstanceOf[SB[Complex[Double]]].showGraph()
   implicit val hw = Unsigned(16)
   implicit val hw3 = FixedPoint(8, 8)
-  //implicit val hw2 = ComplexHW(FixedPoint(8, 8))
-  implicit val hw2 = ComplexHW(Flopoco(8, 23))
+
+  def parseHW: Option[HW[_]] = argsQ.dequeue().toLowerCase() match {
+    case "unsigned" => Numeric[Int].parseString(argsQ.dequeue).map(Unsigned(_))
+    case "fixedpoint" => for {
+      magnitude <- Numeric[Int].parseString(argsQ.dequeue)
+      fractional <- Numeric[Int].parseString(argsQ.dequeue)
+    } yield FixedPoint(magnitude, fractional)
+    case "flopoco" => for {
+      wE <- Numeric[Int].parseString(argsQ.dequeue)
+      wF <- Numeric[Int].parseString(argsQ.dequeue)
+    } yield Flopoco(wE, wF)
+    case "ieee754" => for {
+      wE <- Numeric[Int].parseString(argsQ.dequeue)
+      wF <- Numeric[Int].parseString(argsQ.dequeue)
+    } yield IEEE754(wE, wF)
+    case "half" => Some(IEEE754(5, 10))
+    case "float" => Some(IEEE754(8, 23))
+    case "double" => Some(IEEE754(11, 52))
+    case "minifloat" => Some(IEEE754(4, 3))
+    case "bfloat16" => Some(IEEE754(8, 7))
+    case "complex" => parseHW.map(ComplexHW(_))
+    case _ => None
+  }
   //DFT.CTDFT(3,1).stream(1).asInstanceOf[SB[Complex[Double]]].showRTLGraph()
   //ItProduct(2,LinearPerm[Int](Matrix.reverseIdentity[F2](3))).stream(1).showRTLGraph()
   //println(ItProduct(3,LinearPerm[Int](Seq(Matrix.reverseIdentity[F2](3),Matrix.identity[F2](3)))).stream(1).test(Vector.tabulate(1 << 3)(i => i)))
