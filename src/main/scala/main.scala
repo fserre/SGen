@@ -7,7 +7,7 @@
 
 import SB._
 import StreamingModule.StreamingModule
-import _root_.SB.HW.{HW => _, _}
+import _root_.SB.HW._
 import _root_.SPL.FFT.DFT
 import _root_.SPL.WHT.WHT
 import _root_.SPL._
@@ -79,7 +79,7 @@ object main extends App {
   else
     println(imp.toVerilog)
 
-  while (false && !argsQ.isEmpty) argsQ.dequeue.toLowerCase match {
+  while (!argsQ.isEmpty) argsQ.dequeue.toLowerCase match {
     case "-n" => config.n = Numeric[Int].parseString(argsQ.dequeue)
     case "-k" => config.k = Numeric[Int].parseString(argsQ.dequeue)
     case "-testbench" => config.testbench = true
