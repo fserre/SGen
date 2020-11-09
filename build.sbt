@@ -6,7 +6,7 @@
 name := "SGN"
 organization := "fserre"
 version := "0.1"
-scalaVersion := "2.13.1"
+scalaVersion := "2.13.3"
 mainClass in (Compile, run) := Some("main")
 
 libraryDependencies += "org.scalatest" % "scalatest_2.13" % "3.0.8" % "test"
