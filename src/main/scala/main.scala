@@ -6,6 +6,7 @@
 //import SB.Signals._
 
 import SB._
+import _root_.SB.SLP.Steady
 import StreamingModule.StreamingModule
 import _root_.SB.HW._
 import _root_.SPL.FFT.DFT
@@ -17,6 +18,10 @@ import linalg._
 import scala.collection.mutable
 
 object main extends App {
+  val s=Steady(Matrix.reverseIdentity[F2](2), 2)(Unsigned(16))
+  s.test(Vector.tabulate(2 << s.n)(i => i), 0)
+  throw new Exception("ok")
+
 
   def finisher[T](imp: StreamingModule[T]) = if (config.graph)
     imp match {
@@ -32,8 +37,8 @@ object main extends App {
   var config = new Config()
 
   def parseHW: Option[HW[_]] = argsQ.dequeue().toLowerCase() match {
-    case "unsigned" => Numeric[Int].parseString(argsQ.dequeue).map(Unsigned(_))
-    case "signed" => Numeric[Int].parseString(argsQ.dequeue).map(FixedPoint(_, 0))
+    case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned(_))
+    case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
     case "char" => Some(FixedPoint(8, 0))
     case "short" => Some(FixedPoint(16, 0))
     case "int" => Some(FixedPoint(32, 0))
@@ -43,16 +48,16 @@ object main extends App {
     case "uint" => Some(Unsigned(32))
     case "ulong" => Some(Unsigned(64))
     case "fixedpoint" => for {
-      magnitude <- Numeric[Int].parseString(argsQ.dequeue)
-      fractional <- Numeric[Int].parseString(argsQ.dequeue)
+      magnitude <- Numeric[Int].parseString(argsQ.dequeue())
+      fractional <- Numeric[Int].parseString(argsQ.dequeue())
     } yield FixedPoint(magnitude, fractional)
     case "flopoco" => for {
-      wE <- Numeric[Int].parseString(argsQ.dequeue)
-      wF <- Numeric[Int].parseString(argsQ.dequeue)
+      wE <- Numeric[Int].parseString(argsQ.dequeue())
+      wF <- Numeric[Int].parseString(argsQ.dequeue())
     } yield Flopoco(wE, wF)
     case "ieee754" => for {
-      wE <- Numeric[Int].parseString(argsQ.dequeue)
-      wF <- Numeric[Int].parseString(argsQ.dequeue)
+      wE <- Numeric[Int].parseString(argsQ.dequeue())
+      wF <- Numeric[Int].parseString(argsQ.dequeue())
     } yield IEEE754(wE, wF)
     case "half" => Some(IEEE754(5, 10))
     case "float" => Some(IEEE754(8, 23))
@@ -63,10 +68,10 @@ object main extends App {
     case _ => None
   }
 
-  while (!argsQ.isEmpty) argsQ.dequeue.toLowerCase match {
-    case "-n" => config.n = Numeric[Int].parseString(argsQ.dequeue)
-    case "-k" => config.k = Numeric[Int].parseString(argsQ.dequeue)
-    case "-r" => config.r = Numeric[Int].parseString(argsQ.dequeue)
+  while (!argsQ.isEmpty) argsQ.dequeue().toLowerCase match {
+    case "-n" => config.n = Numeric[Int].parseString(argsQ.dequeue())
+    case "-k" => config.k = Numeric[Int].parseString(argsQ.dequeue())
+    case "-r" => config.r = Numeric[Int].parseString(argsQ.dequeue())
     case "-testbench" => config.testbench = true
     case "-graph" => config.graph = true
     case "-rtlgraph" => config.rtlgraph = true
@@ -78,7 +83,7 @@ object main extends App {
         println("Invertible bit-matrices expected.")
         System.exit(-1)
       }
-      while (!argsQ.isEmpty) argsQ.dequeue match {
+      while (!argsQ.isEmpty) argsQ.dequeue() match {
         case "identity" => matrices.enqueue(Matrix.identity[F2](n))
         case "bitrev" => matrices.enqueue(Matrix.reverseIdentity[F2](n))
         case matrix if matrix.length == n * n => val mat = Matrix(n, n, matrix)

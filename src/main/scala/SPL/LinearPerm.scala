@@ -70,7 +70,7 @@ object LinearPerm {
     Vector.tabulate(1 << P.m)(i => v(permute(Pinv, i)))
   }
 
-  def permute(P: Matrix[F2], i: Int): Int = (P * Vec.fromInt(P.m, i)).toInt
+  def permute(P: Matrix[F2], i: Int): Int = (P * Vec.fromInt(P.m, i)).toInt()
 
   def Rmat(r: Int, n: Int) = (0 until n / r).map(l => Matrix.identity[F2](n - r * (l + 1)) oplus Lmat(r, r * (l + 1))).reduceLeft(_ * _)
 

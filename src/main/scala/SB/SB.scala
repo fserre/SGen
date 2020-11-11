@@ -99,7 +99,7 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     res ++= "  outputs[shape=record,label=\"" + outputs.indices.map(i => "<o" + i + "> " + i + " ").mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
     res ++= "  inputs[shape=record,label=\"" + inputSigs.zipWithIndex.map { case (p, i) => "<i" + p.ref.i + "> " + i + " " }.mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
     while (toProcess.nonEmpty) {
-      val cur = toProcess.dequeue
+      val cur = toProcess.dequeue()
       val curSig = signal(cur)
       curSig.parents.map(_._1).foreach(f =>
         if (!processed(f.i)) {

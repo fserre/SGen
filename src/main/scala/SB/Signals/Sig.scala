@@ -70,7 +70,7 @@ object Sig {
 
     def unary_~() = Not(lhs)
 
-    def scalar(rhs: Sig[Int]) = (lhs & rhs).unary_^
+    def scalar(rhs: Sig[Int]) = (lhs & rhs).unary_^()
 
     def ?[T](inputTrue: Sig[T], inputFalse: Sig[T]) = Mux(lhs, Vector(inputFalse, inputTrue))
 

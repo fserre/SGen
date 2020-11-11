@@ -5,24 +5,13 @@
 
 import SB.HW.{ComplexHW, FixedPoint}
 import SPL.FFT.{DFT, StreamDiagC}
-import SPL.ItProduct
-import SPL.WHT.WHT
 import StreamingModule.StreamingModule
 import linalg.Fields.Complex
 import linalg.{Matrix, Vec}
-import org.scalacheck.{Gen, Shrink}
-import org.scalatest._
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import org.scalacheck.{Gen, Properties, Shrink}
+import org.scalacheck.Prop.forAll
 
-class DFTTest extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers {
-
-
-  /*property("test") {
-    forAll(gen) { v: Vec[F2] =>
-      println(v)
-      assert(v.values(0) == 1)
-    }
-*/
+object DFTTest extends Properties("DFT") {
   implicit def shrinkSB[T]: Shrink[StreamingModule[T]] = Shrink { input: StreamingModule[T] =>
 
     input match {
@@ -41,21 +30,19 @@ class DFTTest extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers
   }
 
   implicit val cphw = ComplexHW(FixedPoint(8, 8))
-  property("CTDFT conforms to the definition") {
-
-    for {n <- 1 until 11
-         r <- 1 until n
-         if n % r == 0
-         } {
-      val sb = DFT.CTDFT(n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
+  property("CTDFT conforms to the definition")=forAll(for {
+    n <- Gen.choose(2,10)
+    r <- Gen.choose(1, n-1)
+    if n % r == 0
+  } yield (n,r)) { case (n,r) =>
+    val sb = DFT.CTDFT(n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res = (0 until (1 << n)).map(j => Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Complex[Double]]](_ :: _)
       val wht = Matrix.tabulate[Complex[Double]](1 << n, 1 << n)((i, j) => DFT.omega(n, i * j))
-      //println((res-wht).norm)
-      assert((res - wht).norm < 0.0001)
+      (res - wht).norm < 0.0001
     }
-  }
+
 
 
   val genSteady = for {
@@ -65,17 +52,12 @@ class DFTTest extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers
     r <- Gen.choose(1, n)
     if n % r == 0
   } yield DFT.CTDFT(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
-  property("CTDFT") {
-
-    forAll(genSteady, minSuccessful(20)) { sb: StreamingModule[Complex[Double]] =>
-      println(sb)
-      //sb.name should equal ("bla")
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
+  property("CTDFT") = forAll(genSteady) { sb: StreamingModule[Complex[Double]] =>
+      sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
-      })
+      }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
-  }
 
 
   val genPease = for {
@@ -85,17 +67,15 @@ class DFTTest extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers
     r <- Gen.choose(1, n)
     if n % r == 0
   } yield DFT.Pease(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
-  property("Pease") {
+  property("Pease") =
 
-    forAll(genPease, minSuccessful(20)) { sb: StreamingModule[Complex[Double]] =>
-      println(sb)
-      //sb.name should equal ("bla")
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
+    forAll(genPease) { sb: StreamingModule[Complex[Double]] =>
+      sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
-      })
+      }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
-  }
+
   val genDiagC = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
@@ -103,34 +83,28 @@ class DFTTest extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers
     r <- Gen.choose(1, n - 1)
     if n % r == 0
   } yield StreamDiagC(n, r).stream(k)(ComplexHW(FixedPoint(16, 16)))
-  property("DiagC") {
-
-    forAll(genDiagC, minSuccessful(20)) { sb: StreamingModule[Complex[Double]] =>
-      println(sb)
-      //sb.name should equal ("bla")
-      assert(sb.test(Vector.tabulate((sb.n) << sb.n)(i => Complex(1))) match {
+  property("DiagC") = forAll(genDiagC) { sb: StreamingModule[Complex[Double]] =>
+      sb.test(Vector.tabulate((sb.n) << sb.n)(i => Complex(1))) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
-      })
-    } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
-  }
+      }
+  } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
 
 
-  property("ItPeaseDFT conforms to the definition") {
 
-    for {n <- 1 until 11
-         r <- 1 until n
-         if n % r == 0
-         } {
+  property("ItPeaseDFT conforms to the definition") =forAll(for {
+    n <- Gen.choose(2,10)
+    r <- Gen.choose(1, n-1)
+    if n % r == 0
+  } yield (n,r)) { case (n,r) =>
       val sb = DFT.ItPease(n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res = (0 until (1 << n)).map(j => Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Complex[Double]]](_ :: _)
       val wht = Matrix.tabulate[Complex[Double]](1 << n, 1 << n)((i, j) => DFT.omega(n, i * j))
-      //println((res-wht).norm)
-      assert((res - wht).norm < 0.0001)
+      (res - wht).norm < 0.0001
     }
-  }
+
 
   val genItPease = for {
     t <- Gen.choose(1, 3)
@@ -140,33 +114,27 @@ class DFTTest extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers
     if n % r == 0
     if k >= r
   } yield DFT.ItPease(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
-  property("ItPease") {
-
-    forAll(genItPease, minSuccessful(20)) { sb: StreamingModule[Complex[Double]] =>
-      println(sb)
-      //sb.name should equal ("bla")
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
+  property("ItPease")= forAll(genItPease) { sb: StreamingModule[Complex[Double]] =>
+      sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
-      })
+      }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
-  }
 
-  property("ItPeaseFused conforms to the definition") {
 
-    for {n <- 1 until 11
-         r <- 1 until n
-         if n % r == 0
-         } {
+  property("ItPeaseFused conforms to the definition")=forAll(for {
+    n <- Gen.choose(2,10)
+    r <- Gen.choose(1, n-1)
+    if n % r == 0
+  } yield (n,r)) { case (n,r) =>
       val sb = DFT.ItPeaseFused(n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res = (0 until (1 << n)).map(j => Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Complex[Double]]](_ :: _)
       val wht = Matrix.tabulate[Complex[Double]](1 << n, 1 << n)((i, j) => DFT.omega(n, i * j))
-      //println((res-wht).norm)
-      assert((res - wht).norm < 0.0001)
+      (res - wht).norm < 0.0001
     }
-  }
+
 
   val genItPeaseFused = for {
     t <- Gen.choose(1, 3)
@@ -176,15 +144,11 @@ class DFTTest extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers
     if n % r == 0
     if k >= r
   } yield DFT.ItPeaseFused(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
-  property("ItPeaseFused") {
-
-    forAll(genItPeaseFused, minSuccessful(20)) { sb: StreamingModule[Complex[Double]] =>
-      println(sb)
-      //sb.name should equal ("bla")
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
+  property("ItPeaseFused") = forAll(genItPeaseFused) { sb: StreamingModule[Complex[Double]] =>
+      sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
-      })
+      }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
-  }
+
 }

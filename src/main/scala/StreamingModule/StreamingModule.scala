@@ -159,7 +159,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
   }
 
   def test(inputs: Seq[U], addedGap: Int = 0): Option[U] = {
-    val xDir = if (System.getProperty("os.name") == "Windows 10") "C:\\Xilinx\\Vivado\\2018.1\\bin\\" else "/home/serref/Xilinx/Vivado/2014.4/bin/"
+    val xDir = if (System.getProperty("os.name") == "Windows 10") "C:\\Xilinx\\Vivado\\2020.1\\bin\\" else "/home/serref/Xilinx/Vivado/2014.4/bin/"
     val ext = if (System.getProperty("os.name") == "Windows 10") ".bat" else ""
     val inputsBits = inputs.map(implicitly[HW[U]].bitsOf)
 
@@ -187,14 +187,14 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
         val res = implicitly[HW[U]].valueOf(BigInt(xsim.slice(pos2, pos3)))
         val diff = implicitly[HW[U]].num.minus(res, outputs(i))
 
-        if (diff != 0) {
+        /*if (diff != 0) {
           println(i)
           println("expecting " + outputs(i))
           println(xsim.slice(pos2, pos3))
           println(BigInt(xsim.slice(pos2, pos3)))
           println(res)
           println()
-        }
+        }*/
         implicitly[HW[U]].num.times(diff, diff)
       }).sum(implicitly[HW[U]].num))
 

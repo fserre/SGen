@@ -56,7 +56,7 @@ object Cpx{
   }
 
   def unapply[T](arg: Sig[Complex[T]]): Option[(Sig[T], Sig[T])] = arg match{
-    case arg:Cpx[Complex[T]] => Some((arg.real,arg.im))
+    case arg:Cpx[T] => Some((arg.real,arg.im))
     case _ => None
   }
 }

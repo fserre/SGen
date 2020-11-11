@@ -12,15 +12,13 @@ import SB.Signals.Sig
 import StreamingModule.StreamingModule
 import Utils.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
 
-class Product[U] private(override val list: Seq[SB[U]]) extends SB[U](list.head.t, list.head.k)(list.head.hw) with AssociativeNode[SB[U]] {
+class Product[U] private (override val list: Seq[SB[U]]) extends SB[U](list.head.t, list.head.k)(list.head.hw) with AssociativeNode[SB[U]] {
   assert(list.forall(_.t == t))
   assert(list.forall(_.k == k))
 
   override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[_]): Seq[Sig[U]] = list.foldRight(inputs)(_ implement _)
 
   override def spl: SPL[U] = SPL.Product(list.map(_.spl))
-
-
 }
 
 object Product extends AssociativeNodeCompanionT[SB,Product] {

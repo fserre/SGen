@@ -8,84 +8,54 @@ import SB.Signals.Null
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
-import collection.mutable.Stack
-import org.scalatest._
-import org.scalatest.prop.{Checkers, GeneratorDrivenPropertyChecks}
-import org.scalacheck.Arbitrary._
-import org.scalacheck.{Arbitrary, Gen, Shrink}
+import org.scalacheck.{Arbitrary, Gen, Properties, Shrink}
 import org.scalacheck.Prop._
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import Generators._
 import SB.{Product, SB}
 import _root_.SB.HW.Unsigned
 import SPL.LinearPerm
 import StreamingModule.StreamingModule
+//import org.scalatest.prop.Configuration.minSuccessful
+//import org.scalatest.prop.TableDrivenPropertyChecks.whenever
 
-class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
-
-
-  /*property("test") {
-    forAll(gen) { v: Vec[F2] =>
-      println(v)
-      assert(v.values(0) == 1)
-    }
-*/
+object SLPTest extends Properties("SLP") {
   val genSteady = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- genInvertible(k)
   } yield Steady(Vector(p1), t)(Unsigned(16))
-  property("Steady") {
+  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)    }
 
-    forAll(genSteady, Gen.choose(0, 10), minSuccessful(20)) { (sb, gap) =>
-      println(sb)
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
-    }
-  }
   val genSteady2 = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(k))
   } yield Steady(p1, t)(Unsigned(16))
-  property("Steady2") {
+  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)   }
 
-    forAll(genSteady2, Gen.choose(0, 10), minSuccessful(20)) { (sb, gap) =>
-      println(sb)
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
-    }
-  }
-
-  property("SwitchArray") {
-    forAll(genVec, Gen.choose(1, 5), Gen.choose(0, 10), minSuccessful(20)) { (v: Vec[F2], k, gap) =>
-      whenever(k > 0) {
-        println(v + " " + k)
+  property("SwitchArray") = forAll(genVec, Gen.choose(1, 5), Gen.choose(0, 10)) { (v: Vec[F2], k, gap) =>
         val sb = SwitchArray(Vector(v), k)(Unsigned(4))
         val n = v.m + k
-        assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
-      }
+        sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)
     }
-  }
+
   val genSwitch2 = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     v <- Gen.containerOfN[Vector, Vec[F2]](2, genVec(t))
   } yield SwitchArray(v, k)(Unsigned(16))
-  property("SwitchArray 2") {
-    forAll(genSwitch2, Gen.choose(0, 10), minSuccessful(20)) { (sb, gap) =>
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
+  property("SwitchArray 2") = forAll(genSwitch2, Gen.choose(0, 10)) { (sb, gap) =>
+      sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)
     }
-  }
+
   val genTemporal = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
     p4 <- genInvertible(t)
     p3 <- genMatrix(t, k)
   } yield TemporalNG(Vector(p3), Vector(p4))(Unsigned(16))
-  property("Temporal") {
-    forAll(genTemporal, Gen.choose(0, 10), minSuccessful(20)) { (sb, gap) =>
-      println(sb)
-      assert(sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0))
-    }
+  property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
+      sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)
   }
 
   val genTemporal2 = for {
@@ -94,11 +64,8 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
     p4 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(t))
     p3 <- Gen.containerOfN[Vector, Matrix[F2]](2, genMatrix(t, k))
   } yield TemporalNG(p3, p4)(Unsigned(16))
-  property("Temporal2") {
-    forAll(genTemporal2, minSuccessful(100)) { sb =>
-      //println(sb)
-      assert(sb.test(Vector.tabulate(5 << sb.n)(i => i)) == Some(0))
-    }
+  property("Temporal2") =  forAll(genTemporal2) { sb =>
+      sb.test(Vector.tabulate(5 << sb.n)(i => i)) == Some(0)
   }
 
   //implicit val hw:HW[Int]=Unsigned(16)
@@ -118,13 +85,8 @@ class SLPTest extends PropSpec with ScalaCheckDrivenPropertyChecks {
   } yield LinearPerm[Int](Seq(p)).stream(k)(Unsigned(16)) //(LinearPerm[Int](Seq(p)), k)
 
 
-  property("LinearPerm") {
-    forAll(genLinPerm, minSuccessful(200)) { sb =>
-      //println(sb)
-      println(sb)
-      assert(sb.test(Vector.tabulate(3 << sb.n)(i => i)) == Some(0))
-
-    }
+  property("LinearPerm") = forAll(genLinPerm) { sb =>
+      sb.test(Vector.tabulate(3 << sb.n)(i => i)) == Some(0)
   }
 
 

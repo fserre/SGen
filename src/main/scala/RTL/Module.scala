@@ -29,7 +29,7 @@ abstract class Module {
       case comp:Input => comp.name
       case comp:Output => comp.name
       case comp:Wire => getName(comp.input)
-      case comp:Const => comp.size+"'d"+comp.value
+      case comp:Const => s"${comp.size}'d${comp.value}"
       case _ => if (!(names contains comp)) {
         names(comp) = "s" + (names.size + 1)
         toImplement.enqueue(comp)
@@ -49,7 +49,7 @@ abstract class Module {
 
     //def addComb(line: Vector[String]) = line.foreach(combinatorial ++= "  " ++= _ ++= "\n")
     while (!toImplement.isEmpty) {
-      val cur = toImplement.dequeue
+      val cur = toImplement.dequeue()
       cur match {
         case _: Output | _: Input | _: Const | _: Wire =>
         case _: Register | _: Mux | _: RAMRd => addDec("reg " + (if (cur.size != 1) "[" + (cur.size - 1) + ":0] " else "") ++ cur + ";")
@@ -127,7 +127,7 @@ abstract class Module {
 
     //def addComb(line: Vector[String]) = line.foreach(combinatorial ++= "  " ++= _ ++= "\n")
     while (!toImplement.isEmpty) {
-      val cur = toImplement.dequeue
+      val cur = toImplement.dequeue()
       cur match {
         case _: Output | _: Input | _:RAMWr =>
         case _: Register => addNode("" ++ cur ++ "[label=\"\",shape=square];")
