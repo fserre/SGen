@@ -1,18 +1,35 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package SB.Signals
 
 import RTL._
-import SB.HW.Unsigned
+import SB.HW.{HW, Unsigned}
 import SB.SB
 
 case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int] {
   //Operator(trigger, reset)(Unsigned(BigInt(limit - 1).bitLength))
-  override implicit val sb = trigger.sb
-  override implicit val hw = Unsigned(BigInt(limit - 1).bitLength)
+  override implicit val sb: SB[_] = trigger.sb
+  override implicit val hw: HW[Int] = Unsigned(BigInt(limit - 1).bitLength)
 
   override def implement(cp: (SigRef[_], Int) => Component): Component = /*Counter.mkCounter(limit,resetValue,cp(reset,1),trigger.sig match{
     case One()=> None

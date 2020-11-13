@@ -1,6 +1,23 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package SB
@@ -26,16 +43,15 @@ object Product extends AssociativeNodeCompanionT[SB,Product] {
     require(lhs.t == rhs.t)
     require(lhs.k == rhs.k)
     require(lhs.hw == rhs.hw)
-    implicit val hw = lhs.hw
+    implicit val hw: HW[T] = lhs.hw
     val t=lhs.t
     (lhs, rhs) match {
       case (Identity(), rhs) => Left(rhs)
       case (lhs, Identity()) => Left(lhs)
 
-      case (Steady(lhs,_),Steady(rhs,_))=>{
+      case (Steady(lhs,_),Steady(rhs,_))=>
         val size =Utils.lcm(lhs.size, rhs.size)
         Left(Steady(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size)),t))
-      }
       //todo:Add SLP
 
       case _ => Right((lhs, rhs))

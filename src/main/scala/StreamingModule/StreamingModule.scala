@@ -1,6 +1,23 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package StreamingModule
@@ -15,17 +32,17 @@ import scala.collection.mutable
 import scala.sys.process._
 
 abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]) extends Module {
-  val n = t + k
-  val N = 1 << n
-  val K = 1 << k
-  val T = 1 << t
+  val n: Int = t + k
+  val N: Int = 1 << n
+  val K: Int = 1 << k
+  val T: Int = 1 << t
 
   def spl: SPL[U]
 
-  val busSize = implicitly[HW[U]].size
+  val busSize: Int = implicitly[HW[U]].size
 
 
-  override lazy val name = spl.getClass.getSimpleName.toLowerCase
+  override lazy val name: String = spl.getClass.getSimpleName.toLowerCase
 
 
   def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component]
@@ -35,7 +52,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
   def minGap = 0
 
 
-  lazy val dataInputs = Vector.tabulate(K)(i => new Input(busSize, "i" + i))
+  lazy val dataInputs: Vector[Input] = Vector.tabulate(K)(i => new Input(busSize, "i" + i))
   val reset = new Input(1, "reset")
   val next = new Input(1, "next")
 
@@ -59,16 +76,16 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
 
     next_out +: res
   }
-  lazy val dataOutputs = outputs.drop(1)
-  lazy val next_out = outputs(0)
+  lazy val dataOutputs: Seq[Output] = outputs.drop(1)
+  lazy val next_out: Output = outputs.head
   private var _nextAt: Option[Int] = None
 
-  def nextAt = {
-    if (_nextAt == None) outputs
+  def nextAt: Int = {
+    if (_nextAt.isEmpty) outputs
     _nextAt.get
   }
 
-  def eval(inputs: Seq[BigInt], set: Int) = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
+  def eval(inputs: Seq[BigInt], set: Int): Seq[BigInt] = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
 
   def getTestBench(input: Seq[BigInt], addedGap: Int = 0): String = {
 
@@ -123,7 +140,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     res ++= "        @(posedge next_out);//#100;\n"
     res ++= "        #50;\n"
     //if (check) {
-    val output = input.grouped(N).toSeq.zipWithIndex.map { case (input, set) => eval(input, set) }.flatten
+    val output = input.grouped(N).toSeq.zipWithIndex.flatMap { case (input, set) => eval(input, set) }
     (0 until repeat).foreach(r => {
       (0 until T).foreach(c => {
         (0 until K).foreach(i => {
@@ -163,11 +180,11 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     val ext = if (System.getProperty("os.name") == "Windows 10") ".bat" else ""
     val inputsBits = inputs.map(implicitly[HW[U]].bitsOf)
 
-    val outputs = inputsBits.grouped(N).toSeq.zipWithIndex.map { case (input, set) => eval(input, set) }.flatten.map(implicitly[HW[U]].valueOf)
+    val outputs = inputsBits.grouped(N).toSeq.zipWithIndex.flatMap { case (input, set) => eval(input, set) }.map(implicitly[HW[U]].valueOf)
     new PrintWriter("test.v") {
       write(getTestBench(inputsBits, addedGap))
       write(toVerilog)
-      close
+      close()
     }
     val xvlog = (xDir + "xvlog" + ext + " test.v").!!
     dependencies.foreach(filename => (xDir + "xvhdl" + ext + " " + filename).!!)
@@ -180,7 +197,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
       None
     }
     else
-      Some((0 until outputs.length).map(i => {
+      Some(outputs.indices.map(i => {
         val pos1 = xsim.indexOf("output" + i + ": ")
         val pos2 = xsim.indexOf(" ", pos1) + 1
         val pos3 = xsim.indexOf(" ", pos2)

@@ -1,10 +1,30 @@
-/**
- * LUL Factorisation - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+
+
 package linalg.Fields
 
 
+import scala.language.implicitConversions
 import scala.math.Numeric.Implicits._
 
 /**
@@ -19,9 +39,9 @@ case class Complex[T: Numeric](re: T, im: T) {
    *
    * @return A printable string representing the number
    */
-  override def toString = re.toString() + (if (im != implicitly[Numeric[T]].zero) "+" + im.toString + "i" else "")
+  override def toString: String = re.toString + (if (im != implicitly[Numeric[T]].zero) "+" + im.toString + "i" else "")
 
-  def conjugate = Complex(re, -im)
+  def conjugate: Complex[T] = Complex(re, -im)
 }
 
 /**
@@ -40,7 +60,7 @@ object Complex {
    * Defines the operations oncomplex numbers
    */
   implicit def ComplexIsFractional[T: Numeric]: Fractional[Complex[T]] = new Fractional[Complex[T]] {
-  val num=implicitly[Numeric[T]]
+  val num: Numeric[T] =implicitly[Numeric[T]]
 
     override def plus(x: Complex[T], y: Complex[T]): Complex[T] = Complex(num.plus(x.re, y.re), num.plus(x.im, y.im))
 
@@ -71,5 +91,5 @@ object Complex {
     override def div(x: Complex[T], y: Complex[T]): Complex[T] = ???
   }
 
-  implicit def NumericOps[T: Numeric](lhs: Complex[T]) = ComplexIsFractional.mkNumericOps(lhs)
+  implicit def NumericOps[T: Numeric](lhs: Complex[T]): Fractional[Complex[T]]#FractionalOps = ComplexIsFractional.mkNumericOps(lhs)
 }

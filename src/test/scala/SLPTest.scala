@@ -1,9 +1,26 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-import SB.SLP.{SLP, Steady, SwitchArray, Temporal, TemporalNG}
+import SB.SLP.{SLP, Steady, SwitchArray, TemporalDPRAM, TemporalSPRAM}
 import SB.Signals.Null
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
@@ -19,65 +36,62 @@ import StreamingModule.StreamingModule
 //import org.scalatest.prop.TableDrivenPropertyChecks.whenever
 
 object SLPTest extends Properties("SLP") {
-  val genSteady = for {
+  val genSteady: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- genInvertible(k)
   } yield Steady(Vector(p1), t)(Unsigned(16))
-  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)    }
+  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)    }
 
-  val genSteady2 = for {
+  val genSteady2: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(k))
   } yield Steady(p1, t)(Unsigned(16))
-  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)   }
+  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)   }
 
   property("SwitchArray") = forAll(genVec, Gen.choose(1, 5), Gen.choose(0, 10)) { (v: Vec[F2], k, gap) =>
         val sb = SwitchArray(Vector(v), k)(Unsigned(4))
-        val n = v.m + k
-        sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)
+    sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)
     }
 
-  val genSwitch2 = for {
+  val genSwitch2: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     v <- Gen.containerOfN[Vector, Vec[F2]](2, genVec(t))
   } yield SwitchArray(v, k)(Unsigned(16))
   property("SwitchArray 2") = forAll(genSwitch2, Gen.choose(0, 10)) { (sb, gap) =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)
+      sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)
     }
 
-  val genTemporal = for {
+  val genTemporal: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
     p4 <- genInvertible(t)
     p3 <- genMatrix(t, k)
-  } yield TemporalNG(Vector(p3), Vector(p4))(Unsigned(16))
+  } yield TemporalDPRAM(Vector(p3), Vector(p4))(Unsigned(16))
   property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => i), gap) == Some(0)
+      sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)
   }
 
-  val genTemporal2 = for {
+  val genTemporal2: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p4 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(t))
     p3 <- Gen.containerOfN[Vector, Matrix[F2]](2, genMatrix(t, k))
-  } yield TemporalNG(p3, p4)(Unsigned(16))
+  } yield TemporalDPRAM(p3, p4)(Unsigned(16))
   property("Temporal2") =  forAll(genTemporal2) { sb =>
-      sb.test(Vector.tabulate(5 << sb.n)(i => i)) == Some(0)
+      sb.test(Vector.tabulate(5 << sb.n)(i => i)).contains(0)
   }
 
   //implicit val hw:HW[Int]=Unsigned(16)
-  implicit def shrinkSB = Shrink { input: StreamingModule[Int] =>
-    input match {
-      case Product(factors) => (0 until factors.size).toStream.map(i => Product[Int]((factors.take(i)) ++ (factors.drop(i + 1))))
-      //case slp:SLP[Int] if slp.size>1 =>
-      case _ => (1 until input.k).reverse.toStream.map(k => input.spl.stream(k)(Unsigned(16)))
-    }
+  implicit def shrinkSB: Shrink[StreamingModule[Int]] = Shrink {
+    case Product(factors) => factors.indices.toStream.map(i => Product[Int](factors.take(i) ++ factors.drop(i + 1)))
+    //case slp:SLP[Int] if slp.size>1 =>
+    case input => (1 until input.k).reverse.toStream.map(k => input.spl.stream(k)(Unsigned(16)))
   }
 
-  val genLinPerm = for {
+  val genLinPerm: Gen[StreamingModule[Int]] = for {
     t <- Gen.choose(5, 5)
     k <- Gen.choose(5, 5)
     n = t + k
@@ -86,7 +100,7 @@ object SLPTest extends Properties("SLP") {
 
 
   property("LinearPerm") = forAll(genLinPerm) { sb =>
-      sb.test(Vector.tabulate(3 << sb.n)(i => i)) == Some(0)
+      sb.test(Vector.tabulate(3 << sb.n)(i => i)).contains(0)
   }
 
 
@@ -123,4 +137,6 @@ object SLPTest extends Properties("SLP") {
           }
         }
       }*/
+
+
 }

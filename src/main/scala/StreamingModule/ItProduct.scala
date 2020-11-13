@@ -1,18 +1,40 @@
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ */
+
 package StreamingModule
 
 import RTL.{Component, Const, Mux, Or, Wire}
 import SB.Identity
-import SB.SLP.TemporalNG
+import SB.SLP.TemporalSPRAM
 import SPL.SPL
 import linalg.Fields.F2
 import linalg.Matrix
 
 case class ItProduct[U](r: Int, factor: StreamingModule[U], endLoopOpt: Option[StreamingModule[U]] = None) extends StreamingModule[U](factor.t, factor.k)(factor.hw) {
-  val endLoop = {
+  val endLoop: StreamingModule[U] = {
     val res = endLoopOpt.getOrElse(Identity(t, k))
     res * Delay(t, k, Math.max(1 + factor.latency + res.latency, T) - (1 + factor.latency + res.latency))
   }
-  val innerLatency = 1 + factor.latency + endLoop.latency
+  val innerLatency: Int = 1 + factor.latency + endLoop.latency
   override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = {
     val feeding1 = new Wire(1)
     val feeding2 = new Mux(token(T - 1), Seq(feeding1, new Const(1, 0)))
@@ -29,7 +51,7 @@ case class ItProduct[U](r: Int, factor: StreamingModule[U], endLoopOpt: Option[S
   }
 
   override val latency: Int = (r - 1) * innerLatency + factor.latency + 1
-  override val minGap = (r - 1) * innerLatency
+  override val minGap: Int = (r - 1) * innerLatency
   override val spl: SPL[U] = SPL.ItProduct(r, factor.spl, endLoopOpt.map(_.spl))
 }
 

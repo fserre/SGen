@@ -1,6 +1,23 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package SB.Signals
@@ -8,6 +25,8 @@ package SB.Signals
 import SB.HW.HW
 import SB.SB
 import Utils._
+
+import scala.annotation.tailrec
 
 
 /*abstract class Plus[T] (override val terms: Seq[SigRef[T]]) extends AssociativeSig[T](terms," + ",4)
@@ -33,13 +52,13 @@ object Plus extends AssociativeSigCompanionT[Plus] {
   }
 }*/
 abstract class Plus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
-  override def graphDeclaration = graphName + "[label=\"+\"];"
+  override def graphDeclaration: String = graphName + "[label=\"+\"];"
 }
 object Plus{
-  def apply[T](lhs: Sig[T], rhs: Sig[T]) = {
+  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
     require(lhs.hw == rhs.hw)
-    implicit val hw = lhs.hw
-    implicit val sb = lhs.sb
+    implicit val hw: HW[T] = lhs.hw
+    implicit val sb: SB[_] = lhs.sb
     import hw.num._
     (lhs, rhs) match {
       case (Const(vl), Const(vr)) => Const(vl + vr)
@@ -54,11 +73,11 @@ object Plus{
 }
 
 abstract class Minus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
-  override def graphDeclaration = graphName + "[label=\"-\"];"
+  override def graphDeclaration: String = graphName + "[label=\"-\"];"
 }
 
 abstract class Times[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
-  override def graphDeclaration = graphName + "[label=\"*\"];"
+  override def graphDeclaration: String = graphName + "[label=\"*\"];"
 }
 
 /*object Plus {
@@ -91,8 +110,8 @@ abstract class Times[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator
 object Minus {
   def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
     require(lhs.hw == rhs.hw)
-    implicit val hw = lhs.hw
-    implicit val sb = lhs.sb
+    implicit val hw: HW[T] = lhs.hw
+    implicit val sb: SB[_] = lhs.sb
     import hw.num._
     (lhs, rhs) match {
       case (Const(vl), Const(vr)) => Const(vl - vr)
@@ -109,9 +128,10 @@ object Minus {
 }
 
 object Times {
+  @tailrec
   def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
-    implicit val hw = lhs.hw
-    implicit val sb = lhs.sb
+    implicit val hw: HW[T] = lhs.hw
+    implicit val sb: SB[_] = lhs.sb
     import hw.num._
     (lhs, rhs) match {
       case (Const(vl), Const(vr)) => Const(vl * vr)
@@ -121,12 +141,12 @@ object Times {
       case (_, Mux(address, inputs)) if inputs.forall(_ match {
         case Zero() | One() | Opposite(One()) => true
         case _ => false
-      }) => Mux(address, inputs.map(_ match {
+      }) => Mux(address, inputs.map {
         case Zero() => Zero()
         case One() => lhs
         case Opposite(One()) => Opposite(lhs)
         case _ => throw new Exception("Error")
-      }))
+      })
       case (lhs: Const[T], _) if rhs.hw == lhs.hw => Times(rhs, lhs)
       case _ => hw.times(lhs, rhs)
     }
@@ -134,7 +154,7 @@ object Times {
 }
 
 object Zero{
-  def unapply[T:HW](arg:Sig[T])={
+  def unapply[T:HW](arg:Sig[T]): Boolean ={
     val hw=implicitly[HW[T]]
 
     arg match{
@@ -146,24 +166,24 @@ object Zero{
       case _ => false
     }
   }
-  def apply[T]()(implicit hw:HW[T],sb:SB[_])=Const(implicitly[HW[T]].num.zero)
+  def apply[T]()(implicit hw:HW[T],sb:SB[_]): Sig[T] =Const(implicitly[HW[T]].num.zero)
 }
 
 object One{
-  def unapply[T:HW](arg:Sig[T])={
+  def unapply[T:HW](arg:Sig[T]): Boolean ={
     val hw=implicitly[HW[T]]
     arg match{
       case Const(value) if hw.valueOf(hw.bitsOf(value))==hw.num.one => true
       case _ => false
     }
   }
-  def apply[T]()(implicit hw:HW[T],sb:SB[_])=Const(implicitly[HW[T]].num.one)
+  def apply[T]()(implicit hw:HW[T],sb:SB[_]): Sig[T] =Const(implicitly[HW[T]].num.one)
 }
 
 object Opposite {
   def unapply[T: HW](arg: Sig[T]): Option[Sig[T]] = {
     val hw = implicitly[HW[T]]
-    implicit val sb = arg.sb
+    implicit val sb: SB[_] = arg.sb
     arg match {
       case Const(value) if hw.num.lt(value, hw.num.zero) => Some(Const(hw.num.negate(value)))
       case Minus(Zero(), arg) => Some(arg)
@@ -172,8 +192,8 @@ object Opposite {
   }
 
   def apply[T](arg: Sig[T]): Sig[T] = {
-    implicit val hw = arg.hw
-    implicit val sb = arg.sb
+    implicit val hw: HW[T] = arg.hw
+    implicit val sb: SB[_] = arg.sb
     arg match {
       case Opposite(arg) => arg
       case _ => Zero[T]() - arg

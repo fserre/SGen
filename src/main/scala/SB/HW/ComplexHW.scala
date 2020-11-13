@@ -20,19 +20,21 @@
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-package SPL
+package SB.HW
+import SB.Signals._
+import linalg.Fields._
 
-import SB.HW.HW
-import StreamingModule.StreamingModule
 
-case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = None) extends SPL[T](factor.n) {
-  val endLoop: SPL[T] = endLoopOpt.getOrElse(Identity[T](n))
+case class ComplexHW[T](hw:HW[T]) extends HW[Complex[T]](hw.size*2)(Complex.ComplexIsFractional[T](hw.num):Numeric[Complex[T]]) {
+  implicit val componentHW: HW[T] =hw
 
-  override def eval(inputs: Seq[T], set: Int): Seq[T] = factor.eval((0 until (r - 1)).foldLeft(inputs)((endLoop * factor).eval), r - 1)
+  override def plus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)+Re(rhs),Im(lhs)+Im(rhs))(this)
 
-  override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = StreamingModule.ItProduct(r, factor.stream(k), endLoopOpt.map(_.stream(k)))
-}
+  override def minus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)-Re(rhs),Im(lhs)-Im(rhs))(this)
 
-object ItProduct {
-  //def apply[T](r: Int, factor: SPL[T]) = if (r == 1) factor else new ItProduct[T](r, factor)
+  override def times(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)*Re(rhs)-Im(lhs)*Im(rhs),Re(lhs)*Im(rhs)+Im(lhs)*Re(rhs))(this)
+
+  override def bitsOf(const: Complex[T]): BigInt = (hw.bitsOf(const.im) << hw.size) + hw.bitsOf(const.re)
+
+  override def valueOf(const: BigInt): Complex[T] = Complex(hw.valueOf(((BigInt(1)<<hw.size)-1) & const),hw.valueOf(const>>hw.size))(hw.num)
 }

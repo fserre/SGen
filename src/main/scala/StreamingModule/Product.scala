@@ -1,6 +1,23 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package StreamingModule
@@ -8,13 +25,14 @@ package StreamingModule
 import RTL.Component
 import SB.HW.HW
 import SB.{Identity, SB}
+import SPL.SPL
 import Utils.{AssociativeNode, AssociativeNodeCompanionT}
 
 class Product[U] private (override val list: Seq[StreamingModule[U]]) extends StreamingModule(list.head.t, list.head.k)(list.head.hw) with AssociativeNode[StreamingModule[U]]{
 
-  override val spl = SPL.Product(list.map(_.spl))
+  override val spl: SPL[U] = SPL.Product(list.map(_.spl))
 
-  override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]) = {
+  override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = {
     var res=inputs
     var curLatency=0
     list.reverse.foreach(t=>{
@@ -35,7 +53,7 @@ object Product extends AssociativeNodeCompanionT[StreamingModule,Product] {
   override def simplify[T](lhs: StreamingModule[T], rhs: StreamingModule[T]): Either[StreamingModule[T], (StreamingModule[T], StreamingModule[T])] = {
     val t=lhs.t
     val k=rhs.k
-    implicit val hw=lhs.hw
+    implicit val hw: HW[T] =lhs.hw
     require(lhs.t==t)
     require(rhs.k==k)
     require(lhs.hw==hw)

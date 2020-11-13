@@ -1,6 +1,23 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 //import SB.Signals._
@@ -18,12 +35,35 @@ import linalg._
 import scala.collection.mutable
 
 object main extends App {
-  val s=Steady(Matrix.reverseIdentity[F2](2), 2)(Unsigned(16))
-  s.test(Vector.tabulate(2 << s.n)(i => i), 0)
+  /*
+  ! SLP.Temporal: Falsified after 2 passed tests.
+  > ARG_0: TemporalNG(Vector((1 .)
+    (1 1)
+  ),Vector(I2))
+  > ARG_1: 1
+  > ARG_1_ORIGINAL: 2
+
+
+  ! SLP.Temporal: Falsified after 0 passed tests.
+> ARG_0: TemporalNG(Vector((.)
+(1)
+),Vector(I2))
+> ARG_1: 1
+> ARG_1_ORIGINAL: 2
+
+! SLP.Temporal: Falsified after 4 passed tests.
+> ARG_0: TemporalNG(Vector((1 1)
+),Vector(I1))
+> ARG_1: 1
+Found 1 failing properties.
+  */
+
+  val s=SLP.TemporalSPRAM(Matrix[F2](2,2,Vector(1,0,1,1)),Matrix.identity[F2](2))(Unsigned(16))
+  println(s.test(Vector.tabulate(2 << s.n)(i => i),8))
   throw new Exception("ok")
 
 
-  def finisher[T](imp: StreamingModule[T]) = if (config.graph)
+  def finisher[T](imp: StreamingModule[T]): Unit = if (config.graph)
     imp match {
       case imp: SB[T] => println(imp.toGraph)
       case _ => println("Graphs can only be generated for non-iterative designs.")
@@ -34,10 +74,10 @@ object main extends App {
     println(imp.toVerilog)
 
   val argsQ = mutable.Queue.from(args)
-  var config = new Config()
+  val config = new Config()
 
   def parseHW: Option[HW[_]] = argsQ.dequeue().toLowerCase() match {
-    case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned(_))
+    case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned)
     case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
     case "char" => Some(FixedPoint(8, 0))
     case "short" => Some(FixedPoint(16, 0))
@@ -68,7 +108,7 @@ object main extends App {
     case _ => None
   }
 
-  while (!argsQ.isEmpty) argsQ.dequeue().toLowerCase match {
+  while (argsQ.nonEmpty) argsQ.dequeue().toLowerCase match {
     case "-n" => config.n = Numeric[Int].parseString(argsQ.dequeue())
     case "-k" => config.k = Numeric[Int].parseString(argsQ.dequeue())
     case "-r" => config.r = Numeric[Int].parseString(argsQ.dequeue())
@@ -83,7 +123,7 @@ object main extends App {
         println("Invertible bit-matrices expected.")
         System.exit(-1)
       }
-      while (!argsQ.isEmpty) argsQ.dequeue() match {
+      while (argsQ.nonEmpty) argsQ.dequeue() match {
         case "identity" => matrices.enqueue(Matrix.identity[F2](n))
         case "bitrev" => matrices.enqueue(Matrix.reverseIdentity[F2](n))
         case matrix if matrix.length == n * n => val mat = Matrix(n, n, matrix)
@@ -123,7 +163,7 @@ object main extends App {
 
     private var _n: Option[Int] = None
 
-    def n_=(arg: Option[Int]) = _n = arg
+    def n_=(arg: Option[Int]): Unit = _n = arg
 
     def n: Int = _n match {
       case Some(n) => n
@@ -134,7 +174,7 @@ object main extends App {
 
     private var _r: Option[Int] = None
 
-    def r_=(arg: Option[Int]) = _r = arg
+    def r_=(arg: Option[Int]): Unit = _r = arg
 
     def r: Int = _r match {
       case Some(r) => r
@@ -143,7 +183,7 @@ object main extends App {
 
     private var _k: Option[Int] = None
 
-    def k_=(arg: Option[Int]) = _k = arg
+    def k_=(arg: Option[Int]): Unit = _k = arg
 
     def k: Int = _k match {
       case Some(k) => k
@@ -153,7 +193,7 @@ object main extends App {
 
     private var _hw: Option[HW[_]] = None
 
-    def hw_=(arg: Option[HW[_]]) = _hw = arg
+    def hw_=(arg: Option[HW[_]]): Unit = _hw = arg
 
     def hw: HW[_] = _hw match {
       case Some(k) => k

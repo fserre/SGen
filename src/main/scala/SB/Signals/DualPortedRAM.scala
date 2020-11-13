@@ -1,6 +1,23 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package SB.Signals
@@ -10,7 +27,7 @@ import SB.HW.HW
 import SB.SB
 
 
-case class RAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {
+case class DualPortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {
   override def parents: Seq[(SigRef[_], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
 
   override val hw: HW[U] = implicitly
@@ -22,9 +39,9 @@ case class RAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency
     new RTL.RAMRd(mem, cp(addrRd, 1))
   }
 
-  override def graphDeclaration = graphName + "[label=\"RAM bank (" + (1 << addrRd.hw.size) + " × " + hw.size + " bits, latency=" + latency + ") |<data> Data|<wr> Write address |<rd> Read address \",shape=record];"
+  override def graphDeclaration: String = graphName + "[label=\"RAM bank (" + (1 << addrRd.hw.size) + " × " + hw.size + " bits, latency=" + latency + ") |<data> Data|<wr> Write address |<rd> Read address \",shape=record];"
 
-  override def graphNode = {
+  override def graphNode: Seq[String] = {
     List(addrWr.graphName + " -> " + graphName + ":wr;",
       //m.we.sigDef.graphName + " -> " + graphName + ":we;",
       input.graphName + " -> " + graphName + ":data;",
@@ -34,8 +51,8 @@ case class RAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency
 
 }
 
-case class RAMNG[U: HW](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
-  val timeRd = T + 1
+case class SinglePortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
+  val timeRd: Int = T + 1
 
   override def parents: Seq[(SigRef[_], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
 
@@ -48,9 +65,9 @@ case class RAMNG[U: HW](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) e
     new RTL.RAMRd(mem, cp(addrWr, timeRd))
   }
 
-  override def graphDeclaration = graphName + "[label=\"RAM bank (" + (1 << addrWr.hw.size) + " × " + hw.size + " bits, latency=" + latency + ") |<data> Data|<wr> Write address\",shape=record];"
+  override def graphDeclaration: String = graphName + "[label=\"RAM bank (" + (1 << addrWr.hw.size) + " × " + hw.size + " bits, latency=" + latency + ") |<data> Data|<wr> Write address\",shape=record];"
 
-  override def graphNode = {
+  override def graphNode: Seq[String] = {
     List(addrWr.graphName + " -> " + graphName + ":wr;",
       //m.we.sigDef.graphName + " -> " + graphName + ":we;",
       input.graphName + " -> " + graphName + ":data;"

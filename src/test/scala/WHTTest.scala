@@ -1,34 +1,42 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-import SB.HW.{ComplexHW, FixedPoint, Unsigned}
-import SB.Product
-import SB.SLP.Steady
-import SPL.ItProduct
+import SB.HW.FixedPoint
 import SPL.WHT.WHT
-import StreamingModule.{Product, StreamingModule}
-import linalg.Fields._
+import StreamingModule.StreamingModule
 import linalg.{Matrix, Vec}
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Gen, Properties, Shrink}
 
 object WHTTest extends Properties("WHT")  {
-  implicit def shrinkSB[T]:Shrink[StreamingModule[T]] = Shrink { input: StreamingModule[T] =>
-    input match {
-      case StreamingModule.Product(factors) =>
-
-        (0 until factors.size).toStream.map(i => StreamingModule.Product[T]((factors.take(i)) ++ (factors.drop(i + 1))))
-      case SB.Product(factors) =>
-
-        (0 until factors.size).toStream.map(i => SB.Product[T]( (factors.take(i)) ++ (factors.drop(i + 1))))
+  implicit def shrinkSB[T]:Shrink[StreamingModule[T]] = Shrink {
+      case StreamingModule.Product(factors) => factors.indices.toStream.map(i => StreamingModule.Product[T](factors.take(i) ++ factors.drop(i + 1)))
+      case SB.Product(factors) => factors.indices.toStream.map(i => SB.Product[T]( factors.take(i) ++ factors.drop(i + 1)))
       case SB.ITensor(r,factor,k) if k>factor.n => (1 to k-factor.n).toStream.map(i=>SB.ITensor(r-i,factor,k-i))
       case StreamingModule.ItProduct(r, factor, endLoop) => (1 until r).reverse.toStream.map(i => StreamingModule.ItProduct(i, factor, endLoop))
       //case slp:SLP[Int] if slp.size>1 =>
-      case _ => (1 until input.k).reverse.toStream.map(k => input.spl.stream(k)(input.hw))
+      case input => (1 until input.k).reverse.toStream.map(k => input.spl.stream(k)(input.hw))
     }
-  }
+
 
 
   property("WHT conforms to the definition")=forAll (Gen.choose(1,10)){n=>
@@ -41,7 +49,7 @@ object WHTTest extends Properties("WHT")  {
     }
 
 
-  val genSteady = for {
+  val genSteady: Gen[StreamingModule[Double]] = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
   } yield WHT[Double](t + k, 1).stream(k)(FixedPoint(16, 0))
@@ -64,7 +72,7 @@ object WHTTest extends Properties("WHT")  {
     }
 
 
-  val peaseWHT = for {
+  val peaseWHT: Gen[StreamingModule[Double]] = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
     n = t + k
@@ -78,7 +86,7 @@ object WHTTest extends Properties("WHT")  {
       }
     }
 
-  val itpeaseWHT = for {
+  val itpeaseWHT: Gen[StreamingModule[Double]] = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
     n = t + k

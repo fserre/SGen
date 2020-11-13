@@ -1,3 +1,25 @@
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ */
+
 package SPL.FFT
 
 import SB.HW.{ComplexHW, FixedPoint, HW, Unsigned}
@@ -8,17 +30,17 @@ import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
 case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
-  def pow(x: Int) = {
+  def pow(x: Int): Int = {
     val j = x % (1 << r)
     val i = ((x >> r) >> (r * l)) << (r * l)
     i * j
   }
 
-  def coef(i: Int) = DFT.omega(n, pow(i))
+  def coef(i: Int): Complex[Double] = DFT.omega(n, pow(i))
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
 
-  override def stream(k: Int)(implicit hw: HW[Complex[Double]]) = new SB(n - k, k) {
+  override def stream(k: Int)(implicit hw: HW[Complex[Double]]): SB[Complex[Double]] = new SB(n - k, k) {
     override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[_]): Seq[Sig[Complex[Double]]] = {
       (0 until K).map(p => {
         val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
@@ -37,17 +59,17 @@ case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
 }
 
 case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
-  def pow(x: Int, l: Int) = {
+  def pow(x: Int, l: Int): Int = {
     val j = x % (1 << r)
     val i = ((x >> r) >> (r * l)) << (r * l)
     i * j
   }
 
-  def coef(i: Int, l: Int) = DFT.omega(n, pow(i, l))
+  def coef(i: Int, l: Int): Complex[Double] = DFT.omega(n, pow(i, l))
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n), set % (n / r)) }
 
-  override def stream(k: Int)(implicit hw: HW[Complex[Double]]) = {
+  override def stream(k: Int)(implicit hw: HW[Complex[Double]]): SB[Complex[Double]] = {
     //require(k>=r)
     new SB(n - k, k) {
       override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[_]): Seq[Sig[Complex[Double]]] = {

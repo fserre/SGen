@@ -1,12 +1,29 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package SPL
 
 import SB.HW.HW
-import SB.SLP.{Spatial, Temporal, TemporalNG}
+import SB.SLP.{Spatial, TemporalDPRAM, TemporalSPRAM}
 import SB.Signals._
 import StreamingModule.StreamingModule
 import linalg.Fields.F2
@@ -47,18 +64,18 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
 
 
       Spatial(L1, L2) *
-        Temporal(C3, C4) *
+        TemporalDPRAM(C3, C4) *
         Spatial(Vector.fill(P.size)(Matrix.identity[F2](k)), R2)
     }
     else {
-      val L = new LUL((p1(0) :: p2(0)) / (p3(0) :: p4(0)), k, t).getSolution
-      val R3 = p3(0) + L * p1(0)
-      val R4 = p4(0) + L * p2(0)
-      val C2 = p2(0) * R4.inverse
-      val C1 = p1(0) + C2 * R3
-      Temporal(L, Matrix.identity[F2](t)) *
+      val L = new LUL((p1.head :: p2.head) / (p3.head :: p4.head), k, t).getSolution
+      val R3 = p3.head + L * p1.head
+      val R4 = p4.head + L * p2.head
+      val C2 = p2.head * R4.inverse
+      val C1 = p1.head + C2 * R3
+      TemporalDPRAM(L, Matrix.identity[F2](t)) *
         Spatial(C1, C2) *
-        Temporal(R3, R4)
+        TemporalDPRAM(R3, R4)
     }
   }
 }
@@ -70,15 +87,15 @@ object LinearPerm {
     Vector.tabulate(1 << P.m)(i => v(permute(Pinv, i)))
   }
 
-  def permute(P: Matrix[F2], i: Int): Int = (P * Vec.fromInt(P.m, i)).toInt()
+  def permute(P: Matrix[F2], i: Int): Int = (P * Vec.fromInt(P.m, i)).toInt
 
-  def Rmat(r: Int, n: Int) = (0 until n / r).map(l => Matrix.identity[F2](n - r * (l + 1)) oplus Lmat(r, r * (l + 1))).reduceLeft(_ * _)
+  def Rmat(r: Int, n: Int): Matrix[F2] = (0 until n / r).map(l => Matrix.identity[F2](n - r * (l + 1)) oplus Lmat(r, r * (l + 1))).reduceLeft(_ * _)
 
-  def Lmat(m: Int, n: Int) = Cmat(n) ^ (n - m)
+  def Lmat(m: Int, n: Int): Matrix[F2] = Cmat(n) ^ (n - m)
 
-  def Cmat(n: Int) = Matrix.tabulate[F2](n, n)((i, j) => F2((i + 1) % n == j))
+  def Cmat(n: Int): Matrix[F2] = Matrix.tabulate[F2](n, n)((i, j) => F2((i + 1) % n == j))
 
-  def stream[T](matrices: Seq[Matrix[F2]], k: Int, hw: HW[T]) = LinearPerm[T](matrices).stream(k)(hw)
+  def stream[T](matrices: Seq[Matrix[F2]], k: Int, hw: HW[T]): StreamingModule[T] = LinearPerm[T](matrices).stream(k)(hw)
 
   //def L[DT](m: Int, n: Int) = LinearPerm[DT](Lmat(m, n))
 

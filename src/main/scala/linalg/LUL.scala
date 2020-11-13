@@ -1,6 +1,23 @@
-/**
- * LUL Factorisation - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 package linalg
 
@@ -19,69 +36,69 @@ class LUL[K: Fractional](val P: Matrix[K], val m: Int, val n: Int) {
   /**
    * upper left block of P
    */
-  val P1 = P(0 until m, 0 until m)
+  val P1: Matrix[K] = P(0 until m, 0 until m)
   /**
    * upper right block of P
    */
-  val P2 = P(0 until m, m until n + m)
+  val P2: Matrix[K] = P(0 until m, m until n + m)
   /**
    * lower left block of P
    */
-  val P3 = P(m until n + m, 0 until m)
+  val P3: Matrix[K] = P(m until n + m, 0 until m)
   /**
    * lower right block of P
    */
-  val P4 = P(m until n + m, m until n + m)
+  val P4: Matrix[K] = P(m until n + m, m until n + m)
   /**
    * Rank of P1
    */
-  val p1 = P1.rk
+  val p1: Int = P1.rk
   /**
    * rank of P2
    */
-  val p2 = P2.rk
+  val p2: Int = P2.rk
   /**
    * rank of P3
    */
-  val p3 = P3.rk
+  val p3: Int = P3.rk
   /**
    * rank of P4
    */
-  val p4 = P4.rk
+  val p4: Int = P4.rk
   /**
    * P2(ker P4)
    */
-  val P2kerP4 = P2 * P4.ker
+  val P2kerP4: Matrix[K] = P2 * P4.ker
   /**
    * P1(ker P3)
    */
-  val P1kerP3 = P1 * P3.ker
+  val P1kerP3: Matrix[K] = P1 * P3.ker
   /**
    * P4(ker P2)
    */
-  val P4kerP2 = P4 * P2.ker
+  val P4kerP2: Matrix[K] = P4 * P2.ker
   /**
    * P3(ker P1)
    */
-  val P3kerP1 = P3 * P1.ker
+  val P3kerP1: Matrix[K] = P3 * P1.ker
   /**
    * Minimal bound of rk R + rk L
    */
-  val bound = Math.max(p3, m + n - p1 - p4)
+  val bound: Int = Math.max(p3, m + n - p1 - p4)
 
   /**
    * Computes a solution that minimizes rk L and rk L + rk R
    *
    * @return an optimal L for the problem
    */
-  def getSolution = if (p3 <= m + n - p1 - p4) solutionP3Smaller2() else solutionP3Bigger2()
+  def getSolution: Matrix[K] = if (p3 <= m + n - p1 - p4) solutionP3Smaller2() else solutionP3Bigger2()
 
   /**
    * Computes a solution in the case where p3 <= m + n - p1 - p4
    *
    * @return an optimal L
    */
-  def solutionP3Smaller2() = {
+  def solutionP3Smaller2(): Matrix[K] = {
     require(p3 <= m + n - p1 - p4)
     val Y1 = P3kerP1.doubleComplement(P4 inter P3, P3)
     val Y = Y1 ++ (Y1 ++ P4).complement
@@ -102,7 +119,7 @@ class LUL[K: Fractional](val P: Matrix[K], val m: Int, val n: Int) {
    *
    * @return an optimal L
    */
-  def solutionP3Bigger2() = {
+  def solutionP3Bigger2(): Matrix[K] = {
     require(p3 >= m + n - p1 - p4)
     val Y = (P4 inter P3).doubleComplement(P3kerP1, P3)
     val X2 = P2kerP4 inter P1
@@ -123,7 +140,7 @@ class LUL[K: Fractional](val P: Matrix[K], val m: Int, val n: Int) {
    * @param S Solution (L) to try
    * @return if S is an optimal L
    */
-  def isSolution(S: Matrix[K]) = {
+  def isSolution(S: Matrix[K]): Boolean = {
     (P4 - (S * P2)).isInvertible && (S.rk + (P3 - S * P1).rk) == bound
   }
 }

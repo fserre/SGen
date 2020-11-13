@@ -1,9 +1,28 @@
-/**
- * LUL Factorisation - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package linalg.Fields
+
+import scala.language.implicitConversions
 
 
 /**
@@ -17,7 +36,7 @@ case class F2(value: Boolean) extends AnyVal {
    *
    * @return A printable string representing the number
    */
-  override def toString = if (value) "1" else "."
+  override def toString: String = if (value) "1" else "."
 }
 
 object F2 {
@@ -34,30 +53,30 @@ object F2 {
    * Extends Fractional[F2] such that numeric and division operations can be implicitly used
    */
   implicit object F2IsFractional extends Fractional[F2] {
-    def div(x: F2, y: F2) = {
+    def div(x: F2, y: F2): F2 = {
       assert(y.value)
       x
     }
 
-    def toDouble(x: F2) = if (x.value) 1.0 else 0.0
+    def toDouble(x: F2): Double = if (x.value) 1.0 else 0.0
 
-    def toFloat(x: F2) = if (x.value) 1.0f else 0.0f
+    def toFloat(x: F2): Float = if (x.value) 1.0f else 0.0f
 
-    def negate(x: F2) = x
+    def negate(x: F2): F2 = x
 
-    def fromInt(x: Int) = if (x % 2 == 0) F2(false) else F2(true)
+    def fromInt(x: Int): F2 = if (x % 2 == 0) F2(false) else F2(true)
 
-    def toLong(x: F2) = if (x.value) 1L else 0L
+    def toLong(x: F2): Long = if (x.value) 1L else 0L
 
-    def times(x: F2, y: F2) = F2(x.value && y.value)
+    def times(x: F2, y: F2): F2 = F2(x.value && y.value)
 
-    def minus(x: F2, y: F2) = plus(x, y)
+    def minus(x: F2, y: F2): F2 = plus(x, y)
 
-    def plus(x: F2, y: F2) = F2(x.value ^ y.value)
+    def plus(x: F2, y: F2): F2 = F2(x.value ^ y.value)
 
-    def compare(x: F2, y: F2) = toInt(x) - toInt(y)
+    def compare(x: F2, y: F2): Int = toInt(x) - toInt(y)
 
-    def toInt(x: F2) = if (x.value) 1 else 0
+    def toInt(x: F2): Int = if (x.value) 1 else 0
 
     override def parseString(str: String): Option[F2] = ???
   }

@@ -20,19 +20,13 @@
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-package SPL
+import scala.annotation.tailrec
 
-import SB.HW.HW
-import StreamingModule.StreamingModule
+package object Utils {
+  @tailrec
+  def gcd(a: Int, b: Int): Int = if (b == 0) a.abs else gcd(b, a % b)
 
-case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = None) extends SPL[T](factor.n) {
-  val endLoop: SPL[T] = endLoopOpt.getOrElse(Identity[T](n))
+  def lcm(a: Int, b: Int): Int = (a * b).abs / gcd(a, b)
 
-  override def eval(inputs: Seq[T], set: Int): Seq[T] = factor.eval((0 until (r - 1)).foldLeft(inputs)((endLoop * factor).eval), r - 1)
-
-  override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = StreamingModule.ItProduct(r, factor.stream(k), endLoopOpt.map(_.stream(k)))
-}
-
-object ItProduct {
-  //def apply[T](r: Int, factor: SPL[T]) = if (r == 1) factor else new ItProduct[T](r, factor)
+  def lcm(x: Vector[Int]): Int = x.reduce(lcm)
 }

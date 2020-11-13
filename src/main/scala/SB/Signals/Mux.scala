@@ -1,6 +1,23 @@
-/**
- * Streaming Hardware Generator - ETH Zurich
- * Copyright (C) 2015 Francois Serre (serref@inf.ethz.ch)
+/*
+ *     _____ ______          SGen - A Generator of Streaming Hardware
+ *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *    \__ \/ / __/ _ \/ __ \
+ *   ___/ / /_/ /  __/ / / /
+ *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 package SB.Signals
@@ -11,47 +28,47 @@ import SB.SB
 import linalg.Fields.Complex
 
 case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(inputs.head.hw) {
-  def isRom = inputs.forall(_.sig.isInstanceOf[Const[_]])
+  def isRom: Boolean = inputs.forall(_.sig.isInstanceOf[Const[_]])
   override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Mux(address, inputs.map(cp))
 
-  override def graphDeclaration = if (isRom)
+  override def graphDeclaration: String = if (isRom)
     graphName + "[label=\"<title>ROM (" + inputs.size + " × " + hw.size + " bits) |" + inputs.map(_.sig.asInstanceOf[Const[U]].value.toString).mkString("|") + "\",shape=record];"
   else
     super.graphDeclaration
 
-  override def graphNode = if (isRom) List(address.graphName + " -> " + graphName + ":title;") else super.graphNode
+  override def graphNode: Seq[String] = if (isRom) List(address.graphName + " -> " + graphName + ":title;") else super.graphNode
   override val pipeline = 1
 }
 
 object Mux {
   def apply[U](address: Sig[Int], inputs: Seq[Sig[U]]): Sig[U] = {
-    val hw = inputs(0).hw
-    implicit val sb = address.sb
+    val hw = inputs.head.hw
+    implicit val sb: SB[_] = address.sb
     require(inputs.forall(_.hw == hw))
 
     address match {
-      case Const(value) => (inputs(value))
+      case Const(value) => inputs(value)
       case _ => inputs match {
-        case _ if inputs.toSet.size == 1 => inputs(0)
+        case _ if inputs.toSet.size == 1 => inputs.head
         case Seq(Mux(adrl, Seq(ll, lr)), Mux(adrr, Seq(rl, rr))) if adrl.hw.size == 1 && address.hw.size == 1 && adrr == adrl => Mux(address :: adrr, Seq(ll, lr, rl, rr))
 
-        case _ => (0 until address.hw.size).find(pos => (0 until inputs.size).forall(i => {
+        case _ => (0 until address.hw.size).find(pos => inputs.indices.forall(i => {
           val j = i | (1 << pos)
           j >= inputs.size || inputs(i) == inputs(j)
         })) match {
           case Some(pos) =>
             val control = address(pos + 1 until address.hw.size) :: address(0 until pos)
-            Mux(control, (0 until inputs.size).filter(i => (i & (1 << pos)) == 0).map(inputs(_)))
+            Mux(control, inputs.indices.filter(i => (i & (1 << pos)) == 0).map(inputs(_)))
 
           case _ => hw match {
             case ComplexHW(innerHW) => Cpx(Mux(address, inputs.map(Re(_)(innerHW))), Mux(address, inputs.map(Im(_)(innerHW))))(hw).asInstanceOf[Sig[U]]
             case Unsigned(_) => (0 until hw.size).find(i => {
-              val ref = inputs(0).asInstanceOf[Sig[Int]](i)
+              val ref = inputs.head.asInstanceOf[Sig[Int]](i)
               inputs.forall(_.asInstanceOf[Sig[Int]](i) == ref)
             }) match {
               case Some(pos) =>
                 val part1 = Mux(address, inputs.map(_.asInstanceOf[Sig[Int]](pos + 1 until hw.size)))
-                val part2 = inputs(0).asInstanceOf[Sig[Int]](pos)
+                val part2 = inputs.head.asInstanceOf[Sig[Int]](pos)
                 val part3 = Mux(address, inputs.map(_.asInstanceOf[Sig[Int]](0 until pos)))
                 val res = part1 :: part2 :: part3
                 res.asInstanceOf[Sig[U]]
@@ -77,7 +94,7 @@ object Mux {
 }
 
 object ROM {
-  def apply[U](values: Seq[U], addr: Sig[Int])(implicit hw: HW[U], sb: SB[_]) = Mux(addr, values.map(v => Const(v)))
+  def apply[U](values: Seq[U], addr: Sig[Int])(implicit hw: HW[U], sb: SB[_]): Sig[U] = Mux(addr, values.map(v => Const(v)))
 
 
 }
