@@ -1,8 +1,8 @@
    _____ ______          SGen - A Generator of Streaming Hardware
   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
   \__ \/ / __/ _ \/ __ \
- ___/ / /_/ /  __/ / / / v.VERSION - DATEVERSION
-/____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ ___/ / /_/ /  __/ / / / Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+/____/\____/\___/_/ /_/  https://github.com/fserre/sgen
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,38 +17,4 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-
-This design was generated on DATECURRENT with the parameters
-PARAMETERS
-after a web request issued on GENERATORHOST by REMOTEHOST.
-The generation was completed in GENERATIONTIMEms.
-
-This design can only be used for non-commercial research, and may not be redistributed, with or without modifications.
-
-It operates on datasets of SIZE elements, streamed over DATADURATION cycles of STREAMINGWIDTH elements. This means that
-each dataset has to be split into chunks of STREAMINGWIDTH elements that are input sequentially every cycle.
-It has a latency of LATENCY cycles: the output will begin LATENCY cycles after the input has begun.
-It supports full-throughput, which means that a new dataset may be input immediately after the previous one.
-It requires a delay of GAP cycles between datasets.
-In total, this design can therefore perform a new transformation every TOTALGAP cycles.
-
-The interface works as follows:
-- clk: The input clock, a cycle begins on ascending edge.
-- reset: Reset signal. It has to be set to 1 during at least one cycle before the first input, and to 0 afterwards.
-- next: Signals the arrival of the next dataset. It has to be set high START the first inputs enter, and left at 0 otherwise.
-        Particularly, it should not be set to 1 more than once every TOTALGAP cycles, as it might leave the design in a
-        confused state, that can only be recovered with a reset.
-- next_out: Indicates that a new dataset begins to output.
-- INPUTS: The components of the chunks of the dataset.
-- OUTPUTS: The components of the chunks of the output dataset.
-
-An example of use of this design for simulation is given in the file benchmark.v.
-
-If you would like to refer to this design, the following publications describe the methods used for its generation:
-- Streaming permutations: F. Serre, T. Holenstein and M. Püschel, Optimal Circuits for Streamed Linear Permutations using RAM, Proc. FPGA, pp. 215-223, 2016
-- Algorithm folding: P. A. Milder, F. Franchetti, J. C. Hoe, and M. Püschel, Computer Generation of Hardware for Linear Digital Signal Processing Transforms, ACM TODAES, Vol. 17, No. 2, 2012
-- Algorithm folding: F. Serre and M. Püschel, Memory-Efficient Fast Fourier Transform on Streaming Data by Fusing Permutations, Proc. FPGA, pp. ??, 2018
-
-Feel free to report any bug, issue, or suggestion to serref@inf.ethz.ch.
-
 

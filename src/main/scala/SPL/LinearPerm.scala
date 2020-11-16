@@ -1,29 +1,30 @@
 /*
- *     _____ ______          SGen - A Generator of Streaming Hardware
- *    / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
- *    \__ \/ / __/ _ \/ __ \
- *   ___/ / /_/ /  __/ / / /
- *  /____/\____/\___/_/ /_/  Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ *    _____ ______          SGen - A Generator of Streaming Hardware
+ *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
+ *   \__ \/ / __/ _ \/ __ \
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020 François Serre (serref@inf.ethz.ch)
+ * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software Foundation,
- *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
  */
 
 package SPL
 
 import SB.HW.HW
-import SB.SLP.{Spatial, TemporalDPRAM, TemporalSPRAM}
+import SB.SLP.{Spatial, Temporal, TemporalSPRAM}
 import SB.Signals._
 import StreamingModule.StreamingModule
 import linalg.Fields.F2
@@ -64,7 +65,7 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
 
 
       Spatial(L1, L2) *
-        TemporalDPRAM(C3, C4) *
+        Temporal(C3, C4) *
         Spatial(Vector.fill(P.size)(Matrix.identity[F2](k)), R2)
     }
     else {
@@ -73,9 +74,9 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
       val R4 = p4.head + L * p2.head
       val C2 = p2.head * R4.inverse
       val C1 = p1.head + C2 * R3
-      TemporalDPRAM(L, Matrix.identity[F2](t)) *
+      Temporal(L, Matrix.identity[F2](t)) *
         Spatial(C1, C2) *
-        TemporalDPRAM(R3, R4)
+        Temporal(R3, R4)
     }
   }
 }
