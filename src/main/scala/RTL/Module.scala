@@ -47,7 +47,7 @@ abstract class Module {
 
    implicit class CompName(cp:Component) {
       @tailrec
-      def id:String = cp match {
+      final def id:String = cp match {
         case comp: Input => comp.name
         case comp: Output => comp.name
         case comp: Wire => comp.input.id
@@ -78,7 +78,7 @@ abstract class Module {
         case cur:RAMWr => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${cur.id} [${(1 << cur.wrAddress.size) - 1}:0]; // synthesis attribute ram_style of ${cur.id} is block")
         case _ => addDec(s"wire ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${cur.id};")
       }
-      if (cur.description != "") addComb(s"// ${cur.description}")
+      //if (cur.description != "") addComb(s"// ${cur.description}")
       cur match {
         case cur:Output => addComb(s"assign ${cur.id} = ${cur.input.id};")
         case cur:Plus => addComb(s"assign ${cur.id} = ${cur.terms.map(_.id).mkString(" + ")};")
@@ -197,6 +197,5 @@ abstract class Module {
     }
     "dot -Tpdf rtl.gv -o rtl.pdf".!!
     "cmd /c start rtl.pdf".!!
-
   }
 }
