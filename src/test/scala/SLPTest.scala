@@ -21,8 +21,7 @@
  *
  */
 
-import SB.SLP.{SLP, Steady, SwitchArray, Temporal, TemporalSPRAM}
-import SB.Signals.Null
+import SB.SLP.{SLP, Steady, SwitchArray, Temporal}
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
@@ -33,8 +32,6 @@ import SB.{Product, SB}
 import _root_.SB.HW.Unsigned
 import SPL.LinearPerm
 import StreamingModule.StreamingModule
-//import org.scalatest.prop.Configuration.minSuccessful
-//import org.scalatest.prop.TableDrivenPropertyChecks.whenever
 
 object SLPTest extends Properties("SLP") {
   val genSteady: Gen[SB[Int]] = for {

@@ -24,8 +24,7 @@
 package SPL
 
 import SB.HW.HW
-import SB.SLP.{Spatial, Temporal, TemporalSPRAM}
-import SB.Signals._
+import SB.SLP.{Spatial, Temporal}
 import StreamingModule.StreamingModule
 import linalg.Fields.F2
 import linalg.{LUL, Matrix, Vec}

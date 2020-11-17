@@ -25,10 +25,7 @@ package StreamingModule
 
 import RTL.{Component, Const, Mux, Or, Wire}
 import SB.Identity
-import SB.SLP.TemporalSPRAM
 import SPL.SPL
-import linalg.Fields.F2
-import linalg.Matrix
 
 case class ItProduct[U](r: Int, factor: StreamingModule[U], endLoopOpt: Option[StreamingModule[U]] = None) extends StreamingModule[U](factor.t, factor.k)(factor.hw) {
   val endLoop: StreamingModule[U] = {
