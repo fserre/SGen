@@ -26,7 +26,6 @@ package SB.Signals
 import RTL.Component
 import SB.HW.{ComplexHW, HW, Unsigned}
 import SB.SB
-import linalg.Fields.Complex
 
 case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(inputs.head.hw) {
   def isRom: Boolean = inputs.forall(_.sig.isInstanceOf[Const[_]])
@@ -43,14 +42,16 @@ case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends 
 
 object Mux {
   def apply[U](address: Sig[Int], inputs: Seq[Sig[U]]): Sig[U] = {
-    val hw = inputs.head.hw
+    require(inputs.nonEmpty)
+    val head=inputs.head
+    val hw = head.hw
     implicit val sb: SB[_] = address.sb
     require(inputs.forall(_.hw == hw))
 
     address match {
       case Const(value) => inputs(value)
       case _ => inputs match {
-        case _ if inputs.toSet.size == 1 => inputs.head
+        case _ if inputs.forall(_==head) => head
         case Seq(Mux(adrl, Seq(ll, lr)), Mux(adrr, Seq(rl, rr))) if adrl.hw.size == 1 && address.hw.size == 1 && adrr == adrl => Mux(address :: adrr, Seq(ll, lr, rl, rr))
 
         case _ => (0 until address.hw.size).find(pos => inputs.indices.forall(i => {
