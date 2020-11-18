@@ -123,7 +123,7 @@ object main extends App {
           if (mat.isInvertible)
             matrices.enqueue(mat)
           else
-            throw new IllegalArgumentException(mat + "is not invertible.")
+            throw new IllegalArgumentException(s"$mat is not invertible.")
         case mat: String => throw new IllegalArgumentException(mat + " is not a valid invertible bit-matrix.")
       }
       design=LinearPerm.stream(matrices.toSeq, k, hw)

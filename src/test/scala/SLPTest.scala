@@ -28,7 +28,7 @@ import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
 import Generators._
-import SB.{Product, SB}
+import SB.SB
 import _root_.SB.HW.Unsigned
 import SPL.LinearPerm
 import StreamingModule.StreamingModule
@@ -82,11 +82,13 @@ object SLPTest extends Properties("SLP") {
       sb.test(5).contains(0)
   }
 
-  //implicit val hw:HW[Int]=Unsigned(16)
-  implicit def shrinkSB: Shrink[StreamingModule[Int]] = Shrink {
-    case Product(factors) => factors.indices.toStream.map(i => Product[Int](factors.take(i) ++ factors.drop(i + 1)))
-    //case slp:SLP[Int] if slp.size>1 =>
-    case input => (1 until input.k).reverse.toStream.map(k => input.spl.stream(k)(Unsigned(16)))
+  implicit def shrinkSB[T]: Shrink[StreamingModule[T]] = Shrink.withLazyList {
+    case StreamingModule.Product(factors) => factors.indices.to(LazyList).map(i => StreamingModule.Product[T](factors.take(i) ++ factors.drop(i + 1)))
+    case SB.Product(factors) => factors.indices.to(LazyList).map(i => SB.Product[T](factors.take(i) ++ factors.drop(i + 1)))
+    case SB.ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => SB.ITensor(r - i, factor, k - i))
+    case StreamingModule.ItProduct(r, factor: SB.Product[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => StreamingModule.ItProduct(r, f, endLoop))
+    case StreamingModule.ItProduct(r, factor, endLoop) => (1 until r).reverse.to(LazyList).map(i => StreamingModule.ItProduct(i, factor, endLoop))
+    case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k)(input.hw))
   }
 
   val genLinPerm: Gen[StreamingModule[Int]] = for {

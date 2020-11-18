@@ -29,15 +29,14 @@ import org.scalacheck.Prop.forAll
 import org.scalacheck.{Gen, Properties, Shrink}
 
 object WHTTest extends Properties("WHT")  {
-  implicit def shrinkSB[T]:Shrink[StreamingModule[T]] = Shrink {
-      case StreamingModule.Product(factors) => factors.indices.toStream.map(i => StreamingModule.Product[T](factors.take(i) ++ factors.drop(i + 1)))
-      case SB.Product(factors) => factors.indices.toStream.map(i => SB.Product[T]( factors.take(i) ++ factors.drop(i + 1)))
-      case SB.ITensor(r,factor,k) if k>factor.n => (1 to k-factor.n).toStream.map(i=>SB.ITensor(r-i,factor,k-i))
-      case StreamingModule.ItProduct(r, factor, endLoop) => (1 until r).reverse.toStream.map(i => StreamingModule.ItProduct(i, factor, endLoop))
-      //case slp:SLP[Int] if slp.size>1 =>
-      case input => (1 until input.k).reverse.toStream.map(k => input.spl.stream(k)(input.hw))
-    }
-
+  implicit def shrinkSB[T]: Shrink[StreamingModule[T]] = Shrink.withLazyList {
+    case StreamingModule.Product(factors) => factors.indices.to(LazyList).map(i => StreamingModule.Product[T](factors.take(i) ++ factors.drop(i + 1)))
+    case SB.Product(factors) => factors.indices.to(LazyList).map(i => SB.Product[T](factors.take(i) ++ factors.drop(i + 1)))
+    case SB.ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => SB.ITensor(r - i, factor, k - i))
+    case StreamingModule.ItProduct(r, factor: SB.Product[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => StreamingModule.ItProduct(r, f, endLoop))
+    case StreamingModule.ItProduct(r, factor, endLoop) => (1 until r).reverse.to(LazyList).map(i => StreamingModule.ItProduct(i, factor, endLoop))
+    case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k)(input.hw))
+  }
 
 
   property("WHT conforms to the definition")=forAll (Gen.choose(1,10)){n=>
