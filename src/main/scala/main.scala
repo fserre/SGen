@@ -21,6 +21,8 @@
  *
  */
 
+import java.io.PrintWriter
+
 import SB._
 import StreamingModule.StreamingModule
 import _root_.SB.HW._
@@ -73,6 +75,11 @@ object main extends App {
     case None => throw new IllegalArgumentException("No design has been specified")
   }
 
+  private var _filename:Option[String]=None
+  def filename_=(arg:String): Unit=_filename=Some(arg)
+  def filename(default:String)=_filename.getOrElse(default)
+
+
   def parseHW: Option[HW[_]] = argsQ.dequeue().toLowerCase() match {
     case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned)
     case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
@@ -105,11 +112,15 @@ object main extends App {
     case _ => None
   }
 
+  io.Source.fromResource("logo.txt").getLines().foreach(println)
+  io.Source.fromResource("lic.txt").getLines().foreach(println)
+
   while (argsQ.nonEmpty) argsQ.dequeue().toLowerCase match {
     case "-n" => n = Numeric[Int].parseString(argsQ.dequeue())
     case "-k" => k = Numeric[Int].parseString(argsQ.dequeue())
     case "-r" => r = Numeric[Int].parseString(argsQ.dequeue())
     case "-hw" => hw = parseHW
+    case "-o" => filename = argsQ.dequeue()
     case "-testbench" => testbench = true
     case "-graph" => graph = true
     case "-rtlgraph" => rtlgraph = true
@@ -123,8 +134,8 @@ object main extends App {
           if (mat.isInvertible)
             matrices.enqueue(mat)
           else
-            throw new IllegalArgumentException(s"$mat is not invertible.")
-        case mat: String => throw new IllegalArgumentException(mat + " is not a valid invertible bit-matrix.")
+            throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
+        case mat: String => throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
       }
       design=LinearPerm.stream(matrices.toSeq, k, hw)
     case "wht" => design=WHT.stream(n, r, k, hw)
@@ -138,14 +149,36 @@ object main extends App {
     }
     case arg => throw new IllegalArgumentException("Unknown argument: " + arg)
   }
+
   if (graph)
     design match {
-      case imp: SB[_] => println(imp.toGraph)
+      case imp: SB[_] =>
+        val file=filename("graph.gv")
+        val pw=new PrintWriter(file)
+        pw.write(imp.toGraph)
+        pw.close()
+        println(s"Written streaming block-level graph in $file.")
       case _ => throw new Exception("Graphs can only be generated for non-iterative designs.")
     }
-  else if (rtlgraph)
-    println(design.toRTLGraph)
-  else
-    println(design.toVerilog)
+  else if (rtlgraph) {
+    val file=filename("rtl.gv")
+    val pw=new PrintWriter(file)
+    pw.write(design.toRTLGraph)
+    pw.close()
+    println(s"Written RTL-level graph in $file.")
+  }
+  else {
+    val file=filename("design.v")
+    val pw=new PrintWriter(file)
+    pw.write("/*\n")
+    io.Source.fromResource("logo.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
+    io.Source.fromResource("license.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
+    pw.write(" */\n\n")
+    pw.println(design.toVerilog)
+    if(testbench)
+      pw.write(design.getTestBench())
+    pw.close()
+    println(s"Written design in $file.")
+  }
 }
 

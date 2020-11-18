@@ -106,10 +106,6 @@ abstract class Module {
     }
 
     var result = new StringBuilder
-    result ++= "/*\n"
-    io.Source.fromResource("header.txt").getLines().foreach(l => result ++= s" * $l\n")
-    result ++= " */\n\n"
-
     result ++= s"module $name(input clk,\n"
     result ++= inputs.map(s => s"  input ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${s.id},\n").mkString("")
     result ++= outputs.map(s => s"  output ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${s.id}").mkString(",\n")
@@ -195,7 +191,7 @@ abstract class Module {
       write(graph)
       close()
     }
-    "dot -Tpdf rtl.gv -o rtl.pdf".!!
+    "Graphviz/dot -Tpdf rtl.gv -o rtl.pdf".!!
     "cmd /c start rtl.pdf".!!
   }
 }

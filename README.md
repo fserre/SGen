@@ -16,6 +16,9 @@ This should generate a streaming Walsh-Hadamard transform on 8 points.
 * `-n `*`n`* Logarithm of the size of the transform. As an example, `-n 3` means that the transform operates on 2^3=8 points. This parameter is required.
 * `-k `*`k`* Logarithm of the *streaming width* of the implementation. `-k 2` means that the resulting implementation will have 2^2=4 input ports and 4 output ports, and will perform a transform every 2^(*n*-*k*) cycles. In case where this parameter is not specified, the implementation is not *folded*, i.e. the implementation will have one input port and one output port for each data point, and will perform one transform per cycle.  
 * `-r `*`r`* Logarithm of the radix (for DFTs and WHTs). This parameter specifies the size of the base transform used in the algorithm. *r* must divide *n*, and, for compact designs (`dftcompact` and `whtcompact`), be smaller or equal to *k*. It is ignored by tranforms not requiring it (permutations). If this parameter is not specified, the highest possible radix is used.
+* `-o `*`filename`* Name of the output file.
+* `-benchmark` Adds a benchmark module in the generated design.
+* `-rtlgraph` Produces a [DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) graph representing the design.
 * `-hw `*`repr`* Hardware arithmetic representation of the input data. *`repr`* can be one of the following:
   * `char` Signed integer of 8 bits. Equivalent of `signed 8`.
   * `short` Signed integer of 16 bits. Equivalent of `signed 16`.

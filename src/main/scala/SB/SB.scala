@@ -86,7 +86,8 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
         case Next() => token(latency - advancedTime)
         case Reset() => rst
         case _: Const[_] => implemented.getOrElseUpdate((ref.i, advancedTime), ref.implement(implementComp(advancedTime)))
-        case _ => val diff = synch(ref.i) - advancedTime
+        case _ =>
+          val diff = synch(ref.i) - advancedTime
           assert(diff >= 0)
           implemented.getOrElseUpdate((ref.i, advancedTime), if (diff == 0) {
             val res = ref.implement(implementComp(advancedTime))

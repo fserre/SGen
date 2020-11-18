@@ -183,11 +183,15 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     val ext = if (System.getProperty("os.name") == "Windows 10") ".bat" else ""
 
     val outputs = testBenchInput(repeat).grouped(N).toSeq.zipWithIndex.flatMap { case (input, set) => eval(input, set) }.map(implicitly[HW[U]].valueOf)
-    new PrintWriter("test.v") {
-      write(toVerilog)
-      write(getTestBench(repeat, addedGap))
-      close()
-    }
+    val pw=new PrintWriter("test.v")
+    pw.write("/*\n")
+    io.Source.fromResource("logo.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
+    io.Source.fromResource("license.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
+    pw.write(" */\n\n")
+    pw.write(toVerilog)
+    pw.write(getTestBench(repeat, addedGap))
+    pw.close()
+
     val xvlog = (xDir + "xvlog" + ext + " test.v").!!
     dependencies.foreach(filename => (xDir + "xvhdl" + ext + " " + filename).!!)
     val xelag = (xDir + "xelab" + ext + " test").!!

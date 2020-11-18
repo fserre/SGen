@@ -31,7 +31,7 @@ import linalg.{Matrix, Vec}
 
 import scala.annotation.tailrec
 
-case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]], dualPorted:Boolean=false) extends SLP(P3.head.m, P3.head.n, P3.size) {
+case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]], dualPorted:Boolean=true) extends SLP(P3.head.m, P3.head.n, P3.size) {
   override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[_]): Seq[Sig[U]] = {
 
     val latency = (for {
