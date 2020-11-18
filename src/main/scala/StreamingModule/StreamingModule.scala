@@ -88,9 +88,11 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
 
   def eval(inputs: Seq[BigInt], set: Int): Seq[BigInt] = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
 
-  def getTestBench(input: Seq[BigInt], addedGap: Int = 0): String = {
+  def testBenchInput(repeat:Int): Seq[BigInt]=(0 until repeat*N).map(i=>hw.bitsOf(hw.num.fromInt(i)))
 
-    val repeat = input.length / N
+  def getTestBench(repeat: Int=2, addedGap: Int = 0): String = {
+
+    val input=testBenchInput(repeat)
 
     //val input = Vector.tabulate(repeat)(set => Vector.tabulate[Int](N)(i => i * 100 + set * 1000))
     //val input = Vector.tabulate(repeat)(set => Vector.tabulate[BigInt](N)(i => 0))
@@ -176,15 +178,14 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     res.toString
   }
 
-  def test(inputs: Seq[U], addedGap: Int = 0): Option[U] = {
+  def test(repeat:Int=2, addedGap: Int = 0): Option[U] = {
     val xDir = if (System.getProperty("os.name") == "Windows 10") "C:\\Xilinx\\Vivado\\2020.1\\bin\\" else "/home/serref/Xilinx/Vivado/2014.4/bin/"
     val ext = if (System.getProperty("os.name") == "Windows 10") ".bat" else ""
-    val inputsBits = inputs.map(implicitly[HW[U]].bitsOf)
 
-    val outputs = inputsBits.grouped(N).toSeq.zipWithIndex.flatMap { case (input, set) => eval(input, set) }.map(implicitly[HW[U]].valueOf)
+    val outputs = testBenchInput(repeat).grouped(N).toSeq.zipWithIndex.flatMap { case (input, set) => eval(input, set) }.map(implicitly[HW[U]].valueOf)
     new PrintWriter("test.v") {
       write(toVerilog)
-      write(getTestBench(inputsBits, addedGap))
+      write(getTestBench(repeat, addedGap))
       close()
     }
     val xvlog = (xDir + "xvlog" + ext + " test.v").!!

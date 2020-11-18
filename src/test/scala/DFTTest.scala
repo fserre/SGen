@@ -69,7 +69,7 @@ object DFTTest extends Properties("DFT") {
     if n % r == 0
   } yield DFT.CTDFT(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
   property("CTDFT") = forAll(genSteady) { sb: StreamingModule[Complex[Double]] =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
+      sb.test() match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }
@@ -86,7 +86,7 @@ object DFTTest extends Properties("DFT") {
   property("Pease") =
 
     forAll(genPease) { sb: StreamingModule[Complex[Double]] =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
+      sb.test() match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }
@@ -100,7 +100,7 @@ object DFTTest extends Properties("DFT") {
     if n % r == 0
   } yield StreamDiagC(n, r).stream(k)(ComplexHW(FixedPoint(16, 16)))
   property("DiagC") = forAll(genDiagC) { sb: StreamingModule[Complex[Double]] =>
-      sb.test(Vector.tabulate(sb.n << sb.n)(_ => Complex(1))) match {
+      sb.test() match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }
@@ -131,7 +131,7 @@ object DFTTest extends Properties("DFT") {
     if k >= r
   } yield DFT.ItPease(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
   property("ItPease")= forAll(genItPease) { sb: StreamingModule[Complex[Double]] =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
+      sb.test() match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }
@@ -161,7 +161,7 @@ object DFTTest extends Properties("DFT") {
     if k >= r
   } yield DFT.ItPeaseFused(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
   property("ItPeaseFused") = forAll(genItPeaseFused) { sb: StreamingModule[Complex[Double]] =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => Complex(i))) match {
+      sb.test() match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }

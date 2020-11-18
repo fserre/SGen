@@ -21,11 +21,11 @@
  *
  */
 
-import SB.SLP.{SLP, Steady, SwitchArray, Temporal}
+import SB.SLP.{Steady, SwitchArray, Temporal}
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
-import org.scalacheck.{Arbitrary, Gen, Properties, Shrink}
+import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
 import Generators._
 import SB.{Product, SB}
@@ -39,18 +39,18 @@ object SLPTest extends Properties("SLP") {
     k <- Gen.choose(1, 5)
     p1 <- genInvertible(k)
   } yield Steady(Vector(p1), t)(Unsigned(16))
-  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)    }
+  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  sb.test(2, gap).contains(0)    }
 
   val genSteady2: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(k))
   } yield Steady(p1, t)(Unsigned(16))
-  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)   }
+  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  sb.test(2, gap).contains(0)   }
 
   property("SwitchArray") = forAll(genVec, Gen.choose(1, 5), Gen.choose(0, 10)) { (v: Vec[F2], k, gap) =>
         val sb = SwitchArray(Vector(v), k)(Unsigned(4))
-    sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)
+    sb.test(2, gap).contains(0)
     }
 
   val genSwitch2: Gen[SB[Int]] = for {
@@ -59,7 +59,7 @@ object SLPTest extends Properties("SLP") {
     v <- Gen.containerOfN[Vector, Vec[F2]](2, genVec(t))
   } yield SwitchArray(v, k)(Unsigned(16))
   property("SwitchArray 2") = forAll(genSwitch2, Gen.choose(0, 10)) { (sb, gap) =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)
+      sb.test(2, gap).contains(0)
     }
 
   val genTemporal: Gen[SB[Int]] = for {
@@ -69,7 +69,7 @@ object SLPTest extends Properties("SLP") {
     p3 <- genMatrix(t, k)
   } yield Temporal(Vector(p3), Vector(p4))(Unsigned(16))
   property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => i), gap).contains(0)
+      sb.test(2, gap).contains(0)
   }
 
   val genTemporal2: Gen[SB[Int]] = for {
@@ -79,7 +79,7 @@ object SLPTest extends Properties("SLP") {
     p3 <- Gen.containerOfN[Vector, Matrix[F2]](2, genMatrix(t, k))
   } yield Temporal(p3, p4)(Unsigned(16))
   property("Temporal2") =  forAll(genTemporal2) { sb =>
-      sb.test(Vector.tabulate(5 << sb.n)(i => i)).contains(0)
+      sb.test(5).contains(0)
   }
 
   //implicit val hw:HW[Int]=Unsigned(16)
@@ -98,7 +98,7 @@ object SLPTest extends Properties("SLP") {
 
 
   property("LinearPerm") = forAll(genLinPerm) { sb =>
-      sb.test(Vector.tabulate(3 << sb.n)(i => i)).contains(0)
+      sb.test(3).contains(0)
   }
 
 

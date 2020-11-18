@@ -54,7 +54,7 @@ object WHTTest extends Properties("WHT")  {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
   } yield WHT[Double](t + k, 1).stream(k)(FixedPoint(16, 0))
-  property("CTWHT")=  forAll(genSteady) { sb:StreamingModule[Double] => sb.test(Vector.tabulate(2 << sb.n)(i => i)) match{
+  property("CTWHT")=  forAll(genSteady) { sb:StreamingModule[Double] => sb.test() match{
         case Some(value) if value<0.01 => true
         case _ => false
       }}
@@ -81,7 +81,7 @@ object WHTTest extends Properties("WHT")  {
     if n % r == 0
   } yield WHT.Pease[Double](n, r).stream(k)(FixedPoint(16, 0))
   property("PeaseWHT") =    forAll(peaseWHT) { sb: StreamingModule[Double] =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => i)) match {
+      sb.test() match {
         case Some(value) if value < 0.01 => true
         case _ => false
       }
@@ -97,7 +97,7 @@ object WHTTest extends Properties("WHT")  {
   property("ItPeaseWHT") =
 
     forAll(itpeaseWHT) { sb: StreamingModule[Double] =>
-      sb.test(Vector.tabulate(2 << sb.n)(i => i)) match {
+      sb.test() match {
         case Some(value) if value < 0.01 => true
         case _ => false
       }
