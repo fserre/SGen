@@ -62,7 +62,7 @@ object DFT {
     if (n == 1)
       DFT2()
     else
-      LinearPerm(LinearPerm.Rmat(r, n),true) * ItProduct(n / r, StreamDiagC(n, r) * ITensor(n - r, CTDFT(r, 1,true)) * LinearPerm(LinearPerm.Lmat(r, n).inverse,true))
+      LinearPerm(LinearPerm.Rmat(r, n),dualPorted = true) * ItProduct(n / r, StreamDiagC(n, r) * ITensor(n - r, CTDFT(r, 1,dualPorted = true)) * LinearPerm(LinearPerm.Lmat(r, n).inverse,dualPorted = true))
   }
 
   def ItPeaseFused(n: Int, r: Int): SPL[Complex[Double]] = {
@@ -70,7 +70,7 @@ object DFT {
     if (n == 1)
       DFT2()
     else
-      ItProduct(n / r + 1, LinearPerm(Seq.fill(n / r)(LinearPerm.Lmat(r, n).inverse) :+ LinearPerm.Rmat(r, n),true), Some(StreamDiagC(n, r) * ITensor(n - r, CTDFT(r, 1,true))))
+      ItProduct(n / r + 1, LinearPerm(Seq.fill(n / r)(LinearPerm.Lmat(r, n).inverse) :+ LinearPerm.Rmat(r, n),dualPorted = true), Some(StreamDiagC(n, r) * ITensor(n - r, CTDFT(r, 1,dualPorted = true))))
   }
   def stream(n: Int, r: Int, k: Int, hw: HW[Complex[Double]],dualPorted:Boolean): StreamingModule[Complex[Double]] = CTDFT(n, r,dualPorted).stream(k)(hw)
 }

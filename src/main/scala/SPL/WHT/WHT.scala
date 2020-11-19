@@ -58,7 +58,7 @@ object WHT {
     if (n == 1)
       DFT2[T]()
     else
-      ItProduct(n / r, ITensor(n - r, apply(r, 1,true)) * LinearPerm(LinearPerm.Lmat(r, n).inverse,true))
+      ItProduct(n / r, ITensor(n - r, apply(r, 1,dualPorted = true)) * LinearPerm(LinearPerm.Lmat(r, n).inverse,dualPorted = true))
   }
 
   def stream[T](n: Int, r: Int, k: Int, hw: HW[T],dualPorted:Boolean): StreamingModule[T] = WHT[T](n, r,dualPorted)(hw.num).stream(k)(hw)

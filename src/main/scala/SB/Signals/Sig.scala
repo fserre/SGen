@@ -84,11 +84,11 @@ object Sig {
 
     def ^(rhs: Sig[Int]):Sig[Int] = Xor(Vector(lhs, rhs))
 
-    def unary_^():Sig[Int] = RedXor(lhs)
+    def unary_^ : Sig[Int] = RedXor(lhs)
 
-    def unary_~():Sig[Int] = Not(lhs)
+    def unary_~ : Sig[Int] = Not(lhs)
 
-    def scalar(rhs: Sig[Int]):Sig[Int] = (lhs & rhs).unary_^()
+    def scalar(rhs: Sig[Int]):Sig[Int] = (lhs & rhs).unary_^
 
     def ?[T](inputs: (Sig[T],Sig[T])):Sig[T] = Mux(lhs, Vector(inputs._2, inputs._1))
 

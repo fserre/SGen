@@ -64,7 +64,6 @@ object Spatial {
   def apply[U: HW](P2: Seq[Matrix[F2]]): StreamingModule[U] = {
     val t = P2.head.n
     val k = P2.head.m
-    val n = t + k
     val P2concat = P2.reduce(_ :: _)
     val L = (P2concat.range :: P2concat.range.complement).inverse
     val LP2 = P2.map(L * _)

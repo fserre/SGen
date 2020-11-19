@@ -41,7 +41,7 @@ abstract class Module {
   lazy val name: String = this.getClass.getSimpleName.toLowerCase
   val dependencies: mutable.Set[String] = mutable.Set[String]()
 
-  def description=Iterator[String]()
+  def description: Iterator[String] =Iterator[String]()
 
   final def toVerilog: String = {
     val names = mutable.AnyRefMap[Component, String]()
@@ -147,10 +147,8 @@ abstract class Module {
 
     def addNode(line: String*): Unit = line.foreach(nodes ++= "      " ++= _ ++= "\n")
 
-    def addEdge(dest: Component, origins: Seq[Component]): Unit = origins.foreach {
-      //case o: Wire => edges ++= s"  ${getName(o.input)} -> ${getName(dest)}[constraint=false,penwidth=${1 + BigInt(o.size).bitLength}];\n"
-      case o => edges ++= s"  ${getName(o)} -> ${getName(dest)}[penwidth=${1 + BigInt(o.size).bitLength}];\n"
-    }
+    def addEdge(dest: Component, origins: Seq[Component]): Unit = origins.foreach(//case o: Wire => edges ++= s"  ${getName(o.input)} -> ${getName(dest)}[constraint=false,penwidth=${1 + BigInt(o.size).bitLength}];\n"
+      o => edges ++= s"  ${getName(o)} -> ${getName(dest)}[penwidth=${1 + BigInt(o.size).bitLength}];\n")
 
     while (toImplement.nonEmpty) {
       val cur = toImplement.dequeue()

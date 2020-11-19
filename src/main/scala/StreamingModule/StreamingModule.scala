@@ -45,7 +45,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
 
   override lazy val name: String = spl.getClass.getSimpleName.toLowerCase
 
-  override def description = io.Source.fromResource("streaming.txt").getLines().
+  override def description: Iterator[String] = io.Source.fromResource("streaming.txt").getLines().
     filterNot(s=>(s contains "full-throughput") && minGap!=0).
     filterNot(s=>(s contains "requires a delay") && minGap==0).
     filterNot(s=>((s contains "single-ported memory") || (s contains "additional cycles")|| (s contains "-dualport")) && !hasSinglePortedMem).
