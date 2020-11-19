@@ -34,4 +34,6 @@ case class ITensor[T](r: Int, factor: SB[T], override val k: Int) extends SB[T](
     factor.implement(inputs)
 
   override def spl: SPL[T] = SPL.ITensor(r,factor.spl)
+
+  override def hasSinglePortedMem: Boolean = factor.hasSinglePortedMem
 }

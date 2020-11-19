@@ -67,9 +67,11 @@ object SLPTest extends Properties("SLP") {
     k <- Gen.choose(1, 2)
     p4 <- genInvertible(t)
     p3 <- genMatrix(t, k)
-  } yield Temporal(Vector(p3), Vector(p4))(Unsigned(16))
+    dp <- Gen.oneOf(true,false)
+  } yield Temporal(Vector(p3), Vector(p4),dp)(Unsigned(16))
   property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
-      sb.test(2, gap).contains(0)
+  val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
+      sb.test(2, gap2).contains(0)
   }
 
   val genTemporal2: Gen[SB[Int]] = for {
@@ -77,7 +79,8 @@ object SLPTest extends Properties("SLP") {
     k <- Gen.choose(1, 5)
     p4 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(t))
     p3 <- Gen.containerOfN[Vector, Matrix[F2]](2, genMatrix(t, k))
-  } yield Temporal(p3, p4)(Unsigned(16))
+    dp <- Gen.oneOf(true,false)
+  } yield Temporal(p3, p4,dp)(Unsigned(16))
   property("Temporal2") =  forAll(genTemporal2) { sb =>
       sb.test(5).contains(0)
   }
@@ -96,7 +99,8 @@ object SLPTest extends Properties("SLP") {
     k <- Gen.choose(5, 5)
     n = t + k
     p <- genInvertible(n)
-  } yield LinearPerm[Int](Seq(p)).stream(k)(Unsigned(16)) //(LinearPerm[Int](Seq(p)), k)
+    dp <- Gen.oneOf(true,false)
+  } yield LinearPerm[Int](Seq(p),dp).stream(k)(Unsigned(16)) //(LinearPerm[Int](Seq(p)), k)
 
 
   property("LinearPerm") = forAll(genLinPerm) { sb =>

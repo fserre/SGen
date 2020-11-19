@@ -42,9 +42,9 @@ object Product extends AssociativeNodeCompanionT[SPL,Product] {
     (lhs, rhs) match {
       case (Identity(), rhs) => Left(rhs)
       case (lhs, Identity()) => Left(lhs)
-      case (LinearPerm(lhs), LinearPerm(rhs)) =>
+      case (LinearPerm(lhs,ldp), LinearPerm(rhs,rdp)) =>
         val size =Utils.lcm(lhs.size, rhs.size)
-        Left(LinearPerm(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size))))
+        Left(LinearPerm(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size)),ldp||rdp))
       case _ => Right((lhs,rhs))
     }
     }

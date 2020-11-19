@@ -39,8 +39,8 @@ object WHTTest extends Properties("WHT")  {
   }
 
 
-  property("WHT conforms to the definition")=forAll (Gen.choose(1,10)){n=>
-      val sb = WHT[Double](n, 1) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
+  property("WHT conforms to the definition")=forAll (Gen.choose(1,10),Gen.oneOf(true,false)){(n,dp)=>
+      val sb = WHT[Double](n, 1,dp) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res=(0 until (1<<n)).map (j=> Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Double]](_ :: _)
@@ -52,7 +52,8 @@ object WHTTest extends Properties("WHT")  {
   val genSteady: Gen[StreamingModule[Double]] = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
-  } yield WHT[Double](t + k, 1).stream(k)(FixedPoint(16, 0))
+    dp <- Gen.oneOf(true,false)
+  } yield WHT[Double](t + k, 1,dp).stream(k)(FixedPoint(16, 0))
   property("CTWHT")=  forAll(genSteady) { sb:StreamingModule[Double] => sb.test() match{
         case Some(value) if value<0.01 => true
         case _ => false
@@ -62,8 +63,9 @@ object WHTTest extends Properties("WHT")  {
     n <- Gen.choose(2,10)
     r <- Gen.choose(1, n-1)
     if n % r == 0
-  } yield (n,r)) { case (n,r) =>
-      val sb = WHT.Pease[Double](n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
+    dp <- Gen.oneOf(true,false)
+  } yield (n,r,dp)) { case (n,r,dp) =>
+      val sb = WHT.Pease[Double](n, r,dp) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res = (0 until (1 << n)).map(j => Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Double]](_ :: _)
@@ -78,7 +80,8 @@ object WHTTest extends Properties("WHT")  {
     n = t + k
     r <- Gen.choose(1, n)
     if n % r == 0
-  } yield WHT.Pease[Double](n, r).stream(k)(FixedPoint(16, 0))
+    dp <- Gen.oneOf(true,false)
+  } yield WHT.Pease[Double](n, r,dp).stream(k)(FixedPoint(16, 0))
   property("PeaseWHT") =    forAll(peaseWHT) { sb: StreamingModule[Double] =>
       sb.test() match {
         case Some(value) if value < 0.01 => true

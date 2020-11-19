@@ -1,9 +1,12 @@
-It operates on datasets of SIZE elements, streamed over DATADURATION cycles of STREAMINGWIDTH elements. This means that
+This design operates on datasets of SIZE elements, streamed over DATADURATION cycles of STREAMINGWIDTH elements. This means that
 each dataset has to be split into chunks of STREAMINGWIDTH elements that are input sequentially every cycle.
 It has a latency of LATENCY cycles: the output will begin LATENCY cycles after the input has begun.
 It supports full-throughput, which means that a new dataset may be input immediately after the previous one.
 It requires a delay of GAP cycles between datasets.
 In total, this design can therefore perform a new transformation every TOTALGAP cycles.
+As single-ported memory is used, there must be precisely TOTALGAP cycles between datasets.
+Otherwise, at least DATADURATION additional cycles must be added to ensure that the first output dataset does not get corrupted.
+Use the -dualport option to use dual-ported memory instead (use more resources).
 
 The interface works as follows:
 - clk: The input clock, a cycle begins on ascending edge.
@@ -12,10 +15,8 @@ The interface works as follows:
         Particularly, it should not be set to 1 more than once every TOTALGAP cycles, as it might leave the design in a
         confused state, that can only be recovered with a reset.
 - next_out: Indicates that a new dataset begins to output.
-- INPUTS: The components of the chunks of the dataset.
+- INPUTS: The components of the chunks of the dataset. Each of these elements is a HW.
 - OUTPUTS: The components of the chunks of the output dataset.
-
-An example of use of this design for simulation is given in the file benchmark.v.
 
 If you would like to refer to this design, the following publications describe the methods used for its generation:
 - Streaming permutations: F. Serre, T. Holenstein and M. Püschel, Optimal Circuits for Streamed Linear Permutations using RAM, Proc. FPGA, pp. 215-223, 2016

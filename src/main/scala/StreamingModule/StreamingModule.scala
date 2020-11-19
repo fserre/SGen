@@ -45,6 +45,24 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
 
   override lazy val name: String = spl.getClass.getSimpleName.toLowerCase
 
+  override def description = io.Source.fromResource("streaming.txt").getLines().
+    filterNot(s=>(s contains "full-throughput") && minGap!=0).
+    filterNot(s=>(s contains "requires a delay") && minGap==0).
+    filterNot(s=>((s contains "single-ported memory") || (s contains "additional cycles")|| (s contains "-dualport")) && !hasSinglePortedMem).
+    map(_.
+    replace("SIZE",N.toString).
+    replace("DATADURATION",T.toString).
+    replace("STREAMINGWIDTH",K.toString).
+      replace("LATENCY",latency.toString).
+      replace("TOTALGAP",(minGap+T).toString).
+      replace("GAP",minGap.toString).
+      replace("INPUTS",s"i0 - i${K-1}").
+      replace("OUTPUTS",s"o0 - o${K-1}").
+      replace("START",if(nextAt==0) "at the same time as" else if(nextAt>0) s"$nextAt cycles after" else s"${-nextAt} cycles before").
+      replace("HW",hw.description)
+  )
+    /*filterNot(s=>(s contains "Computer Generation") && params("arch")!="full" && params("arch")!="iter").
+    filterNot(s=>(s contains "Memory-Efficient") && params("arch")!="fused")*/
 
   def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component]
 
@@ -52,6 +70,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
 
   def minGap = 0
 
+  def hasSinglePortedMem:Boolean=false
 
   lazy val dataInputs: Vector[Input] = Vector.tabulate(K)(i => new Input(busSize, "i" + i))
   val reset = new Input(1, "reset")

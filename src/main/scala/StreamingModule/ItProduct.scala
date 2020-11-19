@@ -51,6 +51,8 @@ case class ItProduct[U](r: Int, factor: StreamingModule[U], endLoopOpt: Option[S
   override val latency: Int = (r - 1) * innerLatency + factor.latency + 1
   override val minGap: Int = (r - 1) * innerLatency
   override val spl: SPL[U] = SPL.ItProduct(r, factor.spl, endLoopOpt.map(_.spl))
+
+  override def hasSinglePortedMem: Boolean = factor.hasSinglePortedMem
 }
 
 object ItProduct {

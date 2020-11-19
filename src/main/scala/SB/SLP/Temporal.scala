@@ -31,7 +31,7 @@ import linalg.{Matrix, Vec}
 
 import scala.annotation.tailrec
 
-case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]], dualPorted:Boolean=true) extends SLP(P3.head.m, P3.head.n, P3.size) {
+case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]], dualPorted:Boolean) extends SLP(P3.head.m, P3.head.n, P3.size) {
   override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[_]): Seq[Sig[U]] = {
 
     val latency = (for {
@@ -101,13 +101,15 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
     else
       inputs.zipWithIndex.map { case (i, p) => SinglePortedRAM(i, addressesWrite(p), latency, T) }
   }
+
+  override def hasSinglePortedMem: Boolean = !dualPorted
 }
 
 object Temporal {
-  def apply[U: HW](P3: Seq[Matrix[F2]], P4: Seq[Matrix[F2]]): SB[U] = if (P3.forall(_.isZero) && P4.forall(_.isIdentity))
+  def apply[U: HW](P3: Seq[Matrix[F2]], P4: Seq[Matrix[F2]], dualPorted:Boolean): SB[U] = if (P3.forall(_.isZero) && P4.forall(_.isIdentity))
     Identity(P3.head.m, P3.head.n)
   else
-    new Temporal(P3, P4)
+    new Temporal(P3, P4,dualPorted)
 
-  def apply[U: HW](P3: Matrix[F2], P4: Matrix[F2]): SB[U] = Temporal(Seq(P3), Seq(P4))
+  def apply[U: HW](P3: Matrix[F2], P4: Matrix[F2], dualPorted:Boolean): SB[U] = Temporal(Seq(P3), Seq(P4),dualPorted)
 }

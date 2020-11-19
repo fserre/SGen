@@ -28,6 +28,14 @@ import SB.Signals.{Operator, Sig, SigRef}
 
 case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1) {
   that =>
+
+  override def description: String = if(wE==8 && wF==23)
+  "IEEE754 single precision floating-point"
+  else if  (wE==11 && wF==52)
+    "IEEE754 double precision floating-point"
+  else
+    s"floating-point number in IEEE754 format (1 bit sign, $wE bits exponent, $wF bits mantissa)"
+
   private val filename = "flopoco/ieee_" + wE + "_" + wF + ".vhdl"
   private val path = java.nio.file.Paths.get(filename)
   if (!java.nio.file.Files.isRegularFile(path)) {

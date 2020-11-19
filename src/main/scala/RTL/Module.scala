@@ -40,6 +40,9 @@ abstract class Module {
 
   lazy val name: String = this.getClass.getSimpleName.toLowerCase
   val dependencies: mutable.Set[String] = mutable.Set[String]()
+
+  def description=Iterator[String]()
+
   final def toVerilog: String = {
     val names = mutable.AnyRefMap[Component, String]()
     val toImplement = mutable.Queue[Component]()
@@ -92,7 +95,7 @@ abstract class Module {
         case cur:Mux =>
           addComb("always @(*)")
           addComb(s"  case(${cur.address.id})")
-          cur.inputs.zipWithIndex.foreach { case (in, i) => addComb(s"    ${if (i == inputs.size - 1 && ((1 << cur.address.size) != inputs.size)) "default" else i}: ${cur.id} <= ${in.id};") }
+          cur.inputs.zipWithIndex.foreach { case (in, i) => addComb(s"    ${if (i == cur.inputs.size - 1 && ((1 << cur.address.size) != cur.inputs.size)) "default" else i}: ${cur.id} <= ${in.id};") }
           addComb("  endcase")
         case cur:Concat => addComb(s"assign ${cur.id} = {${cur.inputs.map(_.id).mkString(", ")}};")
         case cur:Tap => addComb(s"assign ${cur.id} = ${cur.input.id}[${if (cur.range.size > 1) s"${cur.range.last}:" else ""}${cur.range.start}];")
@@ -106,6 +109,9 @@ abstract class Module {
     }
 
     var result = new StringBuilder
+    result ++= "/*\n"
+    description.foreach(l=>result ++= s" * $l\n")
+    result ++= " */\n"
     result ++= s"module $name(input clk,\n"
     result ++= inputs.map(s => s"  input ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${s.id},\n").mkString("")
     result ++= outputs.map(s => s"  output ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${s.id}").mkString(",\n")
@@ -125,7 +131,7 @@ abstract class Module {
     val toImplement = mutable.Queue[Component]()
     toImplement.enqueueAll(outputs)
 
-    implicit def getName(comp: Component): String = comp match {
+    def getName(comp: Component): String = comp match {
       case comp: Input => s"inputs:${comp.name}"
       case comp: Output => s"outputs:${comp.name}"
       case _ => if (!(names contains comp)) {
@@ -142,29 +148,29 @@ abstract class Module {
     def addNode(line: String*): Unit = line.foreach(nodes ++= "      " ++= _ ++= "\n")
 
     def addEdge(dest: Component, origins: Seq[Component]): Unit = origins.foreach {
-      case o: Wire => edges ++= s"  ${o.input} -> $dest[constraint=false,penwidth=${1 + BigInt(o.size).bitLength}];\n"
-      case o => edges ++= s"  $o -> $dest[penwidth=${1 + BigInt(o.size).bitLength}];\n"
+      //case o: Wire => edges ++= s"  ${getName(o.input)} -> ${getName(dest)}[constraint=false,penwidth=${1 + BigInt(o.size).bitLength}];\n"
+      case o => edges ++= s"  ${getName(o)} -> ${getName(dest)}[penwidth=${1 + BigInt(o.size).bitLength}];\n"
     }
 
     while (toImplement.nonEmpty) {
       val cur = toImplement.dequeue()
       cur match {
         case _: Output | _: Input | _:RAMWr =>
-        case _: Register => addNode(s"""$cur[label="",shape=square];""")
-        case _: Plus => addNode(s"""$cur[label="+",shape=circle];""")
-        case _: Or => addNode(s"""$cur[label="|",shape=circle];""")
-        case _: Xor => addNode(s"""$cur[label="^",shape=circle];""")
-        case _: And => addNode(s"""$cur[label="&",shape=circle];""")
-        case _: Minus => addNode(s"""$cur[label="-",shape=circle];""")
-        case cur: Const => addNode(s"""$cur[label="${cur.value}",shape=none];""")
-        case cur: Tap => addNode(s"""$cur[label="[${if (cur.range.size > 1) s"${cur.range.last}:" else ""}${cur.range.start}]",shape=triangle,orientation=270];""")
+        case _: Register => addNode(s"""${getName(cur)}[label="",shape=square];""")
+        case _: Plus => addNode(s"""${getName(cur)}[label="+",shape=circle];""")
+        case _: Or => addNode(s"""${getName(cur)}[label="|",shape=circle];""")
+        case _: Xor => addNode(s"""${getName(cur)}[label="^",shape=circle];""")
+        case _: And => addNode(s"""${getName(cur)}[label="&",shape=circle];""")
+        case _: Minus => addNode(s"""${getName(cur)}[label="-",shape=circle];""")
+        case cur: Const => addNode(s"""${getName(cur)}[label="${cur.value}",shape=none];""")
+        case cur: Tap => addNode(s"""${getName(cur)}[label="[${if (cur.range.size > 1) s"${cur.range.last}:" else ""}${cur.range.start}]",shape=triangle,orientation=270];""")
         case cur: Mux => if (cur.inputs.forall(_.isInstanceOf[Const]))
-          addNode(s"""$cur [label="<title>ROM (${cur.inputs.size} × ${cur.size} bits) |${cur.inputs.map(_.asInstanceOf[Const].value.toString).mkString("|")}",shape=record];""")
+          addNode(s"""${getName(cur)} [label="<title>ROM (${cur.inputs.size} × ${cur.size} bits) |${cur.inputs.map(_.asInstanceOf[Const].value.toString).mkString("|")}",shape=record];""")
         else
-          addNode(s"""$cur[label="",shape=invhouse,orientation=90];""")
-        case cur:RAMRd => addNode(s"""$cur[label="RAM bank (${1 << cur.rdAddress.size} × ${cur.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record];""")
-        case cur:Extern => addNode(s"""$cur[label="${cur.module}"];""")
-        case _ => addNode(s"""$cur[label="${cur.getClass.getSimpleName}"];""")
+          addNode(s"""${getName(cur)}[label="",shape=invhouse,orientation=90];""")
+        case cur:RAMRd => addNode(s"""${getName(cur)}[label="RAM bank (${1 << cur.rdAddress.size} × ${cur.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record];""")
+        case cur:Extern => addNode(s"""${getName(cur)}[label="${cur.module}"];""")
+        case _ => addNode(s"""${getName(cur)}[label="${cur.getClass.getSimpleName}"];""")
       }
 
       cur match {

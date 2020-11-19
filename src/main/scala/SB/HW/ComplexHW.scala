@@ -38,4 +38,6 @@ case class ComplexHW[T](hw:HW[T]) extends HW[Complex[T]](hw.size*2)(Complex.Comp
   override def bitsOf(const: Complex[T]): BigInt = (hw.bitsOf(const.im) << hw.size) + hw.bitsOf(const.re)
 
   override def valueOf(const: BigInt): Complex[T] = Complex(hw.valueOf(((BigInt(1)<<hw.size)-1) & const),hw.valueOf(const>>hw.size))(hw.num)
+
+  override def description: String = "complex number in cartesian form (real and imaginary part are concatenated, each being a "+hw.description+")"
 }

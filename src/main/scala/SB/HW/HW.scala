@@ -36,6 +36,8 @@ import linalg.Fields.Complex
 abstract class HW[T: Numeric](val size: Int) {
   final val num = implicitly[Numeric[T]]
 
+  def description:String
+
   def plus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
 
   def minus(lhs: Sig[T], rhs: Sig[T]): Sig[T]

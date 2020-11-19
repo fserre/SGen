@@ -40,6 +40,7 @@ object main extends App {
   var testbench: Boolean = false
   var graph: Boolean = false
   var rtlgraph: Boolean = false
+  var dualPort:Boolean=false
   var _n: Option[Int] = None
   def n_=(arg: Option[Int]): Unit = _n = arg
   def n: Int = _n match {
@@ -122,6 +123,7 @@ object main extends App {
     case "-hw" => hw = parseHW
     case "-o" => filename = argsQ.dequeue()
     case "-testbench" => testbench = true
+    case "-dualport" => dualPort = true
     case "-graph" => graph = true
     case "-rtlgraph" => rtlgraph = true
     case "lp" =>
@@ -137,10 +139,10 @@ object main extends App {
             throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
         case mat: String => throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
       }
-      design=LinearPerm.stream(matrices.toSeq, k, hw)
-    case "wht" => design=WHT.stream(n, r, k, hw)
+      design=LinearPerm.stream(matrices.toSeq, k, hw, dualPort)
+    case "wht" => design=WHT.stream(n, r, k, hw,dualPort)
     case "dft" => hw match {
-      case hw: ComplexHW[Double@unchecked] if hw.innerHW.num.zero.isInstanceOf[Double] => design=DFT.stream(n, r, k, hw)
+      case hw: ComplexHW[Double@unchecked] if hw.innerHW.num.zero.isInstanceOf[Double] => design=DFT.stream(n, r, k, hw,dualPort)
       case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")
     }
     case "dftcompact" => hw match {

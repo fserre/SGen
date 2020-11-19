@@ -72,6 +72,8 @@ case class FixedPoint(magnitude: Int, fractional: Int) extends HW[Double](magnit
     else
       const.toDouble / Math.pow(2, fractional)
   }
+
+  override def description: String = if (fractional==0) s"$magnitude-bits signed integer in two's complement format" else s"signed fixed-point number ($magnitude.$fractional bits representation)"
 }
 
 

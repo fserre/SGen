@@ -138,6 +138,8 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE+wF+3) {
         res
     }
   }
+
+  override def description: String = s"floating-point number in FloPoCo format (wE=$wE, wF=$wF)"
 }
 
 

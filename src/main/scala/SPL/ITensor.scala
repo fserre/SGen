@@ -45,7 +45,7 @@ object ITensor{
     factor match{
       case Product(factors) => Product(factors.map(ITensor(r, _)))
       case ITensor(r2, factor) => ITensor(r + r2, factor)
-      case LinearPerm(matrices) => LinearPerm(matrices.map(m => Matrix.identity[F2](r) oplus m))
+      case LinearPerm(matrices,dualPorted) => LinearPerm(matrices.map(m => Matrix.identity[F2](r) oplus m),dualPorted)
     case factor:Repeatable[T] => new ITensor(r,factor)
       case _ => throw new Exception("Non repeatable SPL used in ITensor: " + factor)
   }

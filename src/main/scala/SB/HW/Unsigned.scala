@@ -51,5 +51,7 @@ case class Unsigned(_size: Int) extends HW[Int](_size) {
   override def bitsOf(const: Int): BigInt = BigInt(const) & mask
 
   override def valueOf(const: BigInt): Int = const.toInt
+
+  override def description: String = s"$size-bits unsigned integer"
 }
 

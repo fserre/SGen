@@ -41,7 +41,7 @@ abstract class SLP[U: HW](t: Int, k: Int, val size: Int) extends SB(t, k) {
   def P1: Seq[Matrix[F2]] = Vector.fill(size)(Matrix.identity[F2](k))
 
   lazy val P: Seq[Matrix[F2]] = Vector.tabulate(size)(j => (P4(j) :: P3(j)) / (P2(j) :: P1(j)))
-  override lazy val spl: SPL[U] = LinearPerm(P)
+  override lazy val spl: SPL[U] = LinearPerm(P,!hasSinglePortedMem)
   /*def isTemporal=P2.forall(_.isZero()) && P1.forall(_.isIdentity())
   def isSpatial=P3.forall(_.isZero()) && P4.forall(_.isIdentity())
   def isSimple=isTemporal || isSpatial*/

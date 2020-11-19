@@ -37,6 +37,8 @@ class Product[U] private (override val list: Seq[SB[U]]) extends SB[U](list.head
   override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[_]): Seq[Sig[U]] = list.foldRight(inputs)(_ implement _)
 
   override def spl: SPL[U] = SPL.Product(list.map(_.spl))
+
+  override def hasSinglePortedMem: Boolean = list.exists(_.hasSinglePortedMem)
 }
 
 object Product extends AssociativeNodeCompanionT[SB,Product] {

@@ -46,6 +46,8 @@ class Product[U] private (override val list: Seq[StreamingModule[U]]) extends St
 
   override def minGap: Int = list.map(_.minGap).max
   override def latency: Int = list.map(_.latency).sum
+
+  override def hasSinglePortedMem: Boolean = list.exists(_.hasSinglePortedMem)
 }
 
 object Product extends AssociativeNodeCompanionT[StreamingModule,Product] {
