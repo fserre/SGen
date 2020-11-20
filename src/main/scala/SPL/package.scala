@@ -21,11 +21,8 @@
  *
  */
 
-name := "SGen"
-organization := "fserre"
-version := "0.1"
-scalaVersion := "2.13.4"
-//scalacOptions ++=  Seq("-doc-root-content", file("rootdoc.txt").getAbsolutePath)
-mainClass in (Compile, run) := Some("main")
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.15.1" % "test"
-parallelExecution in Test := false
+/** DSL representing linear algebra operations by matrices and operators on these matrices.
+ *
+ * @see [[https://doi.org/10.1145/3359754 TRETS'2019 article]]
+ * */
+package object SPL {}
