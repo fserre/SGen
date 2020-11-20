@@ -10,15 +10,21 @@ cd sgen
 sbt "run -n 3 wht"
 ```
 
-This should generate a streaming Walsh-Hadamard transform on 8 points.
+This generates a streaming Walsh-Hadamard transform on 8 points.
 
-## Parameters
+## Command-line interface
+A command line consists of a list parameters followed by the desired transform. 
+
+### Parameters
+The following parameters can be used:
 * `-n `*`n`* Logarithm of the size of the transform. As an example, `-n 3` means that the transform operates on 2^3=8 points. This parameter is required.
 * `-k `*`k`* Logarithm of the *streaming width* of the implementation. `-k 2` means that the resulting implementation will have 2^2=4 input ports and 4 output ports, and will perform a transform every 2^(*n*-*k*) cycles. In case where this parameter is not specified, the implementation is not *folded*, i.e. the implementation will have one input port and one output port for each data point, and will perform one transform per cycle.  
 * `-r `*`r`* Logarithm of the radix (for DFTs and WHTs). This parameter specifies the size of the base transform used in the algorithm. *r* must divide *n*, and, for compact designs (`dftcompact` and `whtcompact`), be smaller or equal to *k*. It is ignored by tranforms not requiring it (permutations). If this parameter is not specified, the highest possible radix is used.
 * `-o `*`filename`* Name of the output file.
 * `-benchmark` Adds a benchmark module in the generated design.
 * `-rtlgraph` Produces a [DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) graph representing the design.
+* `-dualport` Uses dual-ported memory (instead of single-ported RAM). This option yields designs that use more resources, but that have more flexible timing constraints (see the description in generated files). This option is automatically enabled for compact designs.
+* `-zip` Creates a zip file containing the design and its dependencies (e.g. FloPoCo modules). 
 * `-hw `*`repr`* Hardware arithmetic representation of the input data. *`repr`* can be one of the following:
   * `char` Signed integer of 8 bits. Equivalent of `signed 8`.
   * `short` Signed integer of 16 bits. Equivalent of `signed 16`.
@@ -40,8 +46,9 @@ This should generate a streaming Walsh-Hadamard transform on 8 points.
   * `ieee754 `*`wE wF`* IEEE754 floating point representation with an exponent size of *wE* bits, and a mantissa of *wF* bits. Arithmetic operations are performed using [FloPoCo](http://flopoco.gforge.inria.fr/). Note that, unless otherwise specified when generating FloPoCo operators, denormal numbers are flushed to zero.
   * `complex `*`repr`* Cartesian complex number. Represented by the concatenation of its coordinates, each represented using *repr* arithmetic representation.
   
-## Transforms
-### Streaming linear permutations
+### Transforms
+Supported transforms are the following:
+#### Streaming linear permutations
 [Linear permutations](https://acl.inf.ethz.ch/research/hardware/perms/) can be implemented using the `lp` command:
 ```
 # generates a bit-reversal permutation on 32 points, streamed on 2^2=4 ports.
@@ -56,14 +63,14 @@ Several bit-matrices can be listed (seperated by a space) to generate a datapath
 
 The resulting implementation supports *full throughput*, meaning that no delay is required between two datasets.
 
-### Fourier Transforms (full throughput)
+#### Fourier Transforms (full throughput)
 Fourier transforms (with full-throughput, i.e. without delay between datasets) can be generated using the `dft` command:
 ```
 # generates a Fourier transform on 16 points, streamed on 4 ports, with fixed-point complex datatype with a mantissa of 8 bits and an exponent of 8 bits.
 sbt "run -n 4 -k 2 -hw complex fixedpoint 8 8 dft"
 ```
 
-### Fourier Transforms (compact design)
+#### Fourier Transforms (compact design)
 Fourier transforms (with an architecture that reuses several times the same hardware) can be generated using the `dftcompact` command:
 ```
 # generates a Fourier transform on 1024 points, streamed on 8 ports, with fixed-point complex datatype with a mantissa of 8 bits and an exponent of 8 bits.

@@ -21,14 +21,9 @@
  *
  */
 
-import scala.annotation.tailrec
+package SB
 
-/** Helper functions and classes. */
-package object Utils {
-  @tailrec
-  def gcd(a: Int, b: Int): Int = if (b == 0) a.abs else gcd(b, a % b)
+/** Collection of signals (nodes) to be used in streaming blocks. */
+package object Signals {
 
-  def lcm(a: Int, b: Int): Int = (a * b).abs / gcd(a, b)
-
-  def lcm(x: Vector[Int]): Int = x.reduce(lcm)
 }

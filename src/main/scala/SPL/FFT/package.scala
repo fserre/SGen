@@ -21,14 +21,9 @@
  *
  */
 
-import scala.annotation.tailrec
+package SPL
 
-/** Helper functions and classes. */
-package object Utils {
-  @tailrec
-  def gcd(a: Int, b: Int): Int = if (b == 0) a.abs else gcd(b, a % b)
+/** SPL nodes used for Fast Fourier Transforms. */
+package object FFT {
 
-  def lcm(a: Int, b: Int): Int = (a * b).abs / gcd(a, b)
-
-  def lcm(x: Vector[Int]): Int = x.reduce(lcm)
 }

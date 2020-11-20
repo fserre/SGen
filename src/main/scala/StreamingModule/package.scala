@@ -20,15 +20,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
+/** Streaming-module DSL.
+ * This DSL consists of nodes called streaming modules, i.e. hardware modules that correspond to an SPL operator. They have as many data inputs as outputs, each of the same datatype, and use a token based synchronisation system.
+ * This DSL allows to combine streaming modules, by composing them, or using tensor product.
+ * */
+package object StreamingModule {
 
-import scala.annotation.tailrec
-
-/** Helper functions and classes. */
-package object Utils {
-  @tailrec
-  def gcd(a: Int, b: Int): Int = if (b == 0) a.abs else gcd(b, a % b)
-
-  def lcm(a: Int, b: Int): Int = (a * b).abs / gcd(a, b)
-
-  def lcm(x: Vector[Int]): Int = x.reduce(lcm)
 }
