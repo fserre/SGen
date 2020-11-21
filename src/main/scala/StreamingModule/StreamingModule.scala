@@ -197,51 +197,6 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     res.toString
   }
 
-  def test(repeat:Int=2, addedGap: Int = 0): Option[U] = {
-    val xDir = if (System.getProperty("os.name") == "Windows 10") "C:\\Xilinx\\Vivado\\2020.1\\bin\\" else "/home/serref/Xilinx/Vivado/2014.4/bin/"
-    val ext = if (System.getProperty("os.name") == "Windows 10") ".bat" else ""
-
-    val outputs = testBenchInput(repeat).grouped(N).toSeq.zipWithIndex.flatMap { case (input, set) => eval(input, set) }.map(implicitly[HW[U]].valueOf)
-    val pw=new PrintWriter("test.v")
-    pw.write("/*\n")
-    io.Source.fromResource("logo.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
-    io.Source.fromResource("license.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
-    pw.write(" */\n\n")
-    pw.write(toVerilog)
-    pw.write(getTestBench(repeat, addedGap))
-    pw.close()
-
-    val xvlog = (xDir + "xvlog" + ext + " test.v").!!
-    dependencies.foreach(filename => (xDir + "xvhdl" + ext + " " + filename).!!)
-    val xelag = (xDir + "xelab" + ext + " test").!!
-    val xsim = (xDir + "xsim" + ext + " work.test -R").!!
-    if (!xsim.contains("Success.")) {
-      println(xvlog)
-      println(xelag)
-      println(xsim)
-      None
-    }
-    else
-      Some(outputs.indices.map(i => {
-        val pos1 = xsim.indexOf("output" + i + ": ")
-        val pos2 = xsim.indexOf(" ", pos1) + 1
-        val pos3 = xsim.indexOf(" ", pos2)
-        val res = implicitly[HW[U]].valueOf(BigInt(xsim.slice(pos2, pos3)))
-        val diff = implicitly[HW[U]].num.minus(res, outputs(i))
-
-        /*if (diff != 0) {
-          println(i)
-          println("expecting " + outputs(i))
-          println(xsim.slice(pos2, pos3))
-          println(BigInt(xsim.slice(pos2, pos3)))
-          println(res)
-          println()
-        }*/
-        implicitly[HW[U]].num.times(diff, diff)
-      }).sum(implicitly[HW[U]].num))
-
-
-  }
 
 }
 

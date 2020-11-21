@@ -21,6 +21,7 @@
  *
  */
 
+import TestTools.test
 import SB.HW.{ComplexHW, FixedPoint}
 import SB.SB
 import SPL.FFT.{DFT, StreamDiagC}
@@ -31,15 +32,6 @@ import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop.forAll
 
 object DFTTest extends Properties("DFT") {
-  implicit def shrinkSB[T]: Shrink[StreamingModule[T]] = Shrink.withLazyList {
-    case StreamingModule.Product(factors) => factors.indices.to(LazyList).map(i => StreamingModule.Product[T](factors.take(i) ++ factors.drop(i + 1)))
-    case SB.Product(factors) => factors.indices.to(LazyList).map(i => SB.Product[T](factors.take(i) ++ factors.drop(i + 1)))
-    case SB.ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => SB.ITensor(r - i, factor, k - i))
-    case StreamingModule.ItProduct(r, factor: SB.Product[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => StreamingModule.ItProduct(r, f, endLoop))
-    case StreamingModule.ItProduct(r, factor, endLoop) => (1 until r).reverse.to(LazyList).map(i => StreamingModule.ItProduct(i, factor, endLoop))
-    case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k)(input.hw))
-  }
-
   implicit val cphw: ComplexHW[Double] = ComplexHW(FixedPoint(8, 8))
   property("CTDFT conforms to the definition")=forAll(for {
     n <- Gen.choose(2,10)
@@ -66,7 +58,7 @@ object DFTTest extends Properties("DFT") {
     dp <- Gen.oneOf(true,false)
   } yield DFT.CTDFT(n, r,dp).stream(k)(ComplexHW(FixedPoint(8, 8)))
   property("CTDFT") = forAll(genSteady) { sb: StreamingModule[Complex[Double]] =>
-      sb.test() match {
+      test(sb) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }
@@ -84,7 +76,7 @@ object DFTTest extends Properties("DFT") {
   property("Pease") =
 
     forAll(genPease) { sb: StreamingModule[Complex[Double]] =>
-      sb.test() match {
+      test(sb) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }
@@ -98,7 +90,7 @@ object DFTTest extends Properties("DFT") {
     if n % r == 0
   } yield StreamDiagC(n, r).stream(k)(ComplexHW(FixedPoint(16, 16)))
   property("DiagC") = forAll(genDiagC) { sb: StreamingModule[Complex[Double]] =>
-      sb.test() match {
+    test(sb) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }
@@ -129,7 +121,7 @@ object DFTTest extends Properties("DFT") {
     if k >= r
   } yield DFT.ItPease(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
   property("ItPease")= forAll(genItPease) { sb: StreamingModule[Complex[Double]] =>
-      sb.test() match {
+    test(sb) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }
@@ -159,7 +151,7 @@ object DFTTest extends Properties("DFT") {
     if k >= r
   } yield DFT.ItPeaseFused(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
   property("ItPeaseFused") = forAll(genItPeaseFused) { sb: StreamingModule[Complex[Double]] =>
-      sb.test() match {
+    test(sb) match {
         case Some(value) if value.re < 0.01 => true
         case _ => false
       }

@@ -27,7 +27,7 @@ import linalg.{Matrix, Vec}
 
 import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
-import Generators._
+import TestTools._
 import SB.SB
 import _root_.SB.HW.Unsigned
 import SPL.LinearPerm
@@ -39,18 +39,18 @@ object SLPTest extends Properties("SLP") {
     k <- Gen.choose(1, 5)
     p1 <- genInvertible(k)
   } yield Steady(Vector(p1), t)(Unsigned(16))
-  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  sb.test(2, gap).contains(0)    }
+  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  test(sb,2, gap).contains(0)    }
 
   val genSteady2: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(k))
   } yield Steady(p1, t)(Unsigned(16))
-  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  sb.test(2, gap).contains(0)   }
+  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  test(sb,2, gap).contains(0)   }
 
   property("SwitchArray") = forAll(genVec, Gen.choose(1, 5), Gen.choose(0, 10)) { (v: Vec[F2], k, gap) =>
         val sb = SwitchArray(Vector(v), k)(Unsigned(4))
-    sb.test(2, gap).contains(0)
+    test(sb,2, gap).contains(0)
     }
 
   val genSwitch2: Gen[SB[Int]] = for {
@@ -59,7 +59,7 @@ object SLPTest extends Properties("SLP") {
     v <- Gen.containerOfN[Vector, Vec[F2]](2, genVec(t))
   } yield SwitchArray(v, k)(Unsigned(16))
   property("SwitchArray 2") = forAll(genSwitch2, Gen.choose(0, 10)) { (sb, gap) =>
-      sb.test(2, gap).contains(0)
+      test(sb,2, gap).contains(0)
     }
 
   val genTemporal: Gen[SB[Int]] = for {
@@ -71,7 +71,7 @@ object SLPTest extends Properties("SLP") {
   } yield Temporal(Vector(p3), Vector(p4),dp)(Unsigned(16))
   property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
   val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
-      sb.test(2, gap2).contains(0)
+      test(sb,2, gap2).contains(0)
   }
 
   val genTemporal2: Gen[SB[Int]] = for {
@@ -82,17 +82,10 @@ object SLPTest extends Properties("SLP") {
     dp <- Gen.oneOf(true,false)
   } yield Temporal(p3, p4,dp)(Unsigned(16))
   property("Temporal2") =  forAll(genTemporal2) { sb =>
-      sb.test(5).contains(0)
+      test(sb,5).contains(0)
   }
 
-  implicit def shrinkSB[T]: Shrink[StreamingModule[T]] = Shrink.withLazyList {
-    case StreamingModule.Product(factors) => factors.indices.to(LazyList).map(i => StreamingModule.Product[T](factors.take(i) ++ factors.drop(i + 1)))
-    case SB.Product(factors) => factors.indices.to(LazyList).map(i => SB.Product[T](factors.take(i) ++ factors.drop(i + 1)))
-    case SB.ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => SB.ITensor(r - i, factor, k - i))
-    case StreamingModule.ItProduct(r, factor: SB.Product[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => StreamingModule.ItProduct(r, f, endLoop))
-    case StreamingModule.ItProduct(r, factor, endLoop) => (1 until r).reverse.to(LazyList).map(i => StreamingModule.ItProduct(i, factor, endLoop))
-    case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k)(input.hw))
-  }
+
 
   val genLinPerm: Gen[StreamingModule[Int]] = for {
     t <- Gen.choose(5, 5)
@@ -104,7 +97,7 @@ object SLPTest extends Properties("SLP") {
 
 
   property("LinearPerm") = forAll(genLinPerm) { sb =>
-      sb.test(3).contains(0)
+      test(sb,3).contains(0)
   }
 
 
