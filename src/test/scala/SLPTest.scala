@@ -29,7 +29,7 @@ import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
 import TestTools._
 import SB.SB
-import _root_.SB.HW.Unsigned
+import _root_.SB.HardwareType.Unsigned
 import SPL.LinearPerm
 import StreamingModule.StreamingModule
 

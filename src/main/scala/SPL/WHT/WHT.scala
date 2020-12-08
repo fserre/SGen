@@ -23,7 +23,7 @@
 
 package SPL.WHT
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import SPL.{ITensor, ItProduct, LinearPerm, Product, SPL}
 import StreamingModule.StreamingModule
 import _root_.SPL.FFT.DFT2

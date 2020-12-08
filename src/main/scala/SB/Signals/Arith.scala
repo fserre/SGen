@@ -23,7 +23,7 @@
 
 package SB.Signals
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import SB.SB
 import Utils._
 

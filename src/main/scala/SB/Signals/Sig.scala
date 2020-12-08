@@ -24,7 +24,7 @@
 package SB.Signals
 
 import RTL.Component
-import SB.HW.{HW, Unsigned}
+import SB.HardwareType.{HW, Unsigned}
 import SB.SB
 import Utils.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
 import linalg.Fields.F2

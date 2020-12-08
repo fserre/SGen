@@ -24,7 +24,7 @@
 package SB.Signals
 
 import RTL.Component
-import SB.HW.{ComplexHW, HW, Unsigned}
+import SB.HardwareType.{ComplexHW, HW, Unsigned}
 import SB.SB
 
 case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(inputs.head.hw) {

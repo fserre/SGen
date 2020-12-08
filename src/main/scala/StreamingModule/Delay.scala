@@ -24,7 +24,7 @@
 package StreamingModule
 
 import RTL.Component
-import SB.HW.HW
+import SB.HardwareType.HW
 import SPL.SPL
 
 case class Delay[U: HW](override val t: Int, override val k: Int, override val latency: Int) extends StreamingModule[U](t, k) {

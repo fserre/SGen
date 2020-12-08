@@ -23,7 +23,7 @@
 
 package SPL
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import SB.SLP.{Spatial, Temporal}
 import StreamingModule.StreamingModule
 import linalg.Fields.F2

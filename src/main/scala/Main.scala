@@ -26,7 +26,7 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 
 import SB._
 import StreamingModule.StreamingModule
-import _root_.SB.HW._
+import _root_.SB.HardwareType._
 import _root_.SPL.FFT.DFT
 import _root_.SPL.WHT.WHT
 import _root_.SPL._

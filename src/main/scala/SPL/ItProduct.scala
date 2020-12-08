@@ -23,7 +23,7 @@
 
 package SPL
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import StreamingModule.StreamingModule
 
 case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = None) extends SPL[T](factor.n) {

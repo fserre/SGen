@@ -23,7 +23,7 @@
 
 package SPL.FFT
 
-import SB.HW.{ComplexHW, FixedPoint, HW, Unsigned}
+import SB.HardwareType.{ComplexHW, FixedPoint, HW, Unsigned}
 import SB.SB
 import SPL.{Repeatable, SPL}
 import _root_.SB.Signals.{Const, Counter, ROM, Sig, Timer}

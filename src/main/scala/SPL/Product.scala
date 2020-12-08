@@ -23,7 +23,7 @@
 
 package SPL
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import StreamingModule.StreamingModule
 import Utils.{AssociativeNode, AssociativeNodeCompanionT}
 

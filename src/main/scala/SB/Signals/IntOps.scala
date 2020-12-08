@@ -24,8 +24,8 @@
 package SB.Signals
 
 import RTL.Component
-import SB.{HW, SB}
-import _root_.SB.HW.{HW, Unsigned}
+import SB.{HardwareType, SB}
+import _root_.SB.HardwareType.{HW, Unsigned}
 import Utils.{AssociativeNode, AssociativeNodeCompanion}
 
 import scala.annotation.tailrec

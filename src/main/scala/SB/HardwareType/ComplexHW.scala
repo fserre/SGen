@@ -21,7 +21,7 @@
  *
  */
 
-package SB.HW
+package SB.HardwareType
 import SB.Signals._
 import linalg.Fields._
 

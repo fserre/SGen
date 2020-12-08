@@ -24,7 +24,7 @@
 package SB.SLP
 
 import SB.{Identity, SB}
-import _root_.SB.HW.{HW, Unsigned}
+import _root_.SB.HardwareType.{HW, Unsigned}
 import _root_.SB.Signals._
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}

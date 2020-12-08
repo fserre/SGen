@@ -22,7 +22,7 @@
  */
 
 package SPL
-import SB.HW.HW
+import SB.HardwareType.HW
 import StreamingModule.StreamingModule
 
 case class Identity[T](override val n:Int) extends SPL[T](n) {

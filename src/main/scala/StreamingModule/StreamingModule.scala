@@ -26,7 +26,7 @@ package StreamingModule
 import java.io.PrintWriter
 
 import RTL.{Component, Input, Module, Output, Wire}
-import SB.HW.HW
+import SB.HardwareType.HW
 import SPL.SPL
 
 import scala.collection.mutable

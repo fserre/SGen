@@ -22,7 +22,7 @@
  */
 
 import TestTools.test
-import SB.HW.{ComplexHW, FixedPoint}
+import SB.HardwareType.{ComplexHW, FixedPoint}
 import SB.SB
 import SPL.FFT.{DFT, StreamDiagC}
 import StreamingModule.StreamingModule

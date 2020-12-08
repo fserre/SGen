@@ -24,7 +24,7 @@
 package SB.Signals
 
 import RTL.Component
-import SB.HW.{ComplexHW, HW}
+import SB.HardwareType.{ComplexHW, HW}
 import linalg.Fields.Complex
 
 case class Re[T: HW] private(input: SigRef[Complex[T]]) extends Operator[T](input) {

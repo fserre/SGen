@@ -24,7 +24,7 @@
 package SB.Signals
 
 import RTL._
-import SB.HW.{HW, Unsigned}
+import SB.HardwareType.{HW, Unsigned}
 import SB.SB
 
 case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int] {

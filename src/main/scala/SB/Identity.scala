@@ -23,7 +23,7 @@
 
 package SB
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import SB.Signals.Sig
 import SPL.SPL
 import StreamingModule.StreamingModule

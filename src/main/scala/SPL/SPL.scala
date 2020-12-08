@@ -24,7 +24,7 @@
 package SPL
 
 import RTL._
-import SB.HW.HW
+import SB.HardwareType.HW
 import StreamingModule.StreamingModule
 
 abstract class SPL[T](val n: Int) {

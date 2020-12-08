@@ -23,7 +23,7 @@
 
 package SB.SLP
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import SB.{Identity, SB}
 import _root_.SB.Signals._
 import linalg.Fields.F2

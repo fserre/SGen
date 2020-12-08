@@ -22,7 +22,7 @@
  */
 
 import TestTools.test
-import SB.HW.FixedPoint
+import SB.HardwareType.FixedPoint
 import SPL.WHT.WHT
 import StreamingModule.StreamingModule
 import linalg.{Matrix, Vec}

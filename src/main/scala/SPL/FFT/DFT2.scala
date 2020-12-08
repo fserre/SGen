@@ -23,7 +23,7 @@
 
 package SPL.FFT
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import SB.SB
 import _root_.SB.Signals.Sig
 import SPL.{Repeatable, SPL}

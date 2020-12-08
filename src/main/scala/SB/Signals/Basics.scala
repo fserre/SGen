@@ -24,7 +24,7 @@
 package SB.Signals
 
 import RTL.Component
-import SB.HW.{HW, Unsigned}
+import SB.HardwareType.{HW, Unsigned}
 import SB.SB
 
 case class Input[T](input: Component, override val hw: HW[T], override val sb: SB[T]) extends Source[T](hw, sb) {

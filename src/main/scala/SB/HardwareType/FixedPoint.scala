@@ -21,7 +21,7 @@
  *
  */
 
-package SB.HW
+package SB.HardwareType
 
 import RTL.Component
 import SB.Signals.{Minus, Plus, Sig, SigRef, Times}

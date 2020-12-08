@@ -24,7 +24,7 @@
 package SB.Signals
 
 import RTL.Component
-import SB.HW.HW
+import SB.HardwareType.HW
 import SB.SB
 
 

@@ -21,7 +21,7 @@
  *
  */
 
-package SB.HW
+package SB.HardwareType
 
 import RTL.{Component, Extern}
 import SB.Signals.{Operator, Sig, SigRef}

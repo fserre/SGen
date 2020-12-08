@@ -24,7 +24,7 @@
 package SB.SLP
 
 import SB.SB
-import _root_.SB.HW.HW
+import _root_.SB.HardwareType.HW
 import SPL.{LinearPerm, SPL}
 import _root_.SB.Signals.Sig
 import StreamingModule.StreamingModule

@@ -24,7 +24,7 @@
 package StreamingModule
 
 import RTL.Component
-import SB.HW.HW
+import SB.HardwareType.HW
 import SB.{Identity, SB}
 import SPL.SPL
 import Utils.{AssociativeNode, AssociativeNodeCompanionT}

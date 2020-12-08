@@ -23,7 +23,7 @@
 
 package SPL.FFT
 
-import SB.HW.HW
+import SB.HardwareType.HW
 import SPL._
 import StreamingModule.StreamingModule
 import linalg.Fields.{Complex, F2}
