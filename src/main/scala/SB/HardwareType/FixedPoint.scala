@@ -31,23 +31,23 @@ case class FixPlus(override val lhs: SigRef[Double], override val rhs: SigRef[Do
   //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
   override def pipeline = 1
 
-  override def implement(implicit conv: SigRef[_] => Component) = new RTL.Plus(Seq(lhs,rhs))
+  override def implement(implicit cp: SigRef[_] => Component) = new RTL.Plus(Seq(cp(lhs),cp(rhs)))
 }
 
 case class FixMinus(override val lhs: SigRef[Double],override val rhs: SigRef[Double]) extends Minus(lhs,rhs) {
   //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
   override def pipeline = 1
 
-  override def implement(implicit conv: SigRef[_] => Component) = new RTL.Minus(lhs,rhs)
+  override def implement(implicit cp: SigRef[_] => Component) = new RTL.Minus(cp(lhs),cp(rhs))
 }
 
 case class FixTimes(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Times(lhs, rhs) {
   //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
   override def pipeline = 3
 
-  override def implement(implicit conv: SigRef[_] => Component): Component = {
+  override def implement(implicit cp: SigRef[_] => Component): Component = {
     val shift = rhs.hw.asInstanceOf[FixedPoint].fractional
-    new RTL.Tap(new RTL.Times(lhs, rhs), shift until (shift + lhs.hw.size))
+    new RTL.Tap(new RTL.Times(cp(lhs), cp(rhs)), shift until (shift + lhs.hw.size))
   }
 }
 

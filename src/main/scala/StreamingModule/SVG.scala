@@ -78,7 +78,7 @@ object SVG extends App {
     res.toString()
   }
   val sm=DFT.CTDFT(3,1,false).stream(2)(ComplexHW(FixedPoint(4,4)))
-    val pw = new PrintWriter("test.svg")
-    pw.write(apply(sm))
-pw.close()
+  val pw = new PrintWriter("test.svg")
+  pw.write(apply(sm))
+  pw.close()
 }

@@ -32,7 +32,7 @@ case class Unsigned(_size: Int) extends HW[Int](_size) {
     //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
     override def pipeline = 1
 
-    override def implement(implicit conv: SigRef[_] => Component) =new RTL.Plus(Seq(lhs,rhs))
+    override def implement(implicit cp: SigRef[_] => Component) =new RTL.Plus(Seq(cp(lhs),cp(rhs)))
   }
 
   override def plus(lhs: Sig[Int], rhs: Sig[Int]): Sig[Int] = new UnsignedPlus(lhs,rhs)
@@ -40,7 +40,7 @@ case class Unsigned(_size: Int) extends HW[Int](_size) {
     //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
     override def pipeline = 1
 
-    override def implement(implicit conv: SigRef[_] => Component) =new RTL.Minus(lhs,rhs)
+    override def implement(implicit cp: SigRef[_] => Component) =new RTL.Minus(cp(lhs),cp(rhs))
   }
   override def minus(lhs: Sig[Int], rhs: Sig[Int]): Sig[Int] = UnsignedMinus(lhs, rhs)
 

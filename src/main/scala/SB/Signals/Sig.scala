@@ -48,14 +48,14 @@ abstract class Sig[T] { that =>
 
   def implement(cp: (SigRef[_], Int) => Component): Component
 
-  def toString(s: SigRef[_] => String):String = that.getClass.getSimpleName + parents.map(_._1).map(s).mkString("(", ", ", ")")
+  /*def toString(s: SigRef[_] => String):String = that.getClass.getSimpleName + parents.map(_._1).map(s).mkString("(", ", ", ")")
 
   final def toString(depth:Int):String=if(depth==0)
     this.ref.toString
   else
-    toString(_.toString(depth-1))
+    toString((s:SigRef[_])=>s.ref.toString(depth-1))
 
-  override def toString: String = toString(4)
+  override def toString: String = toString(4)*/
 
   final def +(lhs: Sig[T]):Sig[T] = Plus(this, lhs)
 
@@ -121,7 +121,7 @@ abstract class AssociativeSig[T](val terms: Seq[SigRef[T]], op: String, override
 
   override def graphDeclaration:String = graphName + "[label=\"" + op + "\"];"
 
-  override def toString(s: SigRef[_] => String): String = terms.map(t=>if(t.precedence>=precedence)"("+s(t)+")" else s(t)).mkString(op)
+  //override def toString(s: SigRef[_] => String): String = terms.map(t=>if(t.precedence>=precedence)"("+s(t)+")" else s(t)).mkString(op)
 
   override val hashCode: Int = Seq(that.getClass.getSimpleName,terms).hashCode()
 }

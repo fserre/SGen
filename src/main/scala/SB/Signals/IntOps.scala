@@ -54,7 +54,7 @@ object And extends AssociativeSigCompanion[Int, And](arg => new And(arg.map(_.re
 
 
 case class Not private(input: SigRef[Int]) extends Operator[Int](input)(input.hw) {
-  override def implement(implicit cp: SigRef[_] => Component): Component =new RTL.Not(input)
+  override def implement(implicit cp: SigRef[_] => Component): Component =new RTL.Not(cp(input))
 }
 
 object Not{
@@ -104,7 +104,7 @@ class Concat private(terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms,
   override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Concat(terms.map(cp))
 }
 
-object Concat extends AssociativeSigCompanion[Int, Concat]({ list: Seq[Sig[Int]] => new Concat(list.map(_.ref)) }, (lhs: Sig[Int], rhs: Sig[Int]) => {
+object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]]) => new Concat(list.map(_.ref)) }, (lhs: Sig[Int], rhs: Sig[Int]) => {
   implicit val sb: SB[_] =lhs.sb
   (lhs,rhs) match{
     case (lhs:Const[Int], rhs:Const[Int]) => Left(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size),sb))
@@ -116,7 +116,7 @@ object Concat extends AssociativeSigCompanion[Int, Concat]({ list: Seq[Sig[Int]]
 })
 
 case class Tap private(input: SigRef[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)) {
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Tap(input, range)
+  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Tap(cp(input), range)
 }
 
 object Tap {

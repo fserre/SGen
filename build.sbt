@@ -20,7 +20,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
-
+/*
 name := "SGen"
 organization := "fserre"
 version := "0.1"
@@ -30,13 +30,12 @@ scalaVersion := "2.13.4"
 mainClass in (Compile, run) := Some("main")
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.15.1" % "test"
 parallelExecution in Test := false
-
-/*
+*/
 lazy val root = (project in file("."))
   .settings(
     name := "SGen",
-    scalaVersion := "3.0.0-M2",
+    scalaVersion := "3.0.0-M3",
       libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.1" % "test").withDottyCompat(scalaVersion.value),
     //scalacOptions ++= Seq("-indent","-rewrite")
 
-  )*/
+  )

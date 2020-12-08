@@ -29,7 +29,7 @@ import SB.SB
 
 case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(inputs.head.hw) {
   def isRom: Boolean = inputs.forall(_.sig.isInstanceOf[Const[_]])
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Mux(address, inputs.map(cp))
+  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Mux(cp(address), inputs.map(cp))
 
   override def graphDeclaration: String = if (isRom)
     graphName + "[label=\"<title>ROM (" + inputs.size + " × " + hw.size + " bits) |" + inputs.map(_.sig.asInstanceOf[Const[U]].value.toString).mkString("|") + "\",shape=record];"
@@ -63,7 +63,8 @@ object Mux {
             Mux(control, inputs.indices.filter(i => (i & (1 << pos)) == 0).map(inputs(_)))
 
           case _ => hw match {
-            case ComplexHW(innerHW) => Cpx(Mux(address, inputs.map(Re(_)(innerHW))), Mux(address, inputs.map(Im(_)(innerHW))))(hw).asInstanceOf[Sig[U]]
+              //TODO: Fix type error with dotty
+            //case ComplexHW(innerHW) => Cpx(Mux(address, inputs.map(Re(_)(innerHW))), Mux(address, inputs.map(Im(_)(innerHW))))(hw).asInstanceOf[Sig[U]]
             case Unsigned(_) => (0 until hw.size).find(i => {
               val ref = inputs.head.asInstanceOf[Sig[Int]](i)
               inputs.forall(_.asInstanceOf[Sig[Int]](i) == ref)

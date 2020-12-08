@@ -48,7 +48,7 @@ abstract class Module {
     val toImplement = mutable.Queue[Component]()
     toImplement.enqueueAll(outputs)
 
-   implicit class CompName(cp:Component) {
+    implicit class CompName(cp:Component) {
       @tailrec
       final def id:String = cp match {
         case comp: Input => comp.name

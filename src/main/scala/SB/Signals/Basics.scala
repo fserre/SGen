@@ -65,7 +65,7 @@ object Reset{
 }
 
 case class Const[T](value: T, override val hw: HW[T], override val sb: SB[_]) extends Source(hw, sb) {
-  override def toString(s: SigRef[_] => String): String = value.toString
+  //override def toString(s: SigRef[_] => String): String = value.toString
 
   override def implement = new RTL.Const(hw.size, hw.bitsOf(value))
 

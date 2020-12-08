@@ -122,10 +122,7 @@ object Minus {
     }
   }
 
-  def unapply[T](arg: Minus[T]): Option[(Sig[T], Sig[T])] = arg match {
-    case arg: Minus[T] => Some(arg.lhs, arg.rhs)
-    case _ => None
-  }
+  def unapply[T](arg: Minus[T]): Option[(Sig[T], Sig[T])] = Some(arg.lhs, arg.rhs)
 }
 
 object Times {
