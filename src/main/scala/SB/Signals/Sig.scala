@@ -27,7 +27,7 @@ import RTL.Component
 import SB.HardwareType.{HW, Unsigned}
 import SB.SB
 import Utils.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
-import linalg.Fields.F2
+import linalg.Fields.{Complex, F2}
 import linalg._
 
 
@@ -77,7 +77,7 @@ object Sig {
 
   implicit def vecToConst(v: Vec[F2])(implicit sb:SB[_]): Sig[Int] = Const(v.toInt)(Unsigned(v.m),sb)
 
-  implicit class SigIntOps(lhs: Sig[Int]) {
+  implicit class IntSig[T](lhs: Sig[Int]) {
     def ::(rhs: Sig[Int]):Sig[Int] = Concat(rhs, lhs)
 
     def &(rhs: Sig[Int]):Sig[Int] = And(lhs, rhs)
@@ -90,11 +90,16 @@ object Sig {
 
     def scalar(rhs: Sig[Int]):Sig[Int] = (lhs & rhs).unary_^
 
-    def ?[T](inputs: (Sig[T],Sig[T])):Sig[T] = Mux(lhs, Vector(inputs._2, inputs._1))
+    def ?(inputs: (Sig[T],Sig[T])):Sig[T] = Mux(lhs, Vector(inputs._2, inputs._1))
 
     def apply(i: Int): Sig[Int] = apply(i to i)
 
     def apply(r: Range): Sig[Int] = Tap(lhs, r)
+  }
+
+  implicit class CpxSig[T](lhs: Sig[Complex[T]]) {
+    def re:Sig[T] = Re(lhs)
+    def im:Sig[T] = Im(lhs)
   }
 
   implicit def sigToRef[T](sig:Sig[T]):SigRef[T]=sig.ref

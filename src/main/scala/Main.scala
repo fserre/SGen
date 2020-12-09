@@ -221,6 +221,7 @@ object Main extends App{
       pw.write("/*\n")
       io.Source.fromResource("logo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
       io.Source.fromResource("license.txt").getLines().foreach(l => pw.write(s" * $l\n"))
+      design.description.foreach(l=>pw.write(s" * $l\n"))
       pw.write(" */\n\n")
       pw.println(design.toVerilog)
       if (testbench)

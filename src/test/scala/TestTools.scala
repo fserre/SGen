@@ -23,15 +23,32 @@
 
 import scala.language.implicitConversions
 import java.io.PrintWriter
-
 import StreamingModule.StreamingModule
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Shrink}
+
+import java.nio.file.{Files, Paths}
 import scala.sys.process._
 
 
 object TestTools {
+  lazy val xDir:String = {
+    if(!Files.exists(Paths.get("xilinx.txt")))
+      {
+        println("To perform tests using simulator, please provide the path to Xilinx binaries in the file xilinx.txt.")
+        println("For instance:")
+        println("""echo c:\xilinx\Vivado\2020.1\bin\ > xilinx.txt""")
+        System.exit(0)
+      }
+      val source=io.Source.fromFile("xilinx.txt")
+      val res=source.getLines().next()
+      source.close()
+      res.trim
+  }
+
+
+
   implicit val genF2: Gen[F2] = Gen.oneOf(F2(true), F2(false))
   implicit val genVec: Gen[Vec[F2]] = for {
     size <- Gen.choose(1, 10)
@@ -40,7 +57,7 @@ object TestTools {
 
   implicit def genVec(size: Int): Gen[Vec[F2]] = Gen.choose(0, (1 << size) - 1).map(value => Vec.fromInt(size, value))
 
-  implicit def shrinkVec(implicit s: Shrink[Int]): Shrink[Vec[F2]] = Shrink { v: Vec[F2] =>
+  implicit def shrinkVec(implicit s: Shrink[Int]): Shrink[Vec[F2]] = Shrink { (v: Vec[F2]) =>
     for {
       size <- s.shrink(v.m)
       if size > 0
@@ -76,20 +93,19 @@ object TestTools {
   }
 
   def test[U](sm:StreamingModule[U],repeat:Int=2, addedGap: Int = 0): Option[U] = {
-    val xDir = "" // Path to Xilinx binaries can be put here, if it is not in the system path.
+
     val ext = if (System.getProperty("os.name") contains "Windows") ".bat" else ""
 
     val outputs = sm.testBenchInput(repeat).grouped(sm.N).toSeq.zipWithIndex.flatMap { case (input, set) => sm.eval(input, set) }.map(sm.hw.valueOf)
     val pw=new PrintWriter("test.v")
     pw.write("/*\n")
-    io.Source.fromResource("logo.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
-    io.Source.fromResource("license.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
+    io.Source.fromResource("testlogo.txt").getLines().foreach(l =>pw.write(s" * $l\n"))
     pw.write(" */\n\n")
     pw.write(sm.toVerilog)
     pw.write(sm.getTestBench(repeat, addedGap))
     pw.close()
-
-    val xvlog = (xDir + "xvlog" + ext + " test.v").!!
+val command=xDir + "xvlog" + ext + " test.v"
+    val xvlog = (command).!!
     sm.dependencies.foreach(filename => (xDir + "xvhdl" + ext + " " + filename).!!)
     val xelag = (xDir + "xelab" + ext + " test").!!
     val xsim = (xDir + "xsim" + ext + " work.test -R").!!

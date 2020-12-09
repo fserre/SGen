@@ -49,8 +49,8 @@ object SLPTest extends Properties("SLP") {
   property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  test(sb,2, gap).contains(0)   }
 
   property("SwitchArray") = forAll(genVec, Gen.choose(1, 5), Gen.choose(0, 10)) { (v: Vec[F2], k, gap) =>
-        val sb = SwitchArray(Vector(v), k)(Unsigned(4))
-    test(sb,2, gap).contains(0)
+      val sb = SwitchArray(Vector(v), k)(Unsigned(4))
+      test(sb,2, gap).contains(0)
     }
 
   val genSwitch2: Gen[SB[Int]] = for {

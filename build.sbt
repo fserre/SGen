@@ -20,22 +20,20 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
-/*
-name := "SGen"
-organization := "fserre"
-version := "0.1"
-scalaVersion := "2.13.4"
-//scalaVersion := "3.0.0-M1"
+
 //scalacOptions ++=  Seq("-doc-root-content", file("rootdoc.txt").getAbsolutePath)
-mainClass in (Compile, run) := Some("main")
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.15.1" % "test"
-parallelExecution in Test := false
-*/
 lazy val root = (project in file("."))
   .settings(
     name := "SGen",
-    scalaVersion := "3.0.0-M3",
-      libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.1" % "test").withDottyCompat(scalaVersion.value),
+    organization := "fserre",
+    version := "0.1",
+    //scalaVersion := "3.0.0-M3-bin-20201208-f334e3f-NIGHTLY",
+    scalaVersion := "2.13.4",
+    libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.1" % "test").withDottyCompat(scalaVersion.value),
+    scalacOptions ++= Seq("-deprecation","-feature"),
+    mainClass in (Compile, run) := Some("main"),
+    parallelExecution in Test := false,
+    testOptions in Test +=Tests.Argument("-s","10")
     //scalacOptions ++= Seq("-indent","-rewrite")
-
   )
+

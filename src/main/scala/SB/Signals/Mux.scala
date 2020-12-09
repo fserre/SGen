@@ -26,6 +26,7 @@ package SB.Signals
 import RTL.Component
 import SB.HardwareType.{ComplexHW, HW, Unsigned}
 import SB.SB
+import linalg.Fields.Complex
 
 case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(inputs.head.hw) {
   def isRom: Boolean = inputs.forall(_.sig.isInstanceOf[Const[_]])
@@ -63,8 +64,7 @@ object Mux {
             Mux(control, inputs.indices.filter(i => (i & (1 << pos)) == 0).map(inputs(_)))
 
           case _ => hw match {
-              //TODO: Fix type error with dotty
-            //case ComplexHW(innerHW) => Cpx(Mux(address, inputs.map(Re(_)(innerHW))), Mux(address, inputs.map(Im(_)(innerHW))))(hw).asInstanceOf[Sig[U]]
+            case ComplexHW(_) => Cpx(Mux(address, inputs.map(_.asInstanceOf[Sig[Complex[AnyRef]]].re)), Mux(address, inputs.map(_.asInstanceOf[Sig[Complex[AnyRef]]].im))).asInstanceOf[Sig[U]]
             case Unsigned(_) => (0 until hw.size).find(i => {
               val ref = inputs.head.asInstanceOf[Sig[Int]](i)
               inputs.forall(_.asInstanceOf[Sig[Int]](i) == ref)

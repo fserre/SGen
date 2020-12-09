@@ -47,7 +47,7 @@ object WHTTest extends Properties("WHT")  {
   } yield WHT[Double](t + k, 1,dp).stream(k)(FixedPoint(16, 0))
 
   property("CTWHT")=
-    forAll(genSteady) { sb:StreamingModule[Double] => test(sb) match{
+    forAll(genSteady) {( sb:StreamingModule[Double]) => test(sb) match{
         case Some(value) if value<0.01 => true
         case _ => false
       }}
@@ -78,7 +78,7 @@ object WHTTest extends Properties("WHT")  {
   } yield WHT.Pease[Double](n, r,dp).stream(k)(FixedPoint(16, 0))
 
   property("PeaseWHT") =
-    forAll(peaseWHT) { sb: StreamingModule[Double] =>
+    forAll(peaseWHT) { (sb: StreamingModule[Double]) =>
       test(sb) match {
         case Some(value) if value < 0.01 => true
         case _ => false
@@ -94,7 +94,7 @@ object WHTTest extends Properties("WHT")  {
   } yield WHT.ItPease[Double](n, r).stream(k)(FixedPoint(16, 0))
 
   property("ItPeaseWHT") =
-    forAll(itpeaseWHT) { sb: StreamingModule[Double] =>
+    forAll(itpeaseWHT) { (sb: StreamingModule[Double]) =>
       test(sb) match {
         case Some(value) if value < 0.01 => true
         case _ => false

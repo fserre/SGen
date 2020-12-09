@@ -109,9 +109,6 @@ abstract class Module {
     }
 
     var result = new StringBuilder
-    result ++= "/*\n"
-    description.foreach(l=>result ++= s" * $l\n")
-    result ++= " */\n"
     result ++= s"module $name(input clk,\n"
     result ++= inputs.map(s => s"  input ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${s.id},\n").mkString("")
     result ++= outputs.map(s => s"  output ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${s.id}").mkString(",\n")
