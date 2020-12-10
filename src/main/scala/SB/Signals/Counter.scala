@@ -29,10 +29,10 @@ import SB.SB
 
 case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int] {
   //Operator(trigger, reset)(Unsigned(BigInt(limit - 1).bitLength))
-  override implicit val sb: SB[_] = trigger.sb
+  override implicit val sb: SB[?] = trigger.sb
   override implicit val hw: HW[Int] = Unsigned(BigInt(limit - 1).bitLength)
 
-  override def implement(cp: (SigRef[_], Int) => Component): Component = /*Counter.mkCounter(limit,resetValue,cp(reset,1),trigger.sig match{
+  override def implement(cp: (SigRef[?], Int) => Component): Component = /*Counter.mkCounter(limit,resetValue,cp(reset,1),trigger.sig match{
     case One()=> None
     case _ => Some(cp(trigger,1-delayTrigger))
   })*/ {
@@ -52,11 +52,11 @@ case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetVa
   }
 
   //override def latency = 1
-  override def parents: Seq[(SigRef[_], Int)] = Seq((trigger, 1 - delayTrigger), (reset, 1))
+  override def parents: Seq[(SigRef[?], Int)] = Seq((trigger, 1 - delayTrigger), (reset, 1))
 }
 
 object Counter {
-  def apply(limit: Int)(implicit sb:SB[_]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0),sb) else new Counter(limit, Next(sb), Reset(sb), limit - 1)
+  def apply(limit: Int)(implicit sb:SB[?]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0),sb) else new Counter(limit, Next(sb), Reset(sb), limit - 1)
 
   /*def mkCounter(limit:Int,resetValue:Int,reset:Component,trigger:Option[Component])={
     val size=BigInt(limit - 1).bitLength
@@ -77,9 +77,9 @@ object Counter {
 }
 
 object LateCounter {
-  def apply(limit: Int, delay: Int)(implicit sb: SB[_]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0), sb) else new Counter(limit, Next(sb), Reset(sb), 0, delay)
+  def apply(limit: Int, delay: Int)(implicit sb: SB[?]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0), sb) else new Counter(limit, Next(sb), Reset(sb), 0, delay)
 }
 
 object Timer {
-  def apply(limit: Int)(implicit sb: SB[_]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0), sb) else new Counter(limit, One()(Unsigned(1), sb), Next(sb), 0)
+  def apply(limit: Int)(implicit sb: SB[?]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0), sb) else new Counter(limit, One()(Unsigned(1), sb), Next(sb), 0)
 }

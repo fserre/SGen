@@ -36,14 +36,14 @@ import scala.collection.mutable
 
 abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(t, k) {
 
-  def implement(inputs: Seq[Sig[U]])(implicit sb: SB[_]): Seq[Sig[U]]
+  def implement(inputs: Seq[Sig[U]])(implicit sb: SB[?]): Seq[Sig[U]]
 
-  private val signals = new mutable.ArrayBuffer[Sig[_]]()
-  private val refs = new mutable.HashMap[Sig[_], Int]()
+  private val signals = new mutable.ArrayBuffer[Sig[?]]()
+  private val refs = new mutable.HashMap[Sig[?], Int]()
   private implicit val sb:SB[U] = this
 
-  final def signal(i: Int):Sig[_] = signals(i)
-  final def ref(sig: Sig[_]):Int = refs.getOrElseUpdate(sig, {
+  final def signal(i: Int):Sig[?] = signals(i)
+  final def ref(sig: Sig[?]):Int = refs.getOrElseUpdate(sig, {
     val res = signals.size
     signals += sig
     res
@@ -64,7 +64,7 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
       val cur = toImplement.last
       toImplement.remove(cur)
       val curSig = signal(cur)
-      curSig.parents.foreach { case (s: SigRef[_], advance: Int) =>
+      curSig.parents.foreach { case (s: SigRef[?], advance: Int) =>
         val time = synch(cur) + advance + s.pipeline
         //println(time)
         synch.get(s.i) match {
@@ -80,12 +80,12 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     _latency = Some(latency)
     val implemented = new mutable.HashMap[(Int, Int), Component]()
 
-    def implementComp(time: Int)(ref: SigRef[_], advance: Int): Component = {
+    def implementComp(time: Int)(ref: SigRef[?], advance: Int): Component = {
       val advancedTime = time + advance
       ref.sig match {
         case Next() => token(latency - advancedTime)
         case Reset() => rst
-        case _: Const[_] => implemented.getOrElseUpdate((ref.i, advancedTime), ref.implement(implementComp(advancedTime)))
+        case _: Const[?] => implemented.getOrElseUpdate((ref.i, advancedTime), ref.implement(implementComp(advancedTime)))
         case _ =>
           val diff = synch(ref.i) - advancedTime
           assert(diff >= 0)

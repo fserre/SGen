@@ -64,7 +64,7 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE+wF+3) {
 
     override def pipeline = 1
 
-    override def implement(implicit cp: SigRef[_] => Component) = new RTL.Extern(lhs.hw.size, filename, "add", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: SigRef[?] => Component) = new RTL.Extern(lhs.hw.size, filename, "add", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
   }
 
   case class FloMinus(override val lhs: SigRef[Double],override val rhs: SigRef[Double]) extends Minus(lhs,rhs) {
@@ -72,7 +72,7 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE+wF+3) {
 
     override def pipeline = 1
 
-    override def implement(implicit cp: SigRef[_] => Component) = new RTL.Extern(lhs.hw.size, filename, "diff", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: SigRef[?] => Component) = new RTL.Extern(lhs.hw.size, filename, "diff", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
   }
 
   case class FloTimes(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Times(lhs, rhs) {
@@ -80,7 +80,7 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE+wF+3) {
 
     override def latency: Int = latMult
 
-    override def implement(implicit cp: SigRef[_] => Component) = new RTL.Extern(lhs.hw.size, filename, "mult", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: SigRef[?] => Component) = new RTL.Extern(lhs.hw.size, filename, "mult", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
 
   }
 

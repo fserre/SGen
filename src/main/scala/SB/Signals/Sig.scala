@@ -36,17 +36,17 @@ import linalg._
  * @tparam T Equivalent software datatype of the node
  */
 abstract class Sig[T] { that =>
-  def parents: Seq[(SigRef[_], Int)]
+  def parents: Seq[(SigRef[?], Int)]
 
   val hw: HW[T]
 
-  val sb: SB[_]
+  val sb: SB[?]
 
   def pipeline = 0
 
   def precedence =0
 
-  def implement(cp: (SigRef[_], Int) => Component): Component
+  def implement(cp: (SigRef[?], Int) => Component): Component
 
   /*def toString(s: SigRef[_] => String):String = that.getClass.getSimpleName + parents.map(_._1).map(s).mkString("(", ", ", ")")
 
@@ -75,9 +75,9 @@ abstract class Sig[T] { that =>
 object Sig {
   import scala.language.implicitConversions
 
-  implicit def vecToConst(v: Vec[F2])(implicit sb:SB[_]): Sig[Int] = Const(v.toInt)(Unsigned(v.m),sb)
+  implicit def vecToConst(v: Vec[F2])(implicit sb:SB[?]): Sig[Int] = Const(v.toInt)(Unsigned(v.m),sb)
 
-  implicit class IntSig[T](lhs: Sig[Int]) {
+  extension [T](lhs: Sig[Int]) {
     def ::(rhs: Sig[Int]):Sig[Int] = Concat(rhs, lhs)
 
     def &(rhs: Sig[Int]):Sig[Int] = And(lhs, rhs)
@@ -88,7 +88,7 @@ object Sig {
 
     def unary_~ : Sig[Int] = Not(lhs)
 
-    def scalar(rhs: Sig[Int]):Sig[Int] = (lhs & rhs).unary_^
+    infix def scalar(rhs: Sig[Int]):Sig[Int] = (lhs & rhs).unary_^
 
     def ?(inputs: (Sig[T],Sig[T])):Sig[T] = Mux(lhs, Vector(inputs._2, inputs._1))
 
@@ -97,7 +97,7 @@ object Sig {
     def apply(r: Range): Sig[Int] = Tap(lhs, r)
   }
 
-  implicit class CpxSig[T](lhs: Sig[Complex[T]]) {
+  extension [T](lhs: Sig[Complex[T]]) {
     def re:Sig[T] = Re(lhs)
     def im:Sig[T] = Im(lhs)
   }
@@ -105,7 +105,7 @@ object Sig {
   implicit def sigToRef[T](sig:Sig[T]):SigRef[T]=sig.ref
 }
 
-case class SigRef[T](i:Int, sb:SB[_]){
+case class SigRef[T](i:Int, sb:SB[?]){
   val sig:Sig[T]=sb.signal(i).asInstanceOf[Sig[T]]
 
   override def toString: String = "S"+i
@@ -131,26 +131,26 @@ abstract class AssociativeSig[T](val terms: Seq[SigRef[T]], op: String, override
   override val hashCode: Int = Seq(that.getClass.getSimpleName,terms).hashCode()
 }
 
-abstract class AssociativeSigCompanionT[U[T]<:Sig[T] with AssociativeSig[T]] extends AssociativeNodeCompanionT[Sig,U]
+abstract class AssociativeSigCompanionT[U[T]<:Sig[T] & AssociativeSig[T]] extends AssociativeNodeCompanionT[Sig,U]
 
-abstract class AssociativeSigCompanion[T,U<:Sig[T]  with AssociativeSig[T]](create:Seq[Sig[T]]=>Sig[T], simplify:(Sig[T],Sig[T])=>Either[Sig[T],(Sig[T],Sig[T])]= (lhs:Sig[T], rhs:Sig[T])=>Right(lhs,rhs)) extends AssociativeNodeCompanion[Sig[T],U](create,simplify)
+abstract class AssociativeSigCompanion[T,U<:Sig[T]  & AssociativeSig[T]](create:Seq[Sig[T]]=>Sig[T], simplify:(Sig[T],Sig[T])=>Either[Sig[T],(Sig[T],Sig[T])]= (lhs:Sig[T], rhs:Sig[T])=>Right(lhs,rhs)) extends AssociativeNodeCompanion[Sig[T],U](create,simplify)
 
-abstract class Source[T](override val hw: HW[T], override val sb: SB[_]) extends Sig[T] {
+abstract class Source[T](override val hw: HW[T], override val sb: SB[?]) extends Sig[T] {
   def implement: Component
 
   final override val parents = Seq()
 
-  final override def implement(cp: (SigRef[_], Int) => Component): Component = implement
+  final override def implement(cp: (SigRef[?], Int) => Component): Component = implement
 }
 
-abstract class Operator[T](operands: SigRef[_]*)(implicit override val hw: HW[T]) extends Sig[T] {
+abstract class Operator[T](operands: SigRef[?]*)(implicit override val hw: HW[T]) extends Sig[T] {
   def latency = 0
 
-  def implement(implicit cp: SigRef[_] => Component): Component
+  def implement(implicit cp: SigRef[?] => Component): Component
 
-  final override def parents:Seq[(SigRef[_],Int)] = operands.map((_, latency))
+  final override def parents:Seq[(SigRef[?],Int)] = operands.map((_, latency))
 
-  final override val sb: SB[_] = operands.head.sb
+  final override val sb: SB[?] = operands.head.sb
 
-  final override def implement(cp: (SigRef[_], Int) => Component): Component = implement(sr => cp(sr, latency))
+  final override def implement(cp: (SigRef[?], Int) => Component): Component = implement(sr => cp(sr, latency))
 }

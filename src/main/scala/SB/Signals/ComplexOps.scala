@@ -27,8 +27,8 @@ import RTL.Component
 import SB.HardwareType.{ComplexHW, HW}
 import linalg.Fields.Complex
 
-case class Re[T] private(input: SigRef[Complex[T]]) extends Operator[T](input)(input.sig.hw.innerHW) {
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Tap(cp(input),0 until hw.size)
+case class Re[T] private(input: SigRef[Complex[T]]) extends Operator[T](input)(using input.sig.hw.innerHW) {
+  override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.Tap(cp(input),0 until hw.size)
   }
 object Re{
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match{
@@ -43,8 +43,8 @@ object Re{
   }
 }
 
-case class Im[T] private(input: SigRef[Complex[T]]) extends Operator[T](input)(input.sig.hw.innerHW) {
-  override def implement(implicit cp: SigRef[_] => Component): Component =new RTL.Tap(cp(input),hw.size until (hw.size*2))
+case class Im[T] private(input: SigRef[Complex[T]]) extends Operator[T](input)(using input.sig.hw.innerHW) {
+  override def implement(implicit cp: SigRef[?] => Component): Component =new RTL.Tap(cp(input),hw.size until (hw.size*2))
 
 }
 
@@ -62,13 +62,13 @@ object Im{
 }
 
 
-case class Cpx[T] private(real: SigRef[T], im: SigRef[T]) extends Operator[Complex[T]](real, im)(ComplexHW(real.sig.hw)) {
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Concat(Vector(cp(im),cp(real)))
+case class Cpx[T] private(real: SigRef[T], im: SigRef[T]) extends Operator[Complex[T]](real, im)(using ComplexHW(real.sig.hw)) {
+  override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.Concat(Vector(cp(im),cp(real)))
 
 }
 object Cpx{
   def apply[T](real: Sig[T], im: Sig[T]): Sig[Complex[T]] = (real, im) match {
-    case (Const(re), Const(im)) => Const(Complex(re, im)(real.hw.num))(ComplexHW(real.hw), real.sb)
+    case (Const(re), Const(im)) => Const(Complex(re, im)(using real.hw.num))(using ComplexHW(real.hw), real.sb)
     case (Re(cpxReal),Im(cpxIm)) if cpxReal==cpxIm => cpxReal
     case _ => new Cpx(real,im)
   }

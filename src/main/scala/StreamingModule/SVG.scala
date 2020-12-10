@@ -81,4 +81,5 @@ object SVG extends App {
   val pw = new PrintWriter("test.svg")
   pw.write(apply(sm))
   pw.close()
+
 }

@@ -50,8 +50,7 @@ abstract class HW[T: Numeric](val size: Int) {
 }
 
 object HW {
-
-  implicit class compHW[T](x: HW[Complex[T]]) {
+  extension [T](x: HW[Complex[T]]) {
     def innerHW: HW[T] = x match {
       case x: ComplexHW[T] => x.hw
       case _ => throw new Exception("Invalid complex HW datatype")

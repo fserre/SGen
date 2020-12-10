@@ -29,13 +29,13 @@ import SB.SB
 
 
 case class DualPortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {
-  override def parents: Seq[(SigRef[_], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
+  override def parents: Seq[(SigRef[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
 
   override val hw: HW[U] = implicitly
-  override val sb: SB[_] = input.sb
+  override val sb: SB[?] = input.sb
   override val pipeline = 1
 
-  override def implement(cp: (SigRef[_], Int) => Component): Component = {
+  override def implement(cp: (SigRef[?], Int) => Component): Component = {
     val mem = new RTL.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
     new RTL.RAMRd(mem, cp(addrRd, 1))
   }
@@ -55,13 +55,13 @@ case class DualPortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int
 case class SinglePortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
   val timeRd: Int = T + 1
 
-  override def parents: Seq[(SigRef[_], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
+  override def parents: Seq[(SigRef[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
 
   override val hw: HW[U] = implicitly
-  override val sb: SB[_] = input.sb
+  override val sb: SB[?] = input.sb
   override val pipeline = 1
 
-  override def implement(cp: (SigRef[_], Int) => Component): Component = {
+  override def implement(cp: (SigRef[?], Int) => Component): Component = {
     val mem = new RTL.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
     new RTL.RAMRd(mem, cp(addrWr, timeRd))
   }

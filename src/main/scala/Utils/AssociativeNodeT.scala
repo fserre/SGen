@@ -39,7 +39,7 @@ import scala.reflect._
   override val hashCode: Int = Seq(that.getClass.getSimpleName,list).hashCode()
 }*/
 
-abstract class AssociativeNodeCompanionT[S[_],U[T] <: S[T] with AssociativeNode[S[T]]] {
+abstract class AssociativeNodeCompanionT[S[_],U[T] <: S[T] & AssociativeNode[S[T]]] {
   def create[T](inputs: Seq[S[T]]): S[T]
 
   def simplify[T](lhs: S[T], rhs: S[T]): Either[S[T], (S[T], S[T])] = Right((lhs,rhs))
@@ -50,7 +50,7 @@ abstract class AssociativeNodeCompanionT[S[_],U[T] <: S[T] with AssociativeNode[
       case (ev(lhs), ev(rhs)) => apply(lhs.list ++ rhs.list)
       case (lhs, ev(rhs)) => apply(lhs +: rhs.list)
       case (ev(lhs), rhs) =>
-        val lhsl :+ lhsr = lhs.list
+        val lhsl :+ lhsr: @unchecked = lhs.list
         simplify(lhsr, rhs) match {
           case Left(rhs) => apply(apply(lhsl), rhs)
           case Right((rhs1, rhs2)) => create(lhsl :+ rhs1 :+ rhs2)
@@ -86,14 +86,14 @@ trait AssociativeNode[S]  {that=>
   override val hashCode: Int = Seq(that.getClass.getSimpleName,list).hashCode()
 }
 
-abstract class AssociativeNodeCompanion[S,U <: S with AssociativeNode[S]](create:Seq[S]=>S,simplify:(S,S)=>Either[S,(S,S)]=(lhs:S,rhs:S)=>Right(lhs,rhs)) {
+abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]](create:Seq[S]=>S,simplify:(S,S)=>Either[S,(S,S)]=(lhs:S,rhs:S)=>Right(lhs,rhs)) {
   def apply(lhs: S, rhs: S)(implicit ev:ClassTag[U]): S = simplify(lhs, rhs) match {
     case Left(simple) => simple
     case Right((lhs, rhs)) => (lhs, rhs) match {
       case (ev(lhs), ev(rhs)) => apply(lhs.list ++ rhs.list)
       case (lhs, ev(rhs)) => apply(lhs +: rhs.list)
       case (ev(lhs), rhs) =>
-        val lhsl :+ lhsr = lhs.list
+        val lhsl :+ lhsr: @unchecked = lhs.list
         simplify(lhsr, rhs) match {
           case Left(rhs) => apply(apply(lhsl), rhs)
           case Right((rhs1, rhs2)) => create(lhsl :+ rhs1 :+ rhs2)

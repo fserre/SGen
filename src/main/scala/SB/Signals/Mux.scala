@@ -28,9 +28,9 @@ import SB.HardwareType.{ComplexHW, HW, Unsigned}
 import SB.SB
 import linalg.Fields.Complex
 
-case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(inputs.head.hw) {
-  def isRom: Boolean = inputs.forall(_.sig.isInstanceOf[Const[_]])
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Mux(cp(address), inputs.map(cp))
+case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(using inputs.head.hw) {
+  def isRom: Boolean = inputs.forall(_.sig.isInstanceOf[Const[?]])
+  override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.Mux(cp(address), inputs.map(cp))
 
   override def graphDeclaration: String = if (isRom)
     graphName + "[label=\"<title>ROM (" + inputs.size + " × " + hw.size + " bits) |" + inputs.map(_.sig.asInstanceOf[Const[U]].value.toString).mkString("|") + "\",shape=record];"
@@ -46,7 +46,7 @@ object Mux {
     require(inputs.nonEmpty)
     val head=inputs.head
     val hw = head.hw
-    implicit val sb: SB[_] = address.sb
+    implicit val sb: SB[?] = address.sb
     require(inputs.forall(_.hw == hw))
 
     address match {
@@ -97,7 +97,7 @@ object Mux {
 }
 
 object ROM {
-  def apply[U](values: Seq[U], addr: Sig[Int])(implicit hw: HW[U], sb: SB[_]): Sig[U] = Mux(addr, values.map(v => Const(v)))
+  def apply[U](values: Seq[U], addr: Sig[Int])(implicit hw: HW[U], sb: SB[?]): Sig[U] = Mux(addr, values.map(v => Const(v)))
 
 
 }

@@ -30,7 +30,7 @@ import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
 case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) extends SLP(v.head.m, k, v.size) {
-  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[_]): Seq[Sig[U]] = {
+  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
     val timer = Timer(T)
     val vec = Vector.tabulate(v.size)(j => timer scalar v(j))
     val set = Counter(size)

@@ -122,13 +122,13 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1) {
     require(input.hw == that)
 
     //override def implement(implicit cp: SigRef[_] => Component): Component = new Extern(hw.size,filename,"IEEE2Flopoco",)
-    override def implement(implicit cp: SigRef[_] => Component): Component = new Extern(hw.size, filename, "IEEE2Flopoco", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
+    override def implement(implicit cp: SigRef[?] => Component): Component = new Extern(hw.size, filename, "IEEE2Flopoco", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
   }
 
   private case class FlopocoToIEEE(input: Sig[Double]) extends Operator[Double](input)(that) {
     require(input.hw == Flopoco(wE, wF))
 
-    override def implement(implicit cp: SigRef[_] => Component): Component = new Extern(size, filename, "Flopoco2IEEE", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
+    override def implement(implicit cp: SigRef[?] => Component): Component = new Extern(size, filename, "Flopoco2IEEE", "R", ("clk", new RTL.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
   }
 
 }

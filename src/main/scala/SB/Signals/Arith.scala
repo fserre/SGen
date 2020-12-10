@@ -59,7 +59,7 @@ object Plus{
   def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
     require(lhs.hw == rhs.hw)
     implicit val hw: HW[T] = lhs.hw
-    implicit val sb: SB[_] = lhs.sb
+    implicit val sb: SB[?] = lhs.sb
     import hw.num._
     (lhs, rhs) match {
       case (Const(vl), Const(vr)) => Const(vl + vr)
@@ -112,7 +112,7 @@ object Minus {
   def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
     require(lhs.hw == rhs.hw)
     implicit val hw: HW[T] = lhs.hw
-    implicit val sb: SB[_] = lhs.sb
+    implicit val sb: SB[?] = lhs.sb
     import hw.num._
     (lhs, rhs) match {
       case (Const(vl), Const(vr)) => Const(vl - vr)
@@ -129,7 +129,7 @@ object Times {
   @tailrec
   def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
     implicit val hw: HW[T] = lhs.hw
-    implicit val sb: SB[_] = lhs.sb
+    implicit val sb: SB[?] = lhs.sb
     import hw.num._
     (lhs, rhs) match {
       case (Const(vl), Const(vr)) => Const(vl * vr)
@@ -164,7 +164,7 @@ object Zero{
       case _ => false
     }
   }
-  def apply[T]()(implicit hw:HW[T],sb:SB[_]): Sig[T] =Const(implicitly[HW[T]].num.zero)
+  def apply[T]()(implicit hw:HW[T],sb:SB[?]): Sig[T] =Const(implicitly[HW[T]].num.zero)
 }
 
 object One{
@@ -175,13 +175,13 @@ object One{
       case _ => false
     }
   }
-  def apply[T]()(implicit hw:HW[T],sb:SB[_]): Sig[T] =Const(implicitly[HW[T]].num.one)
+  def apply[T]()(implicit hw:HW[T],sb:SB[?]): Sig[T] =Const(implicitly[HW[T]].num.one)
 }
 
 object Opposite {
   def unapply[T: HW](arg: Sig[T]): Option[Sig[T]] = {
     val hw = implicitly[HW[T]]
-    implicit val sb: SB[_] = arg.sb
+    implicit val sb: SB[?] = arg.sb
     arg match {
       case Const(value) if hw.num.lt(value, hw.num.zero) => Some(Const(hw.num.negate(value)))
       case Minus(Zero(), arg) => Some(arg)
@@ -191,7 +191,7 @@ object Opposite {
 
   def apply[T](arg: Sig[T]): Sig[T] = {
     implicit val hw: HW[T] = arg.hw
-    implicit val sb: SB[_] = arg.sb
+    implicit val sb: SB[?] = arg.sb
     arg match {
       case Opposite(arg) => arg
       case _ => Zero[T]() - arg

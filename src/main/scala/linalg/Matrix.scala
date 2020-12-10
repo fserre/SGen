@@ -312,7 +312,7 @@ case class Matrix[T: Fractional](m: Int, n: Int, values: Vector[T]) {
 
   override def equals(rhs: Any):Boolean = {
     rhs match {
-      case mat: Matrix[T] => mat.m == m && mat.n == n && (0 until m).forall(i => (0 until n).forall(j => this (i, j) == mat(i, j)))
+      case mat: Matrix[?] => mat.m == m && mat.n == n && (0 until m).forall(i => (0 until n).forall(j => this (i, j) == mat(i, j)))
       case _ => false
     }
   }
@@ -380,7 +380,7 @@ case class Matrix[T: Fractional](m: Int, n: Int, values: Vector[T]) {
    * @param rhs a matrix representing another subspace
    * @return a matrix representing the intersection of this and rhs
    */
-  def inter(rhs: Matrix[T]):Matrix[T] = {
+  infix def inter(rhs: Matrix[T]):Matrix[T] = {
     val M = (this :: rhs) / (this :: Matrix.zeros[T](this.m, rhs.n))
     val M2 = M.reducedColEchelonForm
     (0 until M2.n).find(j => (0 until this.m).forall(i => M2(i, j) == implicitly[Fractional[T]].zero)) match {
@@ -392,7 +392,7 @@ case class Matrix[T: Fractional](m: Int, n: Int, values: Vector[T]) {
     }
   }
 
-  def oplus(rhs: Matrix[T]):Matrix[T] = (this :: Matrix.zeros(this.m, rhs.n)) / (Matrix.zeros(rhs.m, this.n) :: rhs)
+  infix def oplus(rhs: Matrix[T]):Matrix[T] = (this :: Matrix.zeros(this.m, rhs.n)) / (Matrix.zeros(rhs.m, this.n) :: rhs)
 
   /**
    * Concatenates horizontally two matrices with the same number of rows

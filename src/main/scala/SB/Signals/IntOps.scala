@@ -31,7 +31,7 @@ import Utils.{AssociativeNode, AssociativeNodeCompanion}
 import scala.annotation.tailrec
 
 class And private (terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," & ",8){
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.And(terms.map(cp))
+  override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.And(terms.map(cp))
 
   override val pipeline = 1
 }
@@ -39,7 +39,7 @@ class And private (terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," 
 object And extends AssociativeSigCompanion[Int, And](arg => new And(arg.map(_.ref)), (lhs: Sig[Int], rhs: Sig[Int]) => {
   require(lhs.hw == rhs.hw)
   implicit val hw: HW[Int] = lhs.hw
-  implicit val sb: SB[_] =lhs.sb
+  implicit val sb: SB[?] =lhs.sb
   def withConst(const:Int,input:Sig[Int])={
     val bits = hw.bitsOf(const)
     Concat((0 until hw.size).reverse.map(i=>if(bits.testBit(i)) input(i) else Const(0)(Unsigned(1),sb)))
@@ -54,13 +54,13 @@ object And extends AssociativeSigCompanion[Int, And](arg => new And(arg.map(_.re
 
 
 case class Not private(input: SigRef[Int]) extends Operator[Int](input)(input.hw) {
-  override def implement(implicit cp: SigRef[_] => Component): Component =new RTL.Not(cp(input))
+  override def implement(implicit cp: SigRef[?] => Component): Component =new RTL.Not(cp(input))
 }
 
 object Not{
   def apply(input: Sig[Int]): Sig[Int] = {
     implicit val hw: HW[Int] = input.hw
-    implicit val sb: SB[_] = input.sb
+    implicit val sb: SB[?] = input.sb
     input match {
       case Const(value) => Const(((1 << hw.size) - 1) ^ value)
       case Not(input) => input
@@ -75,7 +75,7 @@ object Not{
 }
 
 class Xor private(terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms, " ^ ",9) {
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Xor(terms.map(cp))
+  override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.Xor(terms.map(cp))
 
   override val pipeline = 1
 }
@@ -85,7 +85,7 @@ object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg.map(_.re
 
   require(lhs.hw == rhs.hw)
   implicit val hw: HW[Int] = lhs.hw
-  implicit val sb: SB[_] =lhs.sb
+  implicit val sb: SB[?] =lhs.sb
   def withConst(const:Int,input:Sig[Int])={
     val bits = hw.bitsOf(const)
     Concat((0 until hw.size).reverse.map(i=>if(bits.testBit(i)) Not(input(i)) else input(i)))
@@ -101,11 +101,11 @@ object RedXor {
   def apply(input: Sig[Int]): Sig[Int] = Xor((0 until input.hw.size).map(input(_)))
 }
 class Concat private(terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," :: ",12)(Unsigned(terms.map(_.hw.size).sum)) {
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Concat(terms.map(cp))
+  override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.Concat(terms.map(cp))
 }
 
 object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]]) => new Concat(list.map(_.ref)) }, (lhs: Sig[Int], rhs: Sig[Int]) => {
-  implicit val sb: SB[_] =lhs.sb
+  implicit val sb: SB[?] =lhs.sb
   (lhs,rhs) match{
     case (lhs:Const[Int], rhs:Const[Int]) => Left(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size),sb))
     case (_, Null()) => Left(lhs)
@@ -116,12 +116,12 @@ object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]
 })
 
 case class Tap private(input: SigRef[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)) {
-  override def implement(implicit cp: SigRef[_] => Component): Component = new RTL.Tap(cp(input), range)
+  override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.Tap(cp(input), range)
 }
 
 object Tap {
   def apply(input: Sig[Int], range: Range): Sig[Int] = {
-    implicit val sb: SB[_] =input.sb
+    implicit val sb: SB[?] =input.sb
     input match {
       case _ if range.isEmpty => Null()
       case _ if range.length == input.hw.size => input

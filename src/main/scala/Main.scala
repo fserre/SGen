@@ -72,18 +72,18 @@ object Main extends App{
       case _ => (1 to k).reverse.filter(n % _ == 0).head
     }
 
-    var _hw: Option[HW[_]] = None
+    var _hw: Option[HW[?]] = None
 
-    def hw_=(arg: Option[HW[_]]): Unit = _hw = arg
+    def hw_=(arg: Option[HW[?]]): Unit = _hw = arg
 
-    def hw: HW[_] = _hw match {
+    def hw: HW[?] = _hw match {
       case Some(k) => k
       case _ => Unsigned(16)
     }
 
-    var _design: Option[StreamingModule[_]] = None
+    var _design: Option[StreamingModule[?]] = None
 
-    def design_=(arg: StreamingModule[_]): Unit = _design = Some(arg)
+    def design_=(arg: StreamingModule[?]): Unit = _design = Some(arg)
 
     def design = _design match {
       case Some(d) => d
@@ -97,7 +97,7 @@ object Main extends App{
     def filename(default: String) = _filename.getOrElse(default)
 
 
-    def parseHW: Option[HW[_]] = argsQ.dequeue().toLowerCase() match {
+    def parseHW: Option[HW[?]] = argsQ.dequeue().toLowerCase() match {
       case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned)
       case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
       case "char" => Some(FixedPoint(8, 0))
@@ -171,7 +171,7 @@ object Main extends App{
 
     if (graph)
       design match {
-        case imp: SB[_] =>
+        case imp: SB[?] =>
           val file = filename("graph.gv")
           val pw = new PrintWriter(file)
           pw.write(imp.toGraph)
