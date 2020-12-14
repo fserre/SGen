@@ -32,14 +32,12 @@ import linalg.{Matrix, Vec}
 import scala.annotation.tailrec
 
 case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]], dualPorted:Boolean) extends SLP(P3.head.m, P3.head.n, P3.size) {
+  val innerLatency = (for {
+    p <- 0 until K
+    c <- 0 until T
+    i <- 0 until size
+  } yield c - Vec(P4(i) * Vec.fromInt(t, c) + P3(i) * Vec.fromInt(k, p)).toInt).max
   override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
-
-    val latency = (for {
-      p <- 0 until K
-      c <- 0 until T
-      i <- 0 until size
-    } yield c - Vec(P4(i) * Vec.fromInt(t, c) + P3(i) * Vec.fromInt(k, p)).toInt).max
-
     def compBasis(basis: Matrix[F2] = Matrix.identity[F2](t), i: Int = 0): Vector[Matrix[F2]] = {
       val nextBasis = basis * P4(i).inverse
       if (i == P3.size - 1 && nextBasis.isIdentity)
@@ -96,10 +94,10 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
 
       val addressesRead = offsetListRead.map(_ ^ basisRead)
 
-      inputs.zipWithIndex.map { case (i, p) => DualPortedRAM(i, addressesWrite(p), addressesRead(p), latency) }
+      inputs.zipWithIndex.map { case (i, p) => DualPortedRAM(i, addressesWrite(p), addressesRead(p), innerLatency) }
     }
     else
-      inputs.zipWithIndex.map { case (i, p) => SinglePortedRAM(i, addressesWrite(p), latency, T) }
+      inputs.zipWithIndex.map { case (i, p) => SinglePortedRAM(i, addressesWrite(p), innerLatency, T) }
   }
 
   override def hasSinglePortedMem: Boolean = !dualPorted

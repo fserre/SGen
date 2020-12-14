@@ -26,12 +26,12 @@ package SPL.FFT
 import SB.HardwareType.{ComplexHW, FixedPoint, HW}
 import SB.SB
 import _root_.SB.Signals.{ROM, Sig, Timer}
-import SPL.{Repeatable, SPL}
+import SPL.{Identity, Repeatable, SPL}
 import StreamingModule.StreamingModule
 import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
-case class DiagE(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
+case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
   def pow(x: Int): Int = {
     val j = x % (1 << r)
     val i = (x >> r) % (1 << (n - r * (l + 1)))
@@ -61,4 +61,10 @@ case class DiagE(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
     override def toString: String = "DiagE(" + this.n + "," + r + "," + l + "," + this.k + ")"
     override def spl: SPL[Complex[Double]] = DiagE(this.n, r, l)
   }
+}
+object DiagE{
+  def apply(n: Int, r: Int, l: Int):SPL[Complex[Double]]=
+    if(n==r*(l+1))
+      Identity[Complex[Double]](n) else
+    new DiagE(n,r,l)
 }

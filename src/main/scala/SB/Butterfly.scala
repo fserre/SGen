@@ -22,28 +22,26 @@
  */
 
 package SB
+
+import SB.HardwareType.HW
 import SB.Signals.Sig
-import SPL.{Repeatable, SPL}
+import SPL.SPL
+import StreamingModule.StreamingModule
+import _root_.SPL.FFT.DFT2
 
+class Butterfly[T:HW] extends SB[T](0,1){
 
-/**
- * Streaming block that represents the SPL expression I_{2^r} \otimes factor, streamed with 2^k ports.
- * Either factor is streamed with the same streaming width (k==factor.k, so we repeat in time), or factor is not streaming (factor.n==factor.k, so we repeat in space).
- *
- * @param r Log of the total number of times factor has to be repeated.
- * @param factor Streaming block to be repeated
- * @param k Log of the streaming width.
- * @tparam T Software datatype of the inputs/outputs
- */
-case class ITensor[T](r: Int, factor: SB[T], override val k: Int) extends SB[T](r + factor.n - k, k)(factor.hw) {
-//println("r:"+r+" k:"+k+" factor:"+factor)
-  require((k>factor.n && factor.n==factor.k) || factor.k==k)
-  override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = if(k>factor.n)
-    inputs.grouped(1<<factor.n).toSeq.flatMap(factor.implement(_))
-  else
-    factor.implement(inputs)
+  override def toString: String = "F2"
 
-  override def spl: SPL[T] = SPL.ITensor(r,factor.spl)
+  override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
 
-  override def hasSinglePortedMem: Boolean = factor.hasSinglePortedMem
+  override def spl: SPL[T] =DFT2[T]()(implicitly[HW[T]].num)
+}
+
+object Butterfly{
+  def apply[T:HW]=new Butterfly[T]
+  def unapply[T](arg:StreamingModule[T]):Boolean= arg match{
+    case _:Butterfly[T] => true
+    case _ => false
+  }
 }
