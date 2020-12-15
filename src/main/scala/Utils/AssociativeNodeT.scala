@@ -76,12 +76,24 @@ trait AssociativeNode[S]  {that=>
 
   override def toString: String = that.getClass.getSimpleName+"("+list.map(_.toString()).mkString(", ")+")"
 
-  def canEqual(other:Any): Boolean =other.isInstanceOf[that.type]
+  final def canEqual(other:Any): Boolean =other.isInstanceOf[that.type]
 
-  override def equals(obj: Any): Boolean = obj match{
-    case other:that.type => other.canEqual(that) && other.list==list
-    case _ => false
-  }
+  final override def equals(obj: Any): Boolean =
+    if(obj.isInstanceOf[that.type])
+      if(obj.asInstanceOf[that.type].canEqual(that))
+        if (list==obj.asInstanceOf[that.type].list)
+          true
+        else
+          false
+      else
+        false
+    else
+      false
+//todo: replace with this code once scala3 works
+  /*obj match{
+  case other:that.type => other.canEqual(that) && list==other.list
+  case _ => false
+}*/
 
   override val hashCode: Int = Seq(that.getClass.getSimpleName,list).hashCode()
 }

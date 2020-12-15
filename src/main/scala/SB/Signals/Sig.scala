@@ -78,7 +78,7 @@ object Sig {
   implicit def vecToConst(v: Vec[F2])(implicit sb:SB[?]): Sig[Int] = Const(v.toInt)(Unsigned(v.m),sb)
 
   extension [T](lhs: Sig[Int]) {
-    def ::(rhs: Sig[Int]):Sig[Int] = Concat(rhs, lhs)
+    def ::(rhs: Sig[Int]):Sig[Int] = Concat(lhs, rhs)
 
     def &(rhs: Sig[Int]):Sig[Int] = And(lhs, rhs)
 
@@ -119,10 +119,10 @@ object SigRef{
 abstract class AssociativeSig[T](val terms: Seq[SigRef[T]], op: String, override val precedence: Int)(implicit hw: HW[T] = terms.head.hw) extends Operator(terms: _*)(hw) with AssociativeNode[Sig[T]] { that =>
   override val list:Seq[Sig[T]]=terms.map(_.sig)
 
-  override def equals(obj: Any): Boolean = obj match{
+  /*override def equals(obj: Any): Boolean = obj match{
     case other:that.type => other.canEqual(that) && other.terms==terms
     case _ => false
-  }
+  }*/
 
   override def graphDeclaration:String = graphName + "[label=\"" + op + "\"];"
 
