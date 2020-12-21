@@ -21,5 +21,9 @@
  *
  */
 
-/** Streaming block DSL */
-package object SB {}
+package AcyclicStreamingModule
+
+/** Collection of signals (nodes) to be used in streaming blocks. */
+package object Signals {
+
+}

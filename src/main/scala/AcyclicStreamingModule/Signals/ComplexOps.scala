@@ -21,10 +21,10 @@
  *
  */
 
-package SB.Signals
+package AcyclicStreamingModule.Signals
 
 import RTL.Component
-import SB.HardwareType.{ComplexHW, HW}
+import AcyclicStreamingModule.HardwareType.{ComplexHW, HW}
 import linalg.Fields.Complex
 
 case class Re[T] private(input: SigRef[Complex[T]]) extends Operator[T](input)(using input.sig.hw.innerHW) {

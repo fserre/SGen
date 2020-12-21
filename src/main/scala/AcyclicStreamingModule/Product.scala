@@ -21,12 +21,12 @@
  *
  */
 
-package SB
+package AcyclicStreamingModule
 
-import SB.HardwareType.HW
-import SB.SLP.Steady
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SLP.Steady
 import SPL.SPL
-import SB.Signals.Sig
+import AcyclicStreamingModule.Signals.Sig
 import StreamingModule.StreamingModule
 import Utils.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
 

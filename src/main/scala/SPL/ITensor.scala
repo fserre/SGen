@@ -23,8 +23,9 @@
 
 package SPL
 
-import SB.HardwareType.HW
-import SB.SB
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SB
+import AcyclicStreamingModule.SLP.RAMControl
 import StreamingModule.StreamingModule
 import linalg.Fields.F2
 import linalg.Matrix
@@ -34,7 +35,7 @@ case class ITensor[T] private (r:Int, factor:Repeatable[T]) extends SPL[T](facto
   override def eval(inputs: Seq[T], set: Int): Seq[T] = //inputs.grouped(1<<n).toSeq.map(_.grouped(1<<factor.n).toVector).transpose.flatten.map(factor.eval).map(_.grouped(1<<factor.n).toVector).transpose.flatten.flatten
     inputs.grouped(factor.N).toSeq.flatMap(factor.eval(_, set))
 
-  override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = SB.ITensor(r,factor.stream(Math.min(factor.n,k)),k)
+  override def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = AcyclicStreamingModule.ITensor(r,factor.stream(Math.min(factor.n,k),control),k)
 }
 
 object ITensor{
@@ -45,12 +46,12 @@ object ITensor{
     factor match{
       case Product(factors) => Product(factors.map(ITensor(r, _)))
       case ITensor(r2, factor) => ITensor(r + r2, factor)
-      case LinearPerm(matrices,dualPorted) => LinearPerm(matrices.map(m => Matrix.identity[F2](r) oplus m),dualPorted)
+      case LinearPerm(matrices) => LinearPerm(matrices.map(m => Matrix.identity[F2](r) oplus m))
     case factor:Repeatable[T] => new ITensor(r,factor)
       case _ => throw new Exception("Non repeatable SPL used in ITensor: " + factor)
   }
 }
 
 trait Repeatable[T] extends SPL[T]{
-  override def stream(k: Int)(implicit hw: HW[T]): SB[T]
+  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): SB[T]
 }

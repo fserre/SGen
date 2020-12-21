@@ -22,8 +22,9 @@
  */
 
 import TestTools.test
-import SB.HardwareType.{ComplexHW, FixedPoint}
-import SB.SB
+import AcyclicStreamingModule.HardwareType.{ComplexHW, FixedPoint}
+import AcyclicStreamingModule.SB
+import AcyclicStreamingModule.SLP.RAMControl
 import SPL.FFT.{DFT, StreamDiagC}
 import StreamingModule.StreamingModule
 import linalg.Fields.Complex
@@ -37,10 +38,9 @@ object DFTTest extends Properties("DFT") {
   property("CTDFT conforms to the definition")=forAll(for {
     n <- Gen.choose(2,10)
     r <- Gen.choose(1, n-1)
-    dp <- Gen.oneOf(true,false)
     if n % r == 0
-  } yield (n,r,dp)) { case (n,r,dp) =>
-    val sb = DFT.CTDFT(n, r,dp) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
+  } yield (n,r)) { case (n,r) =>
+    val sb = DFT.CTDFT(n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res = (0 until (1 << n)).map(j => Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Complex[Double]]](_ :: _)
@@ -57,8 +57,8 @@ object DFTTest extends Properties("DFT") {
     n = t + k
     r <- Gen.choose(1, n)
     if n % r == 0
-    dp <- Gen.oneOf(true,false)
-  } yield DFT.CTDFT(n, r,dp).stream(k)(ComplexHW(FixedPoint(8, 8)))
+    dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
+  } yield DFT.CTDFT(n, r).stream(k,dp)(ComplexHW(FixedPoint(8, 8)))
   property("CTDFT") = forAll(genSteady) { (sb: StreamingModule[Complex[Double]]) =>
       test(sb) match {
         case Some(value) if value.re < 0.01 => true
@@ -73,8 +73,8 @@ object DFTTest extends Properties("DFT") {
     n = t + k
     r <- Gen.choose(1, n)
     if n % r == 0
-    dp <- Gen.oneOf(true,false)
-  } yield DFT.Pease(n, r,dp).stream(k)(ComplexHW(FixedPoint(8, 8)))
+    dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
+  } yield DFT.Pease(n, r).stream(k,dp)(ComplexHW(FixedPoint(8, 8)))
   property("Pease") =
 
     forAll(genPease) { (sb: StreamingModule[Complex[Double]]) =>
@@ -90,7 +90,7 @@ object DFTTest extends Properties("DFT") {
     n = t + k
     r <- Gen.choose(1, n - 1)
     if n % r == 0
-  } yield StreamDiagC(n, r).stream(k)(ComplexHW(FixedPoint(16, 16)))
+  } yield StreamDiagC(n, r).stream(k,RAMControl.Single)(ComplexHW(FixedPoint(16, 16)))
   property("DiagC") = forAll(genDiagC) { (sb: StreamingModule[Complex[Double]]) =>
     test(sb) match {
         case Some(value) if value.re < 0.01 => true
@@ -121,7 +121,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n - 1)
     if n % r == 0
     if k >= r
-  } yield DFT.ItPease(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
+  } yield DFT.ItPease(n, r).stream(k,RAMControl.Dual)(ComplexHW(FixedPoint(8, 8)))
   property("ItPease")= forAll(genItPease) { (sb: StreamingModule[Complex[Double]]) =>
     test(sb) match {
         case Some(value) if value.re < 0.01 => true
@@ -151,7 +151,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n - 1)
     if n % r == 0
     if k >= r
-  } yield DFT.ItPeaseFused(n, r).stream(k)(ComplexHW(FixedPoint(8, 8)))
+  } yield DFT.ItPeaseFused(n, r).stream(k,RAMControl.Dual)(ComplexHW(FixedPoint(8, 8)))
   property("ItPeaseFused") = forAll(genItPeaseFused) { (sb: StreamingModule[Complex[Double]]) =>
     test(sb) match {
         case Some(value) if value.re < 0.01 => true

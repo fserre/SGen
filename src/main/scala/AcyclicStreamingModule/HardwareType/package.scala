@@ -21,9 +21,9 @@
  *
  */
 
-package SB
+package AcyclicStreamingModule
 
-/** Streaming blocks used for streaming linear permutations. */
-package object SLP {
+/** Collection of hardware datatypes. */
+package object HardwareType {
 
 }

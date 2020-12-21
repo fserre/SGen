@@ -27,17 +27,13 @@ lazy val root = (project in file("."))
     name := "SGen",
     organization := "fserre",
     version := "0.1",
-    //scalaVersion := "3.0.0-M3-bin-20201211-dbc1186-NIGHTLY",
-    scalaVersion := "3.0.0-M3-bin-20201213-3c18f6b-NIGHTLY",
-
-    //scalaVersion := "3.0.0-M2",
-    //scalaVersion := "2.13.4",
+    scalaVersion := "3.0.0-RC1-bin-20201218-33b710a-NIGHTLY",
     libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.1" % "test").withDottyCompat(scalaVersion.value),
     scalacOptions ++= Seq("-deprecation","-feature"),
     //scalacOptions ++= Seq("-source","3.1"),
     mainClass in (Compile, run) := Some("main"),
     parallelExecution in Test := false,
-    testOptions in Test +=Tests.Argument("-s","10")
+    testOptions in Test +=Tests.Argument("-s","100")
     //scalacOptions ++= Seq("-indent","-rewrite")
   )
 

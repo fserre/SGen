@@ -21,11 +21,11 @@
  *
  */
 
-package SB.Signals
+package AcyclicStreamingModule.Signals
 
 import RTL.Component
-import SB.HardwareType.HW
-import SB.SB
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SB
 
 
 case class DualPortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {

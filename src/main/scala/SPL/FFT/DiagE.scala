@@ -23,9 +23,10 @@
 
 package SPL.FFT
 
-import SB.HardwareType.{ComplexHW, FixedPoint, HW}
-import SB.SB
-import _root_.SB.Signals.{ROM, Sig, Timer}
+import AcyclicStreamingModule.HardwareType.{ComplexHW, FixedPoint, HW}
+import AcyclicStreamingModule.SB
+import AcyclicStreamingModule.SLP.RAMControl
+import _root_.AcyclicStreamingModule.Signals.{ROM, Sig, Timer}
 import SPL.{Identity, Repeatable, SPL}
 import StreamingModule.StreamingModule
 import linalg.Fields.Complex
@@ -42,7 +43,7 @@ case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Compl
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
 
-  override def stream(k: Int)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = new SB(n - k, k) {
+  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = new SB(n - k, k) {
     override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[?]): Seq[Sig[Complex[Double]]] = {
       (0 until K).map(p => {
         val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))

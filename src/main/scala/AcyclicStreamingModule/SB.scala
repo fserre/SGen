@@ -21,13 +21,13 @@
  *
  */
 
-package SB
+package AcyclicStreamingModule
 
 import java.io.PrintWriter
 
 import RTL.Component
-import SB.HardwareType.HW
-import SB.Signals._
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.Signals._
 import StreamingModule.StreamingModule
 
 import sys.process._

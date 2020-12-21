@@ -21,19 +21,69 @@
  *
  */
 
-import SB.SLP.{Steady, SwitchArray, Temporal}
+import AcyclicStreamingModule.SLP.{Steady, SwitchArray, Temporal,RAMControl}
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
 import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
 import TestTools._
-import SB.SB
-import _root_.SB.HardwareType.Unsigned
+import AcyclicStreamingModule.SB
+import _root_.AcyclicStreamingModule.HardwareType.Unsigned
 import SPL.LinearPerm
 import StreamingModule.StreamingModule
 
 object SLPTest extends Properties("SLP") {
+
+
+
+
+
+
+  val genTemporal: Gen[SB[Int]] = for {
+    t <- Gen.choose(1, 2)
+    k <- Gen.choose(1, 2)
+    r <- Gen.choose(0, 2)
+    innerP4 <- genInvertible(t)
+    p4=Matrix.identity[F2](r) oplus innerP4
+    innerP3 <- genMatrix(t, k)
+    p3=Matrix.zeros[F2](r,k)/innerP3
+    dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
+  } yield Temporal(Vector(p3), Vector(p4),dp)(Unsigned(16))
+  property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
+    val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
+    test(sb,2, gap2).contains(0)
+  }
+
+  val genTemporal2: Gen[SB[Int]] = for {
+    t <- Gen.choose(1, 5)
+    k <- Gen.choose(1, 5)
+    r <- Gen.choose(0, 2)
+    innerP4 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(t))
+    p4=innerP4.map(Matrix.identity[F2](r) oplus _)
+    innerP3 <- Gen.containerOfN[Vector, Matrix[F2]](2, genMatrix(t, k))
+    p3=innerP3.map(Matrix.zeros[F2](r,k)/_)
+    dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
+  } yield Temporal(p3, p4,dp)(Unsigned(16))
+  property("Temporal2") =  forAll(genTemporal2, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
+    val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
+    test(sb,5,gap2).contains(0)
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   val genSteady: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
@@ -62,29 +112,6 @@ object SLPTest extends Properties("SLP") {
       test(sb,2, gap).contains(0)
     }
 
-  val genTemporal: Gen[SB[Int]] = for {
-    t <- Gen.choose(1, 2)
-    k <- Gen.choose(1, 2)
-    p4 <- genInvertible(t)
-    p3 <- genMatrix(t, k)
-    dp <- Gen.oneOf(true,false)
-  } yield Temporal(Vector(p3), Vector(p4),dp)(Unsigned(16))
-  property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
-  val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
-      test(sb,2, gap2).contains(0)
-  }
-
-  val genTemporal2: Gen[SB[Int]] = for {
-    t <- Gen.choose(1, 5)
-    k <- Gen.choose(1, 5)
-    p4 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(t))
-    p3 <- Gen.containerOfN[Vector, Matrix[F2]](2, genMatrix(t, k))
-    dp <- Gen.oneOf(true,false)
-  } yield Temporal(p3, p4,dp)(Unsigned(16))
-  property("Temporal2") =  forAll(genTemporal2) { sb =>
-      test(sb,5).contains(0)
-  }
-
 
 
   val genLinPerm: Gen[StreamingModule[Int]] = for {
@@ -92,8 +119,8 @@ object SLPTest extends Properties("SLP") {
     k <- Gen.choose(5, 5)
     n = t + k
     p <- genInvertible(n)
-    dp <- Gen.oneOf(true,false)
-  } yield LinearPerm[Int](Seq(p),dp).stream(k)(Unsigned(16)) //(LinearPerm[Int](Seq(p)), k)
+    dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
+  } yield LinearPerm[Int](Seq(p)).stream(k,dp)(Unsigned(16)) //(LinearPerm[Int](Seq(p)), k)
 
 
   property("LinearPerm") = forAll(genLinPerm) { sb =>

@@ -23,10 +23,11 @@
 
 package SPL.FFT
 
-import SB.HardwareType.{ComplexHW, FixedPoint, HW, Unsigned}
-import SB.SB
+import AcyclicStreamingModule.HardwareType.{ComplexHW, FixedPoint, HW, Unsigned}
+import AcyclicStreamingModule.SB
+import AcyclicStreamingModule.SLP.RAMControl
 import SPL.{Repeatable, SPL}
-import _root_.SB.Signals.{Const, Counter, ROM, Sig, Timer}
+import _root_.AcyclicStreamingModule.Signals.{Const, Counter, ROM, Sig, Timer}
 import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
@@ -41,7 +42,7 @@ case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
 
-  override def stream(k: Int)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = new SB(n - k, k) {
+  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = new SB(n - k, k) {
     override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[?]): Seq[Sig[Complex[Double]]] = {
       (0 until K).map(p => {
         val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
@@ -70,7 +71,7 @@ case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]]
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n), set % (n / r)) }
 
-  override def stream(k: Int)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = {
+  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = {
     //require(k>=r)
     new SB(n - k, k) {
       override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[?]): Seq[Sig[Complex[Double]]] = {

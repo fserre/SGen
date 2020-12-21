@@ -24,6 +24,7 @@
 import scala.language.implicitConversions
 import java.io.PrintWriter
 import StreamingModule.StreamingModule
+import AcyclicStreamingModule.SLP.RAMControl
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Shrink}
@@ -41,10 +42,10 @@ object TestTools {
         println("""echo c:\xilinx\Vivado\2020.1\bin\ > xilinx.txt""")
         System.exit(0)
       }
-      val source=io.Source.fromFile("xilinx.txt")
-      val res=source.getLines().next()
-      source.close()
-      res.trim
+    val source=io.Source.fromFile("xilinx.txt")
+    val res=source.getLines().next()
+    source.close()
+    res.trim
   }
 
 
@@ -85,11 +86,11 @@ object TestTools {
 
   implicit def shrinkSB[T]: Shrink[StreamingModule[T]] = Shrink.withLazyList {
     case StreamingModule.Product(factors) => factors.indices.to(LazyList).map(i => StreamingModule.Product[T](factors.take(i) ++ factors.drop(i + 1)))
-    case SB.Product(factors) => factors.indices.to(LazyList).map(i => SB.Product[T](factors.take(i) ++ factors.drop(i + 1)))
-    case SB.ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => SB.ITensor(r - i, factor, k - i))
-    case StreamingModule.ItProduct(r, factor: SB.Product[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => StreamingModule.ItProduct(r, f, endLoop))
+    case AcyclicStreamingModule.Product(factors) => factors.indices.to(LazyList).map(i => AcyclicStreamingModule.Product[T](factors.take(i) ++ factors.drop(i + 1)))
+    case AcyclicStreamingModule.ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => AcyclicStreamingModule.ITensor(r - i, factor, k - i))
+    case StreamingModule.ItProduct(r, factor: AcyclicStreamingModule.Product[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => StreamingModule.ItProduct(r, f, endLoop))
     case StreamingModule.ItProduct(r, factor, endLoop) => (1 until r).reverse.to(LazyList).map(i => StreamingModule.ItProduct(i, factor, endLoop))
-    case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k)(input.hw))
+    case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k,if(input.hasSinglePortedMem) RAMControl.Single else RAMControl.Dual)(input.hw))
   }
 
   def test[U](sm:StreamingModule[U],repeat:Int=2, addedGap: Int = 0): Option[U] = {
@@ -104,7 +105,7 @@ object TestTools {
     pw.write(sm.toVerilog)
     pw.write(sm.getTestBench(repeat, addedGap))
     pw.close()
-val command=xDir + "xvlog" + ext + " test.v"
+    val command=xDir + "xvlog" + ext + " test.v"
     val xvlog = (command).!!
     sm.dependencies.foreach(filename => (xDir + "xvhdl" + ext + " " + filename).!!)
     val xelag = (xDir + "xelab" + ext + " test").!!

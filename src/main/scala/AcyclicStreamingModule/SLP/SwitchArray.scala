@@ -21,9 +21,33 @@
  *
  */
 
-package SB
+package AcyclicStreamingModule.SLP
 
-/** Collection of hardware datatypes. */
-package object HardwareType {
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.{Identity, SB}
+import _root_.AcyclicStreamingModule.Signals._
+import linalg.Fields.F2
+import linalg.{Matrix, Vec}
 
+case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) extends SLP(v.head.m, k, v.size) {
+  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
+    val timer = Timer(T)
+    val vec = Vector.tabulate(v.size)(j => timer scalar v(j))
+    val set = Counter(size)
+    val control = Mux(set, vec)
+
+    inputs.indices.toVector.map(i => if (i % 2 == 0) control ? (inputs(i + 1), inputs(i)) else control ? (inputs(i - 1), inputs(i)))
+
+  }
+
+  override val P2: Seq[Matrix[F2]] = v.map(v => Matrix.zeros[F2](k - 1, t) / v.transpose)
+}
+
+object SwitchArray {
+  def apply[U: HW](v: Seq[Vec[F2]], k: Int): SB[U] = if (v.forall(_.isZero))
+    Identity(v.head.m, k)
+  else
+    new SwitchArray(v, k)
+
+  def apply[U: HW](v: Vec[F2], k: Int): SB[U] = apply(Seq(v), k)
 }

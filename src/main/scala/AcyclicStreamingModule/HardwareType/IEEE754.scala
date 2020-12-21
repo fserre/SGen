@@ -21,10 +21,10 @@
  *
  */
 
-package SB.HardwareType
+package AcyclicStreamingModule.HardwareType
 
 import RTL.{Component, Extern}
-import SB.Signals.{Operator, Sig, SigRef}
+import AcyclicStreamingModule.Signals.{Operator, Sig, SigRef}
 
 case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1) {
   that =>

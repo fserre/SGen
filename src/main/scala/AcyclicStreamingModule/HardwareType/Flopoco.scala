@@ -21,10 +21,10 @@
  *
  */
 
-package SB.HardwareType
+package AcyclicStreamingModule.HardwareType
 
 import RTL.Component
-import SB.Signals._
+import AcyclicStreamingModule.Signals._
 
 import scala.io.Source
 

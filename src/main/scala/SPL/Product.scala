@@ -23,17 +23,17 @@
 
 package SPL
 
-import SB.HardwareType.HW
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SLP.RAMControl
 import StreamingModule.StreamingModule
 import Utils.{AssociativeNode, AssociativeNodeCompanionT}
 
 
 class Product[T] private(override val list: Seq[SPL[T]]) extends SPL[T](list.head.n) with AssociativeNode[SPL[T]]{
   assert(list.forall(_.n == n))
-
   override def eval(inputs: Seq[T], set: Int): Seq[T] = list.foldRight(inputs)((spl, ins) => spl.eval(ins, set))
 //TODO: Handle when SB
-  override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = StreamingModule.Product(list.map(_.stream(k)))
+  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = StreamingModule.Product(list.map(_.stream(k,control)))
 }
 
 object Product extends AssociativeNodeCompanionT[SPL,Product] {
@@ -42,9 +42,9 @@ object Product extends AssociativeNodeCompanionT[SPL,Product] {
     (lhs, rhs) match {
       case (Identity(), rhs) => Left(rhs)
       case (lhs, Identity()) => Left(lhs)
-      case (LinearPerm(lhs,ldp), LinearPerm(rhs,rdp)) =>
+      case (LinearPerm(lhs), LinearPerm(rhs)) =>
         val size =Utils.lcm(lhs.size, rhs.size)
-        Left(LinearPerm(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size)),ldp||rdp))
+        Left(LinearPerm(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size))))
       case _ => Right((lhs,rhs))
     }
     }

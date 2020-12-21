@@ -24,9 +24,10 @@
 import java.io.{FileInputStream, FileOutputStream, PrintWriter}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 
-import SB._
+import AcyclicStreamingModule._
+import AcyclicStreamingModule.SLP.RAMControl
 import StreamingModule.StreamingModule
-import _root_.SB.HardwareType._
+import _root_.AcyclicStreamingModule.HardwareType._
 import _root_.SPL.FFT.DFT
 import _root_.SPL.WHT.WHT
 import _root_.SPL._
@@ -41,7 +42,8 @@ object Main extends App{
     var testbench: Boolean = false
     var graph: Boolean = false
     var rtlgraph: Boolean = false
-    var dualPort: Boolean = false
+    var dualRAMControl: Boolean = false
+    var singlePortedRAM: Boolean = false
     var zip=false
 
 
@@ -96,9 +98,12 @@ object Main extends App{
 
     def filename(default: String) = _filename.getOrElse(default)
 
+    def control= if(singlePortedRAM) RAMControl.SinglePorted else if (dualRAMControl) RAMControl.Dual else RAMControl.Single
+  
+      
 
     def parseHW: Option[HW[?]] = argsQ.dequeue().toLowerCase() match {
-      case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned)
+      case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned.apply)
       case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
       case "char" => Some(FixedPoint(8, 0))
       case "short" => Some(FixedPoint(16, 0))
@@ -139,7 +144,8 @@ object Main extends App{
       case "-hw" => hw = parseHW
       case "-o" => filename = argsQ.dequeue()
       case "-testbench" => testbench = true
-      case "-dualport" => dualPort = true
+      case "-dualramcontrol" => dualRAMControl = true
+      case "-signleportedram" => singlePortedRAM = true
       case "-graph" => graph = true
       case "-rtlgraph" => rtlgraph = true
       case "-zip" => zip = true
@@ -156,14 +162,14 @@ object Main extends App{
               throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
           case mat: String => throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
         }
-        design = LinearPerm.stream(matrices.toSeq, k, hw, dualPort)
-      case "wht" => design = WHT.stream(n, r, k, hw, dualPort)
+        design = LinearPerm.stream(matrices.toSeq, k, hw, control)
+      case "wht" => design = WHT.stream(n, r, k, hw, control)
       case "dft" => hw match {
-        case hw: ComplexHW[Double@unchecked] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.stream(n, r, k, hw, dualPort)
+        case hw: ComplexHW[?] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.CTDFT(n,r).stream(k,control)(hw.asInstanceOf[ComplexHW[Double]])
         case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")
       }
       case "dftcompact" => hw match {
-        case hw: ComplexHW[Double@unchecked] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.ItPeaseFused(n, r).stream(k)(hw)
+        case hw: ComplexHW[?] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.ItPeaseFused(n, r).stream(k,RAMControl.Dual)(hw.asInstanceOf[ComplexHW[Double]])
         case _ => throw new IllegalArgumentException("Compact DFT requires a complex of fractional hardware datatype.")
       }
       case arg => throw new IllegalArgumentException("Unknown argument: " + arg)

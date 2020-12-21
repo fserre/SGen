@@ -21,11 +21,11 @@
  *
  */
 
-package SB.Signals
+package AcyclicStreamingModule.Signals
 
 import RTL.Component
-import SB.HardwareType.{HW, Unsigned}
-import SB.SB
+import AcyclicStreamingModule.HardwareType.{HW, Unsigned}
+import AcyclicStreamingModule.SB
 import Utils.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
 import linalg.Fields.{Complex, F2}
 import linalg._
@@ -119,16 +119,11 @@ object SigRef{
 abstract class AssociativeSig[T](val terms: Seq[SigRef[T]], op: String, override val precedence: Int)(implicit hw: HW[T] = terms.head.hw) extends Operator(terms: _*)(hw) with AssociativeNode[Sig[T]] { that =>
   override val list:Seq[Sig[T]]=terms.map(_.sig)
 
-  /*override def equals(obj: Any): Boolean = obj match{
-    case other:that.type => other.canEqual(that) && other.terms==terms
-    case _ => false
-  }*/
-
   override def graphDeclaration:String = graphName + "[label=\"" + op + "\"];"
 
   //override def toString(s: SigRef[_] => String): String = terms.map(t=>if(t.precedence>=precedence)"("+s(t)+")" else s(t)).mkString(op)
 
-  override val hashCode: Int = Seq(that.getClass.getSimpleName,terms).hashCode()
+
 }
 
 abstract class AssociativeSigCompanionT[U[T]<:Sig[T] & AssociativeSig[T]] extends AssociativeNodeCompanionT[Sig,U]

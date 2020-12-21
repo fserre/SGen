@@ -21,21 +21,9 @@
  *
  */
 
-package SB
+package AcyclicStreamingModule
 
-import SB.HardwareType.HW
-import SB.Signals.Sig
-import SPL.SPL
-import StreamingModule.StreamingModule
+/** Streaming blocks used for streaming linear permutations. */
+package object SLP {
 
-case class Identity[T:HW](override val t:Int,override val k:Int) extends SB[T](t,k) {
-  override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = inputs
-  override def spl: SPL[T] = SPL.Identity[T](t+k)
-}
-
-object Identity{
-  def unapply[T](arg: StreamingModule[T]):Boolean = arg match{
-    case _:Identity[T] => true
-    case _ => false
-  }
 }

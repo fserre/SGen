@@ -23,7 +23,8 @@ The following parameters can be used:
 * `-o `*`filename`* Name of the output file.
 * `-benchmark` Adds a benchmark module in the generated design.
 * `-rtlgraph` Produces a [DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) graph representing the design.
-* `-dualport` Uses dual-ported memory (instead of single-ported RAM). This option yields designs that use more resources, but that have more flexible timing constraints (see the description in generated files). This option is automatically enabled for compact designs.
+* `-dualramcontrol` Uses dual-control for memory (read and write addresses are computed independently). This option yields designs that use more resources than with single RAM control (default), but that have more flexible timing constraints (see the description in generated files). This option is automatically enabled for compact designs.
+* `-singleported` Uses single-ported memory (read and write addresses are the same). This option has the same constraints as single RAM control (default), but may have a higher latency.
 * `-zip` Creates a zip file containing the design and its dependencies (e.g. FloPoCo modules). 
 * `-hw `*`repr`* Hardware arithmetic representation of the input data. *`repr`* can be one of the following:
   * `char` Signed integer of 8 bits. Equivalent of `signed 8`.
@@ -57,7 +58,7 @@ sbt "run -n 5 -k 2 lp bitrev"
 # generates a streaming datapath that performs a bit-reversal permutation on 8 points on the first dataset, and a "half-reversal" on the second dataset on 2 ports
 sbt "run -n 3 -k 1 lp bitrev 100110111"
 ```
-The command 'lp' takes as parameter the invertible bit-matrix representing the linear permutation (see [this publication](https://fserre.github.io/publications/pdfs/fpga2016.pdf) for details) in row-major order. Alternatively, the matrix can be replaced by the keyword `bitrev` or ìdentity`.
+The command `lp` takes as parameter the invertible bit-matrix representing the linear permutation (see [this publication](https://fserre.github.io/publications/pdfs/fpga2016.pdf) for details) in row-major order. Alternatively, the matrix can be replaced by the keyword `bitrev` or `identity`.
 
 Several bit-matrices can be listed (seperated by a space) to generate a datapath performing several permutations. In this case, the first permutation will be applied to the first dataset entering, the second one on the second dataset, ...
 
@@ -76,3 +77,9 @@ Fourier transforms (with an architecture that reuses several times the same hard
 # generates a Fourier transform on 1024 points, streamed on 8 ports, with fixed-point complex datatype with a mantissa of 8 bits and an exponent of 8 bits.
 sbt "run -n 10 -k 3 -hw complex fixedpoint 8 8 dftcompact"
 ```
+
+### RAM control
+In the case of a streaming design (n > k), memory modules may need to be used. In this case, SGen allows to choose the control strategy used for this module:
+* Dual RAM control: read and write addresses are computed independently. This offers the highest flexibility (a dataset can be input at any time after the previous one), but this uses more resources. It is automatically used for compact designs (`dftcompact`), but can be enabled for other designs using the `-dualRAMcontrol` parameter.
+* Single RAM control: write address is the same as the read address, delayed by a constant time. This uses less resources, but it has less flexibility: a dataset must be input either immediately after the previous one, or wait that the previous dataset is completely out. This is the default mode (except for compact designs).
+* Single-ported RAM: write and read addresses are the same. This has the same constraints as Single RAM control, but may have a higher latency.

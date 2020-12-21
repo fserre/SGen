@@ -24,7 +24,8 @@
 package SPL
 
 import RTL._
-import SB.HardwareType.HW
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SLP.RAMControl
 import StreamingModule.StreamingModule
 
 abstract class SPL[T](val n: Int) {
@@ -32,7 +33,7 @@ abstract class SPL[T](val n: Int) {
 
   def eval(inputs: Seq[T], set: Int): Seq[T]
 
-  def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T]
+  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
 
   def *(rhs:SPL[T]): SPL[T] =Product(this,rhs)
 

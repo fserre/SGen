@@ -21,8 +21,8 @@
  *
  */
 
-package SB.HardwareType
-import SB.Signals._
+package AcyclicStreamingModule.HardwareType
+import AcyclicStreamingModule.Signals._
 import linalg.Fields._
 
 

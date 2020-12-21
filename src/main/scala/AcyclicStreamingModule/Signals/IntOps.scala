@@ -21,18 +21,22 @@
  *
  */
 
-package SB.Signals
+package AcyclicStreamingModule.Signals
 
 import RTL.Component
-import SB.{HardwareType, SB}
-import _root_.SB.HardwareType.{HW, Unsigned}
+import AcyclicStreamingModule.{HardwareType, SB}
+import _root_.AcyclicStreamingModule.HardwareType.{HW, Unsigned}
 import Utils.{AssociativeNode, AssociativeNodeCompanion}
 
 import scala.annotation.tailrec
 
-class And private (terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," & ",8){
+final class And private (override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," & ",8){
   override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.And(terms.map(cp))
-
+  override val hashCode: Int = Seq("And",terms).hashCode()
+  override def equals(other:Any)=other match{
+    case other:And => other.terms==terms
+    case _ => false
+  }
   override val pipeline = 1
 }
 
@@ -74,10 +78,14 @@ object Not{
   }
 }
 
-class Xor private(terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms, " ^ ",9) {
+final class Xor private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms, " ^ ",9) {
   override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.Xor(terms.map(cp))
-
   override val pipeline = 1
+  override val hashCode: Int = Seq("Xor",terms).hashCode()
+  override def equals(other:Any)=other match{
+    case other:Xor => other.terms==terms
+    case _ => false
+  }
 }
 
 object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg.map(_.ref)), (lhs: Sig[Int], rhs: Sig[Int]) => {
@@ -100,8 +108,13 @@ object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg.map(_.re
 object RedXor {
   def apply(input: Sig[Int]): Sig[Int] = Xor((0 until input.hw.size).map(input(_)))
 }
-class Concat private(terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," :: ",12)(Unsigned(terms.map(_.hw.size).sum)) {
+final class Concat private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," :: ",12)(Unsigned(terms.map(_.hw.size).sum)) {
   override def implement(implicit cp: SigRef[?] => Component): Component = new RTL.Concat(terms.map(cp))
+  override val hashCode: Int = Seq("Concat",terms).hashCode()
+  override def equals(other:Any)=other match{
+    case other:Concat => other.terms==terms
+    case _ => false
+  }
 }
 
 object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]]) => new Concat(list.map(_.ref)) }, (lhs: Sig[Int], rhs: Sig[Int]) => {

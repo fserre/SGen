@@ -21,10 +21,10 @@
  *
  */
 
-package SB.HardwareType
+package AcyclicStreamingModule.HardwareType
 
 import RTL.Component
-import SB.Signals._
+import AcyclicStreamingModule.Signals._
 
 case class Unsigned(_size: Int) extends HW[Int](_size) {
 

@@ -4,9 +4,9 @@ It has a latency of LATENCY cycles: the output will begin LATENCY cycles after t
 It supports full-throughput, which means that a new dataset may be input immediately after the previous one.
 It requires a delay of GAP cycles between datasets.
 In total, this design can therefore perform a new transformation every TOTALGAP cycles.
-As single-ported memory is used, there must be precisely TOTALGAP cycles between datasets.
+As single RAM control is used, there must be precisely TOTALGAP cycles between datasets.
 Otherwise, at least DATADURATION additional cycles must be added to ensure that the first output dataset does not get corrupted.
-Use the -dualport option to use dual-ported memory instead (use more resources).
+Use the -dualRAMcontrol option to use dual control memory instead (use more resources).
 
 The interface works as follows:
 - clk: The input clock, a cycle begins on ascending edge.

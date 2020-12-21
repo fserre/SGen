@@ -21,11 +21,11 @@
  *
  */
 
-package SB.Signals
+package AcyclicStreamingModule.Signals
 
 import RTL._
-import SB.HardwareType.{HW, Unsigned}
-import SB.SB
+import AcyclicStreamingModule.HardwareType.{HW, Unsigned}
+import AcyclicStreamingModule.SB
 
 case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int] {
   //Operator(trigger, reset)(Unsigned(BigInt(limit - 1).bitLength))
@@ -56,7 +56,7 @@ case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetVa
 }
 
 object Counter {
-  def apply(limit: Int)(implicit sb:SB[?]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0),sb) else new Counter(limit, Next(sb), Reset(sb), limit - 1)
+  def apply(limit: Int)(implicit sb:SB[?]): Sig[Int] = if (limit == 1) AcyclicStreamingModule.Signals.Const(0)(Unsigned(0),sb) else new Counter(limit, Next(sb), Reset(sb), limit - 1)
 
   /*def mkCounter(limit:Int,resetValue:Int,reset:Component,trigger:Option[Component])={
     val size=BigInt(limit - 1).bitLength
@@ -77,9 +77,9 @@ object Counter {
 }
 
 object LateCounter {
-  def apply(limit: Int, delay: Int)(implicit sb: SB[?]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0), sb) else new Counter(limit, Next(sb), Reset(sb), 0, delay)
+  def apply(limit: Int, delay: Int)(implicit sb: SB[?]): Sig[Int] = if (limit == 1) AcyclicStreamingModule.Signals.Const(0)(Unsigned(0), sb) else new Counter(limit, Next(sb), Reset(sb), 0, delay)
 }
 
 object Timer {
-  def apply(limit: Int)(implicit sb: SB[?]): Sig[Int] = if (limit == 1) SB.Signals.Const(0)(Unsigned(0), sb) else new Counter(limit, One()(Unsigned(1), sb), Next(sb), 0)
+  def apply(limit: Int)(implicit sb: SB[?]): Sig[Int] = if (limit == 1) AcyclicStreamingModule.Signals.Const(0)(Unsigned(0), sb) else new Counter(limit, One()(Unsigned(1), sb), Next(sb), 0)
 }

@@ -21,40 +21,25 @@
  *
  */
 
-package SB.HardwareType
+package AcyclicStreamingModule.SLP
 
-import RTL.Component
-import SB.Signals.{Plus, Sig}
-import linalg.Fields.Complex
+import AcyclicStreamingModule.{Identity, SB}
+import _root_.AcyclicStreamingModule.HardwareType.HW
+import SPL.LinearPerm
+import _root_.AcyclicStreamingModule.Signals._
+import StreamingModule.StreamingModule
+import linalg.Fields.F2
+import linalg.Matrix
 
-/**
- * Class that represents a hardware representation
- *
- * @tparam T Type of the equivalent software datatype. Used for computations with constants.
- * @param size Size in bits of the representation
- */
-abstract class HW[T: Numeric](val size: Int) {
-  final val num = implicitly[Numeric[T]]
-
-  def description:String
-
-  def plus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
-
-  def minus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
-
-  def times(lhs: Sig[T], rhs: Sig[T]): Sig[T]
-
-  def bitsOf(const: T): BigInt
-
-  def valueOf(const: BigInt): T
+case class Steady[U: HW] private(override val P1: Seq[Matrix[F2]], override val t: Int) extends SLP(t, P1.head.m, P1.size) {
+  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
+    val set = Counter(size)
+    Vector.tabulate(K)(i => Mux(set, Vector.tabulate(P.size)(j => inputs(LinearPerm.permute(P(j).inverse, i)))))
+  }
 }
 
-object HW {
-  extension [T](x: HW[Complex[T]]) {
-    def innerHW: HW[T] = x match {
-      case x: ComplexHW[T] => x.hw
-      case _ => throw new Exception("Invalid complex HW datatype")
-    }
-  }
+object Steady {
+  def apply[U: HW](P1: Seq[Matrix[F2]], t: Int): SB[U] = if (P1.forall(_.isIdentity)) Identity(t, P1.head.m) else new Steady(P1, t)
 
+  def apply[U: HW](P1: Matrix[F2], t: Int): SB[U] = Steady(Seq(P1), t)
 }

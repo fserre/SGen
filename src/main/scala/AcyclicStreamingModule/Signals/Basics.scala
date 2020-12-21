@@ -21,11 +21,11 @@
  *
  */
 
-package SB.Signals
+package AcyclicStreamingModule.Signals
 
 import RTL.Component
-import SB.HardwareType.{HW, Unsigned}
-import SB.SB
+import AcyclicStreamingModule.HardwareType.{HW, Unsigned}
+import AcyclicStreamingModule.SB
 
 case class Input[T](input: Component, override val hw: HW[T], override val sb: SB[T]) extends Source[T](hw, sb) {
   override def implement: Component = input

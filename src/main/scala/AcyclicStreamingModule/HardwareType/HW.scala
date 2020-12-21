@@ -21,33 +21,40 @@
  *
  */
 
-package SB.SLP
+package AcyclicStreamingModule.HardwareType
 
-import SB.HardwareType.HW
-import SB.{Identity, SB}
-import _root_.SB.Signals._
-import linalg.Fields.F2
-import linalg.{Matrix, Vec}
+import RTL.Component
+import AcyclicStreamingModule.Signals.{Plus, Sig}
+import linalg.Fields.Complex
 
-case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) extends SLP(v.head.m, k, v.size) {
-  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
-    val timer = Timer(T)
-    val vec = Vector.tabulate(v.size)(j => timer scalar v(j))
-    val set = Counter(size)
-    val control = Mux(set, vec)
+/**
+ * Class that represents a hardware representation
+ *
+ * @tparam T Type of the equivalent software datatype. Used for computations with constants.
+ * @param size Size in bits of the representation
+ */
+abstract class HW[T: Numeric](val size: Int) {
+  final val num = implicitly[Numeric[T]]
 
-    inputs.indices.toVector.map(i => if (i % 2 == 0) control ? (inputs(i + 1), inputs(i)) else control ? (inputs(i - 1), inputs(i)))
+  def description:String
 
-  }
+  def plus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
 
-  override val P2: Seq[Matrix[F2]] = v.map(v => Matrix.zeros[F2](k - 1, t) / v.transpose)
+  def minus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
+
+  def times(lhs: Sig[T], rhs: Sig[T]): Sig[T]
+
+  def bitsOf(const: T): BigInt
+
+  def valueOf(const: BigInt): T
 }
 
-object SwitchArray {
-  def apply[U: HW](v: Seq[Vec[F2]], k: Int): SB[U] = if (v.forall(_.isZero))
-    Identity(v.head.m, k)
-  else
-    new SwitchArray(v, k)
+object HW {
+  extension [T](x: HW[Complex[T]]) {
+    def innerHW: HW[T] = x match {
+      case x: ComplexHW[T] => x.hw
+      case _ => throw new Exception("Invalid complex HW datatype")
+    }
+  }
 
-  def apply[U: HW](v: Vec[F2], k: Int): SB[U] = apply(Seq(v), k)
 }

@@ -24,8 +24,8 @@
 package StreamingModule
 
 import RTL.Component
-import SB.HardwareType.HW
-import SB.{Identity, SB}
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.{Identity, SB}
 import SPL.SPL
 import Utils.{AssociativeNode, AssociativeNodeCompanionT}
 
@@ -43,7 +43,6 @@ class Product[U] private (override val list: Seq[StreamingModule[U]]) extends St
     res
 //    terms.foldRight(inputs)((sm, ins) => sm.implement(rst, token, ins))
   }
-
   override def minGap: Int = list.map(_.minGap).max
   override def latency: Int = list.map(_.latency).sum
 
@@ -63,7 +62,7 @@ object Product extends AssociativeNodeCompanionT[StreamingModule,Product] {
     (lhs,rhs) match {
       case (_,Identity())=>Left(lhs)
       case (Identity(),_)=>Left(rhs)
-      case(lhs:SB[T],rhs:SB[T])=>Left(SB.Product(lhs,rhs))
+      case(lhs:SB[T],rhs:SB[T])=>Left(AcyclicStreamingModule.Product(lhs,rhs))
 
       case _ =>Right((lhs,rhs))
     }

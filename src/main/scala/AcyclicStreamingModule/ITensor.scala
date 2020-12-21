@@ -21,8 +21,8 @@
  *
  */
 
-package SB
-import SB.Signals.Sig
+package AcyclicStreamingModule
+import AcyclicStreamingModule.Signals.Sig
 import SPL.{Repeatable, SPL}
 
 

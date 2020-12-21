@@ -21,10 +21,10 @@
  *
  */
 
-package SB.HardwareType
+package AcyclicStreamingModule.HardwareType
 
 import RTL.Component
-import SB.Signals.{Minus, Plus, Sig, SigRef, Times}
+import AcyclicStreamingModule.Signals.{Minus, Plus, Sig, SigRef, Times}
 
 //todo:Check for negative numbers
 case class FixPlus(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Plus(lhs, rhs) {

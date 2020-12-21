@@ -23,7 +23,8 @@
 
 package SPL
 
-import SB.HardwareType.HW
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SLP.RAMControl
 import StreamingModule.StreamingModule
 
 case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = None) extends SPL[T](factor.n) {
@@ -31,7 +32,10 @@ case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = Non
 
   override def eval(inputs: Seq[T], set: Int): Seq[T] = factor.eval((0 until (r - 1)).foldLeft(inputs)((endLoop * factor).eval), r - 1)
 
-  override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = StreamingModule.ItProduct(r, factor.stream(k), endLoopOpt.map(_.stream(k)))
+  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = {
+    require(control==RAMControl.Dual,"Iterative product requires a dual address control of memories.")
+    StreamingModule.ItProduct(r, factor.stream(k,RAMControl.Dual), endLoopOpt.map(_.stream(k,RAMControl.Dual)))
+  }
 }
 
 object ItProduct {

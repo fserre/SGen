@@ -21,10 +21,10 @@
  *
  */
 
-package SB
+package AcyclicStreamingModule
 
-import SB.HardwareType.HW
-import SB.Signals.Sig
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.Signals.Sig
 import SPL.SPL
 import StreamingModule.StreamingModule
 import _root_.SPL.FFT.DFT2

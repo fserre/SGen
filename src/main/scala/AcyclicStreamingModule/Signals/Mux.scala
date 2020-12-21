@@ -21,11 +21,11 @@
  *
  */
 
-package SB.Signals
+package AcyclicStreamingModule.Signals
 
 import RTL.Component
-import SB.HardwareType.{ComplexHW, HW, Unsigned}
-import SB.SB
+import AcyclicStreamingModule.HardwareType.{ComplexHW, HW, Unsigned}
+import AcyclicStreamingModule.SB
 import linalg.Fields.Complex
 
 case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(using inputs.head.hw) {

@@ -23,7 +23,8 @@
 
 package StreamingModule
 
-import SB.HardwareType.{ComplexHW, FixedPoint}
+import AcyclicStreamingModule.HardwareType.{ComplexHW, FixedPoint, Unsigned}
+import AcyclicStreamingModule.SLP.RAMControl
 import SPL.FFT.{DFT, DiagE}
 import SPL.LinearPerm
 import linalg.Vec
@@ -43,7 +44,7 @@ object SVG extends App {
     def apply(sb:mutable.StringBuilder)={
 
       sb ++= s"""<rect x="0" y="0" width="${Element.size}" height="${Element.size}" stroke="#000" style="fill:#${color}" rx="5">\n"""
-      sb ++= s"""<animateMotion dur="50s" values="${path.map((x,y)=>s"$x,$y").mkString(";")}" calcMode="linear" repeatCount="indefinite"/>\n"""
+      sb ++= s"""<animateMotion dur="5s" values="${path.map((x,y)=>s"$x,$y").mkString(";")}" calcMode="linear" repeatCount="indefinite"/>\n"""
       sb ++= s"""</rect>\n"""
     }
   }
@@ -59,88 +60,93 @@ object SVG extends App {
 
   }
 
-  def animate[T](sm: StreamingModule[T],el:Seq[Element]):Seq[Element]= sm match{
+  def animate[T](sm: StreamingModule[T],el:Seq[Element],set:Int):Seq[Element]= sm match{
     case Product(list) =>
       var cur=el
       for(i<-list.indices.reverse)
       {
-        cur=animate(list(i),cur)
+        cur=animate(list(i),cur,set)
         if(i>0)
           cur.foreach(_.move(unit))
       }
       cur
-    case SB.Product(list) =>
+    case AcyclicStreamingModule.Product(list) =>
       var cur=el
       for(i<-list.indices.reverse)
       {
-        cur=animate(list(i),cur)
+        cur=animate(list(i),cur,set)
         if(i>0)
           cur.foreach(_.move(unit))
       }
       cur
-    case SB.SLP.Steady(p1,t) =>
+    case AcyclicStreamingModule.SLP.Steady(p1,t) =>
       (0 until sm.N).foreach{i =>
       val p=i%sm.K
         el(i).move(unit,unit*(LinearPerm.permute(p1.head,p)-p))
       }
       el.grouped(sm.K).toSeq.flatMap(LinearPerm.permute(p1.head,_))
-    case SB.SLP.SwitchArray(v,k) =>
+    case AcyclicStreamingModule.SLP.SwitchArray(v,k) =>
       el.grouped(2).zipWithIndex.flatMap{case (Seq(e1,e2),hi)=>{
         val c=hi*2/sm.K
         val cv=Vec.fromInt(sm.t,c)
         val res=cv scalar v.head
         if(res.value){
-          e1.move(3*unit/2,unit)
-          e2.move(3*unit/2,-unit)
+          e1.move(unit,unit)
+          e2.move(unit,-unit)
           Vector(e2,e1)
         }
         else {
-          e1.move(3*unit/2)
-          e2.move(3*unit/2)
+          e1.move(unit)
+          e2.move(unit)
           Vector(e1,e2)
         }
       }
       }.toSeq
-    case sm@SB.SLP.Temporal(p3,p4,_) =>
+    case sm@AcyclicStreamingModule.SLP.Temporal(p3,p4,_) =>
       val res=Array.fill(sm.N)(el.head)
       (0 until sm.N).foreach{i=>
       val c=i/sm.K
       val p=i%sm.K
+      val s=(set<<sm.r)+(c>>(sm.t-sm.r))
+      val off=sm.offset1(p)
+      val adr=(sm.basis(s%sm.basis.size)*Vec.fromInt(sm.t-sm.r, c%(1<<(sm.t-sm.r)))+off(s%off.size)).toInt+1
       val nc=(p3.head*Vec.fromInt(sm.k, p)+p4.head*Vec.fromInt(sm.t,c)).toInt
       val ni=nc*sm.K+p
       res(ni)=el(i)
       el(i).move(dy = -Element.size)
-      el(i).move(Element.size*3/2*(sm.T-c))
+      el(i).move(Element.size*3/2*(adr))
       el(i).move(dy = Element.size)
       //el(i).stay
       (0 until (sm.innerLatency-c+nc)).foreach(_ => el(i).stay)
       el(i).move(dy = Element.size)
-      el(i).move(Element.size*3/2*(c+1))
+      el(i).move(length(sm)-Element.size*3/2*adr)
       el(i).move(dy = -Element.size)
     }
-      res
-    case SB.ITensor(r,factor,k) =>
-      el.grouped(factor.N).toSeq.flatMap(animate(factor,_))
-    case SB.Butterfly() =>
-        el(0).move(3*unit/4, unit/2)
-        el(0).move(3*unit/4, -unit/2)
-        el(1).move(3*unit/4, -unit/2)
-        el(1).move(3*unit/4, unit/2)
+      res.toSeq
+    case AcyclicStreamingModule.ITensor(r,factor,k) =>
+      el.grouped(factor.N).toSeq.flatMap(animate(factor,_,set))
+    case AcyclicStreamingModule.Butterfly() =>
+        el(0).move(unit/2, unit/2)
+        el(0).move(unit/2, -unit/2)
+        el(1).move(unit/2, -unit/2)
+        el(1).move(unit/2, unit/2)
       el
     case _ =>
-      el.foreach(_.move(length(sm)))
+      val l=length(sm)
+      if(l>0)
+        el.foreach(_.move(length(sm)))
       el
   }
 
   def length[T](sm: StreamingModule[T]):Int= sm match{
     case Product(list) => list.map(length).sum+(list.size-1)*unit
-    case SB.Product(list) => list.map(length).sum+(list.size-1)*unit
-    case SB.SLP.Steady(_,_) => unit
-    case SB.SLP.SwitchArray(_,_) => 3*unit/2
-    case SB.SLP.Temporal(p3,p4,_) => (sm.T+1)*3*Element.size/2
-    case SB.ITensor(_,factor,_) => length(factor)
-    case SB.Butterfly() => 3*unit/2
-    case sm if sm.spl.isInstanceOf[DiagE] => unit/2
+    case AcyclicStreamingModule.Product(list) => list.map(length).sum+(list.size-1)*unit
+    case AcyclicStreamingModule.SLP.Steady(_,_) => unit
+    case AcyclicStreamingModule.SLP.SwitchArray(_,_) => unit//3*unit/2
+    case sm@AcyclicStreamingModule.SLP.Temporal(p3,p4,_) => ((1<<sm.innerP4.head.m)+1)*3*Element.size/2
+    case AcyclicStreamingModule.ITensor(_,factor,_) => length(factor)
+    case AcyclicStreamingModule.Butterfly() => unit
+    case sm if sm.spl.isInstanceOf[DiagE] => 0//unit/2
     case _ => 2*unit
   }
 
@@ -150,40 +156,63 @@ object SVG extends App {
       var curx = x
       for(i<-list.indices.reverse)
       {
-        static(list(i),pw,curx,y)
         curx += length(list(i))
         if(i>0)
           (0 until sm.K).foreach(i => pw ++= s"""<line x1="$curx" y1="${y+i*unit+unit/2}" x2="${curx+unit}" y2="${y+i*unit+unit/2}" stroke="#000"/>\n""")
         curx+=unit
       }
-    case SB.Product(list) =>
-      var curx = x
+      curx = x
       for(i<-list.indices.reverse)
       {
         static(list(i),pw,curx,y)
+        curx += length(list(i))+unit
+      }
+    case AcyclicStreamingModule.Product(list) =>
+      var curx = x
+      for(i<-list.indices.reverse)
+      {
         curx += length(list(i))
         if(i>0)
           (0 until sm.K).foreach(i => pw ++= s"""<line x1="$curx" y1="${y+i*unit+unit/2}" x2="${curx+unit}" y2="${y+i*unit+unit/2}" stroke="#000"/>\n""")
         curx+=unit
       }
-    case SB.SLP.Steady(p1,t) => (0 until sm.K).foreach(i => pw ++= s"""<line x1="$x" y1="${i*unit+unit/2}" x2="${x+unit}" y2="${LinearPerm.permute(p1.head,i)*unit+unit/2}" stroke="#000"/>\n""")
-    case SB.SLP.SwitchArray(v,k) =>
-      for(i<-0 until 1<<(k-1)) {
-        pw ++= s"""<rect x="${x}" y="${y + 2 * i * unit + 0.25 * unit}" width="${unit * 1.5}" height="${unit * 1.5}" rx="0" style="fill:#d5d5d5"/>"""
-        pw ++= s"""<line x1="$x" y1="${y+2*i*unit+unit/2}" x2="${x+1.5*unit}" y2="${y+2*i*unit+unit/2}" stroke="#000"/>\n"""
-        pw ++= s"""<line x1="$x" y1="${y+2*i*unit+3*unit/2}" x2="${x+1.5*unit}" y2="${y+2*i*unit+3*unit/2}" stroke="#000"/>\n"""
+      curx = x
+      for(i<-list.indices.reverse)
+      {
+        static(list(i),pw,curx,y)
+        curx += length(list(i))+unit
       }
-    case SB.SLP.Temporal(p3,p4,_) =>
-      (0 until sm.K).foreach(i => pw ++= s"""<rect x="$x" y="${y+i*unit+unit/4}" width="${length(sm)}" height="${unit/2}" fill="#2f75b6"/>\n""")
-    case SB.ITensor(r,factor,k) =>
+    case AcyclicStreamingModule.SLP.Steady(p1,t) => (0 until sm.K).foreach(i => pw ++= s"""<line x1="$x" y1="${i*unit+unit/2}" x2="${x+unit}" y2="${LinearPerm.permute(p1.head,i)*unit+unit/2}" stroke="#000"/>\n""")
+    case AcyclicStreamingModule.SLP.SwitchArray(v,k) =>
+      for(i<-0 until 1<<(k-1)) {
+        pw ++= s"""<rect x="${x-0.25*unit}" y="${y + 2 * i * unit + 0.25 * unit}" width="${unit * 1.5}" height="${unit * 1.5}" rx="0" style="fill:#d5d5d5"/>"""
+        pw ++= s"""<line x1="${x}" y1="${y+2*i*unit+unit/2}" x2="${x+unit}" y2="${y+2*i*unit+unit/2}" stroke="#000"/>\n"""
+        pw ++= s"""<line x1="${x}" y1="${y+2*i*unit+3*unit/2}" x2="${x+unit}" y2="${y+2*i*unit+3*unit/2}" stroke="#000"/>\n"""
+        pw ++= s"""<line x1="${x}" y1="${y+2*i*unit+unit/2}" x2="${x+unit}" y2="${y+2*i*unit+3*unit/2}" stroke="#000"/>\n"""
+        pw ++= s"""<line x1="${x}" y1="${y+2*i*unit+3*unit/2}" x2="${x+unit}" y2="${y+2*i*unit+unit/2}" stroke="#000"/>\n"""
+
+      }
+    case sm@AcyclicStreamingModule.SLP.Temporal(p3,p4,_) =>
+      (0 until sm.K).foreach { i =>
+      val l=length(sm)
+        pw ++= s"""<line x1="$x" y1="${y+i*unit+unit/2}" x2="${x+l}" y2="${y+i*unit+unit/2}" stroke="#000"/>\n"""
+        pw ++= s"""<rect x="${x + unit * 0.2}" y="${y + i * unit + unit / 2 - unit * 0.2}" width="${l - unit * 0.4}" height="${unit * 0.4}" fill="#2f75b6"/>\n"""
+        if(sm.t-sm.r==1)
+          pw ++= s"""<text x="${x + l/2}" y="${y + i * unit + unit / 2}" text-anchor="middle" alignment-baseline="middle" style="fill:#025; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">RAM</text>"""
+        else if(sm.t-sm.r==2)
+          pw ++= s"""<text x="${x + l/2}" y="${y + i * unit + unit / 2}" text-anchor="middle" alignment-baseline="middle" style="fill:#025; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">RAM bank</text>"""
+        else
+          pw ++= s"""<text x="${x + l/2}" y="${y + i * unit + unit / 2}" text-anchor="middle" alignment-baseline="middle" style="fill:#025; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">RAM bank (${1<<(sm.t-sm.r)} elements)</text>"""
+      }
+    case AcyclicStreamingModule.ITensor(r,factor,k) =>
       if (k>factor.n)
       for(i<-0 until (sm.K/factor.K))
         static(factor,pw,x,y+i*(1<<factor.k)*unit)
       else
         static(factor,pw,x,y)
-    case SB.Butterfly() =>
-      pw ++= s"""<rect x="${x}" y="${y+0.25*unit}" width="${unit*1.5}" height="${unit*1.5}" rx="10" style="fill:#a1e47e"/>"""
-      pw ++= s"""<text x="${x+0.75*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">Butterfly</text>"""
+    case AcyclicStreamingModule.Butterfly() =>
+      pw ++= s"""<rect x="${x-0.25*unit}" y="${y+0.25*unit}" width="${unit*1.5}" height="${unit*1.5}" rx="10" style="fill:#a1e47e"/>"""
+      pw ++= s"""<text x="${x+0.5*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">Butterfly</text>"""
     case sm if sm.spl.isInstanceOf[DiagE] =>
       val de:DiagE=sm.spl.asInstanceOf[DiagE]
       (0 until sm.K).map{p =>
@@ -195,15 +224,15 @@ object SVG extends App {
         else if (coefs.head==0)
           pw ++= s"""<line x1="$x" y1="${y+p*unit+unit/2}" x2="${x+unit/2}" y2="${y+p*unit+unit/2}" stroke="#000"/>\n"""
         else if(coefs.head*4==sm.N) {
-          pw ++= s"""<circle cx="${x + unit * 0.25}" cy="${y + p * unit + unit / 2}" r="${unit * 0.25}" stroke="#000" fill="transparent"/>\n""" //-i
+          pw ++= s"""<circle cx="${x + unit * 0.25}" cy="${y + p * unit + unit / 2}" r="${unit * 0.25}" stroke="#000" fill="#FFF"/>\n""" //-i
           pw ++= s"""<text x="${x + 0.25 * unit}" y="${y + p*unit+unit/2}" text-anchor="middle" alignment-baseline="middle" style="fill:#000; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">-i</text>"""
         }
         else if(coefs.head*2==sm.N) {
-          pw ++= s"""<circle cx="${x + unit * 0.25}" cy="${y + p * unit + unit / 2}" r="${unit * 0.25}" stroke="#000" fill="transparent"/>\n""" //-i
+          pw ++= s"""<circle cx="${x + unit * 0.25}" cy="${y + p * unit + unit / 2}" r="${unit * 0.25}" stroke="#000" fill="#FFF"/>\n""" //-i
           pw ++= s"""<text x="${x + 0.25 * unit}" y="${y + p*unit+unit/2}" text-anchor="middle" alignment-baseline="middle" style="fill:#000; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">-1</text>"""
         }
         else if(coefs.head*4==sm.N*3) {
-          pw ++= s"""<circle cx="${x + unit * 0.25}" cy="${y + p * unit + unit / 2}" r="${unit * 0.25}" stroke="#000" fill="transparent"/>\n""" //-i
+          pw ++= s"""<circle cx="${x + unit * 0.25}" cy="${y + p * unit + unit / 2}" r="${unit * 0.25}" stroke="#000" fill="#FFF"/>\n""" //-i
           pw ++= s"""<text x="${x + 0.25 * unit}" y="${y + p*unit+unit/2}" text-anchor="middle" alignment-baseline="middle" style="fill:#000; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">i</text>"""
         }
         else {
@@ -218,12 +247,11 @@ object SVG extends App {
     val res=new mutable.StringBuilder
     val height=sm.N*unit //unit/2 up and down
     val width=length(sm)+4*unit //unit on each side
-    res ++= s"""<?xml version="1.0" encoding="utf-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="$width" height="$height">\n"""
+    res ++= s"""<?xml version="1.0" encoding="utf-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 ${width} $height">\n"""
     res ++= """<defs><marker id="triangle" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/> </marker><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7"/></marker></defs>"""
     (0 until sm.K).foreach(i => res ++= s"""<line x1="$unit" y1="${i*unit+unit/2}" x2="${2*unit}" y2="${i*unit+unit/2}" stroke="#000"/>\n""")
-    static(sm,res,2*unit,0)
-    //res ++= s"""<rect x="${-0.125*unit}" y="${(0.5-0.125+1)*unit}" width="${unit*0.25}" height="${unit*0.25}" style="fill:#000">\n"""
     (0 until sm.K).foreach(i => res ++= s"""<line x1="${length(sm)+2*unit}" y1="${i*unit+unit/2}" x2="${length(sm)+3*unit}" y2="${i*unit+unit/2}" stroke="#000" marker-end="url(#triangle)"/>\n""")
+    static(sm,res,2*unit,0)
     val elements=Seq.tabulate(sm.N) { i =>
       val p = i % sm.K
       val c=i/sm.K
@@ -233,7 +261,7 @@ object SVG extends App {
       res.move(unit)
       res
     }
-    animate(sm,elements).zipWithIndex.foreach{(e,i)=>
+    animate(sm,elements,0).zipWithIndex.foreach{(e,i)=>
       val p = i % sm.K
       val c=i/sm.K
       e.moveTo(length(sm)+4*unit,i*unit+unit/2)
@@ -244,7 +272,8 @@ object SVG extends App {
     res++="</svg>\n"
     res.toString()
   }
-  val sm=DFT.CTDFT(6,1,false).stream(2)(ComplexHW(FixedPoint(4,4)))
+  val sm=DFT.CTDFT(3,1).stream(2,RAMControl.SinglePorted)(ComplexHW(FixedPoint(4,4)))
+  //val sm=LinearPerm.stream(Vector(LinearPerm.Rmat(1,3)),2,Unsigned(16),false)
   val pw = new PrintWriter("test.svg")
   println(sm)
   pw.write(apply(sm))

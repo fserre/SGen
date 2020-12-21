@@ -23,13 +23,13 @@
 
 package SPL
 
-import SB.HardwareType.HW
-import SB.SLP.{Spatial, Temporal}
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SLP.{RAMControl, Spatial, Temporal}
 import StreamingModule.StreamingModule
 import linalg.Fields.F2
 import linalg.{LUL, Matrix, Vec}
 
-case class LinearPerm[T](P: Seq[Matrix[F2]], dualPorted:Boolean) extends SPL[T](P.head.m) {
+case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
   val ULU = false
   assert(P.forall(m => m.m == m.n))
   assert(P.forall(_.isInvertible))
@@ -37,7 +37,7 @@ case class LinearPerm[T](P: Seq[Matrix[F2]], dualPorted:Boolean) extends SPL[T](
 
   override def eval(inputs: Seq[T], set: Int): Seq[T] = LinearPerm.permute(P(set % P.size), inputs) //inputs.grouped(N).toSeq.zipWithIndex.flatMap { case (inputs, s) => LinearPerm.permute(P(s % P.size), inputs) }
 
-  override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = {
+  override def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = {
     def unblock(P: Matrix[F2], t: Int) = {
       assert(P.m == P.n)
       val k = P.m - t
@@ -64,7 +64,7 @@ case class LinearPerm[T](P: Seq[Matrix[F2]], dualPorted:Boolean) extends SPL[T](
 
 
       Spatial(L1, L2) *
-        Temporal(C3, C4,dualPorted) *
+        Temporal(C3, C4,control) *
         Spatial(Vector.fill(P.size)(Matrix.identity[F2](k)), R2)
     }
     else {
@@ -73,15 +73,15 @@ case class LinearPerm[T](P: Seq[Matrix[F2]], dualPorted:Boolean) extends SPL[T](
       val R4 = p4.head + L * p2.head
       val C2 = p2.head * R4.inverse
       val C1 = p1.head + C2 * R3
-      Temporal(L, Matrix.identity[F2](t),dualPorted) *
+      Temporal(L, Matrix.identity[F2](t),control) *
         Spatial(C1, C2) *
-        Temporal(R3, R4,dualPorted)
+        Temporal(R3, R4,control)
     }
   }
 }
 
 object LinearPerm {
-  def apply[T](P:Matrix[F2], dualPorted:Boolean):SPL[T]=LinearPerm[T](Seq(P),dualPorted)
+  def apply[T](P:Matrix[F2]):SPL[T]=LinearPerm[T](Seq(P))
   def permute[T](P: Matrix[F2], v: Seq[T]): Seq[T] = {
     val Pinv = P.inverse
     Vector.tabulate(1 << P.m)(i => v(permute(Pinv, i)))
@@ -95,7 +95,7 @@ object LinearPerm {
 
   def Cmat(n: Int): Matrix[F2] = Matrix.tabulate[F2](n, n)((i, j) => F2((i + 1) % n == j))
 
-  def stream[T](matrices: Seq[Matrix[F2]], k: Int, hw: HW[T], dualPorted:Boolean): StreamingModule[T] = LinearPerm[T](matrices,dualPorted).stream(k)(hw)
+  def stream[T](matrices: Seq[Matrix[F2]], k: Int, hw: HW[T], control:RAMControl): StreamingModule[T] = LinearPerm[T](matrices).stream(k,control)(hw)
 
   //def L[DT](m: Int, n: Int) = LinearPerm[DT](Lmat(m, n))
 

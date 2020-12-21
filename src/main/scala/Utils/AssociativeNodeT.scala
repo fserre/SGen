@@ -50,7 +50,7 @@ abstract class AssociativeNodeCompanionT[S[_],U[T] <: S[T] & AssociativeNode[S[T
       case (ev(lhs), ev(rhs)) => apply(lhs.list ++ rhs.list)
       case (lhs, ev(rhs)) => apply(lhs +: rhs.list)
       case (ev(lhs), rhs) =>
-        val lhsl :+ lhsr: @unchecked = lhs.list
+        val lhsl :+ lhsr = lhs.list
         simplify(lhsr, rhs) match {
           case Left(rhs) => apply(apply(lhsl), rhs)
           case Right((rhs1, rhs2)) => create(lhsl :+ rhs1 :+ rhs2)
@@ -75,37 +75,16 @@ trait AssociativeNode[S]  {that=>
   val list: Seq[S]
 
   override def toString: String = that.getClass.getSimpleName+"("+list.map(_.toString()).mkString(", ")+")"
-
-  final def canEqual(other:Any): Boolean =other.isInstanceOf[that.type]
-
-  final override def equals(obj: Any): Boolean =
-    if(obj.isInstanceOf[that.type])
-      if(obj.asInstanceOf[that.type].canEqual(that))
-        if (list==obj.asInstanceOf[that.type].list)
-          true
-        else
-          false
-      else
-        false
-    else
-      false
-//todo: replace with this code once scala3 works
-  /*obj match{
-  case other:that.type => other.canEqual(that) && list==other.list
-  case _ => false
-}*/
-
-  override val hashCode: Int = Seq(that.getClass.getSimpleName,list).hashCode()
 }
 
 abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]](create:Seq[S]=>S,simplify:(S,S)=>Either[S,(S,S)]=(lhs:S,rhs:S)=>Right(lhs,rhs)) {
-  def apply(lhs: S, rhs: S)(implicit ev:ClassTag[U]): S = simplify(lhs, rhs) match {
+  final def apply(lhs: S, rhs: S)(implicit ev:ClassTag[U]): S = simplify(lhs, rhs) match {
     case Left(simple) => simple
     case Right((lhs, rhs)) => (lhs, rhs) match {
       case (ev(lhs), ev(rhs)) => apply(lhs.list ++ rhs.list)
       case (lhs, ev(rhs)) => apply(lhs +: rhs.list)
       case (ev(lhs), rhs) =>
-        val lhsl :+ lhsr: @unchecked = lhs.list
+        val lhsl :+ lhsr = lhs.list
         simplify(lhsr, rhs) match {
           case Left(rhs) => apply(apply(lhsl), rhs)
           case Right((rhs1, rhs2)) => create(lhsl :+ rhs1 :+ rhs2)
@@ -113,12 +92,12 @@ abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]](create:Se
       case _ => create(Seq(lhs, rhs))
     }
   }
-  def apply(inputs: Seq[S])(implicit ev:ClassTag[U]): S = {
+  final def apply(inputs: Seq[S])(implicit ev:ClassTag[U]): S = {
     require(inputs.nonEmpty)
     inputs.reduceLeft((lhs, rhs) => apply(lhs, rhs))
   }
 
-  def unapply(arg: U)(implicit ev:ClassTag[U]): Option[Seq[S]] = arg match {
+  final def unapply(arg: U)(implicit ev:ClassTag[U]): Option[Seq[S]] = arg match {
     case ev(arg) => Some(arg.list)
     case _ => None
   }

@@ -22,13 +22,14 @@
  */
 
 package SPL
-import SB.HardwareType.HW
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SLP.RAMControl
 import StreamingModule.StreamingModule
 
 case class Identity[T](override val n:Int) extends SPL[T](n) {
   override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs
 
-  override def stream(k: Int)(implicit hw: HW[T]): StreamingModule[T] = ???
+  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = ???
 }
 object Identity{
 

@@ -26,7 +26,7 @@ package StreamingModule
 import java.io.PrintWriter
 
 import RTL.{Component, Input, Module, Output, Wire}
-import SB.HardwareType.HW
+import AcyclicStreamingModule.HardwareType.HW
 import SPL.SPL
 
 import scala.collection.mutable
@@ -48,7 +48,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
   override def description: Iterator[String] = io.Source.fromResource("streaming.txt").getLines().
     filterNot(s=>(s.contains ("full-throughput")) && minGap!=0).
     filterNot(s=>(s.contains ("requires a delay")) && minGap==0).
-    filterNot(s=>((s.contains ("single-ported memory")) || (s.contains("additional cycles"))|| (s.contains ("-dualport"))) && !hasSinglePortedMem).
+    filterNot(s=>((s.contains ("single RAM control")) || (s.contains("additional cycles"))|| (s.contains ("-dualRAMcontrol"))) && !hasSinglePortedMem).
     map(_.
     replace("SIZE",N.toString).
     replace("DATADURATION",T.toString).
@@ -136,7 +136,7 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     res ++= "      begin\n"
     res ++= "        @(posedge clk);\n"
     res ++= "        next <= 0;\n"
-    (0 to (latency - nextAt)).foreach(_ => res ++= "        @(posedge clk);\n")
+    (0 to (latency - nextAt+T)).foreach(_ => res ++= "        @(posedge clk);\n")
     res ++= "        rst <= 1;\n"
     res ++= "        @(posedge clk);\n"
     res ++= "        @(posedge clk);\n"

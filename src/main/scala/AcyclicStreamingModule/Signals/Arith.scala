@@ -21,10 +21,10 @@
  *
  */
 
-package SB.Signals
+package AcyclicStreamingModule.Signals
 
-import SB.HardwareType.HW
-import SB.SB
+import AcyclicStreamingModule.HardwareType.HW
+import AcyclicStreamingModule.SB
 import Utils._
 
 import scala.annotation.tailrec
