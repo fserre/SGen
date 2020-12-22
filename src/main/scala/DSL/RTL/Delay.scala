@@ -21,27 +21,14 @@
  *   
  */
 
-package transforms.FFT
+package DSL.RTL
 
 import DSL.RTL.HardwareType.HW
-import DSL.RTL.Signals.Sig
-import DSL.RTL.{SB, StreamingModule}
 import DSL.SPL.SPL
-import transforms.FFT.DFT2
 
-class Butterfly[T:HW] extends SB[T](0,1){
+case class Delay[U: HW](override val t: Int, override val k: Int, override val latency: Int) extends StreamingModule[U](t, k) {
+  override def spl: SPL[U] = DSL.SPL.Identity[U](t + k)
 
-  override def toString: String = "F2"
+  override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = inputs.map(i => (0 until latency).foldLeft(i)((x, _) => x.register))
 
-  override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
-
-  override def spl: SPL[T] =DFT2[T]()(implicitly[HW[T]].num)
-}
-
-object Butterfly{
-  def apply[T:HW]=new Butterfly[T]
-  def unapply[T](arg:StreamingModule[T]):Boolean= arg match{
-    case _:Butterfly[T] => true
-    case _ => false
-  }
 }

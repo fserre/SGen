@@ -22,8 +22,8 @@
  */
 
 import TestTools.test
-import RTL.HardwareType.{ComplexHW, FixedPoint}
-import RTL.{SB, StreamingModule,RAMControl}
+import DSL.RTL.HardwareType.{ComplexHW, FixedPoint}
+import DSL.RTL.{SB, StreamingModule,RAMControl}
 import transforms.FFT.{DFT, StreamDiagC}
 import linalg.Fields.Complex
 import linalg.{Matrix, Vec}

@@ -23,10 +23,10 @@
 
 package transforms.FFT
 
-import RTL.HardwareType.HW
-import RTL.{SB, StreamingModule,RAMControl}
-import RTL.Signals.Sig
-import SPL.{Repeatable, SPL}
+import DSL.RTL.HardwareType.HW
+import DSL.RTL.{SB, StreamingModule,RAMControl}
+import DSL.RTL.Signals.Sig
+import DSL.SPL.{Repeatable, SPL}
 import linalg.Fields.Complex
 
 class DFT2[T](implicit val num:Numeric[T]) extends SPL[T](1) with Repeatable[T]{

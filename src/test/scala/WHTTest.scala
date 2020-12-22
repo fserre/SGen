@@ -22,8 +22,8 @@
  */
 
 import TestTools.test
-import RTL.HardwareType.FixedPoint
-import RTL.{StreamingModule,RAMControl}
+import DSL.RTL.HardwareType.FixedPoint
+import DSL.RTL.{StreamingModule,RAMControl}
 import transforms.WHT.WHT
 import linalg.{Matrix, Vec}
 import org.scalacheck.Prop.forAll

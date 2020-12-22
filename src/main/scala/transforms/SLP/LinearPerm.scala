@@ -23,9 +23,9 @@
 
 package transforms.SLP
 
-import RTL.HardwareType.HW
-import RTL.{RAMControl, StreamingModule}
-import SPL.{SPL}
+import DSL.RTL.HardwareType.HW
+import DSL.RTL.{RAMControl, StreamingModule}
+import DSL.SPL.{SPL}
 import linalg.Fields.F2
 import linalg.{LUL, Matrix, Vec}
 import transforms.SLP.{Spatial, Temporal}

@@ -21,24 +21,23 @@
  *
  */
 
-package transforms.SLP
-
-import DSL.RTL.{Identity, SB, StreamingModule}
-import DSL.RTL.HardwareType.HW
+package DSL.RTL.HardwareType
 import DSL.RTL.Signals._
-import linalg.Fields.F2
-import linalg.Matrix
-import transforms.SLP.LinearPerm
+import linalg.Fields._
 
-case class Steady[U: HW] private(override val P1: Seq[Matrix[F2]], override val t: Int) extends SLP(t, P1.head.m, P1.size) {
-  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
-    val set = Counter(size)
-    Vector.tabulate(K)(i => Mux(set, Vector.tabulate(P.size)(j => inputs(LinearPerm.permute(P(j).inverse, i)))))
-  }
-}
 
-object Steady {
-  def apply[U: HW](P1: Seq[Matrix[F2]], t: Int): SB[U] = if (P1.forall(_.isIdentity)) Identity(t, P1.head.m) else new Steady(P1, t)
+case class ComplexHW[T](hw:HW[T]) extends HW[Complex[T]](hw.size*2)(using Complex.complexIsFractional[T](using hw.num):Numeric[Complex[T]]) {
+  implicit val componentHW: HW[T] =hw
 
-  def apply[U: HW](P1: Matrix[F2], t: Int): SB[U] = Steady(Seq(P1), t)
+  override def plus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)+Re(rhs),Im(lhs)+Im(rhs))
+
+  override def minus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)-Re(rhs),Im(lhs)-Im(rhs))
+
+  override def times(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)*Re(rhs)-Im(lhs)*Im(rhs),Re(lhs)*Im(rhs)+Im(lhs)*Re(rhs))
+
+  override def bitsOf(const: Complex[T]): BigInt = (hw.bitsOf(const.im) << hw.size) + hw.bitsOf(const.re)
+
+  override def valueOf(const: BigInt): Complex[T] = Complex(hw.valueOf(((BigInt(1)<<hw.size)-1) & const),hw.valueOf(const>>hw.size))(using hw.num)
+
+  override def description: String = "complex number in cartesian form (real and imaginary part are concatenated, each being a "+hw.description+")"
 }

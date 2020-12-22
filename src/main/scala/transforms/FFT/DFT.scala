@@ -23,9 +23,9 @@
 
 package transforms.FFT
 
-import RTL.HardwareType.HW
-import RTL.StreamingModule
-import SPL._
+import DSL.RTL.HardwareType.HW
+import DSL.RTL.StreamingModule
+import DSL.SPL._
 import linalg.Fields.{Complex, F2}
 import linalg.Matrix
 import transforms.SLP

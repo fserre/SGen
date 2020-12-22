@@ -9,39 +9,31 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
+package DSL
+package SPL
 
-package transforms.FFT
-
+import DSL.RTL.{StreamingModule,RAMControl}
 import DSL.RTL.HardwareType.HW
-import DSL.RTL.Signals.Sig
-import DSL.RTL.{SB, StreamingModule}
-import DSL.SPL.SPL
-import transforms.FFT.DFT2
 
-class Butterfly[T:HW] extends SB[T](0,1){
+abstract class SPL[T](val n: Int) {
+  val N: Int = 1 << n
 
-  override def toString: String = "F2"
+  def eval(inputs: Seq[T], set: Int): Seq[T]
 
-  override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
+  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
 
-  override def spl: SPL[T] =DFT2[T]()(implicitly[HW[T]].num)
-}
+  def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
 
-object Butterfly{
-  def apply[T:HW]=new Butterfly[T]
-  def unapply[T](arg:StreamingModule[T]):Boolean= arg match{
-    case _:Butterfly[T] => true
-    case _ => false
-  }
+  //def eval(inputs:Seq[Int]):Seq[Int]
 }

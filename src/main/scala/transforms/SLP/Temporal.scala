@@ -23,9 +23,9 @@
 
 package transforms.SLP
 
-import RTL.{Identity, SB, RAMControl}
-import RTL.HardwareType.{HW, Unsigned}
-import RTL.Signals._
+import DSL.RTL.{Identity, SB, RAMControl}
+import DSL.RTL.HardwareType.{HW, Unsigned}
+import DSL.RTL.Signals._
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 

@@ -9,39 +9,52 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
-package transforms.FFT
+package DSL.RTL.HardwareType
 
-import DSL.RTL.HardwareType.HW
-import DSL.RTL.Signals.Sig
-import DSL.RTL.{SB, StreamingModule}
-import DSL.SPL.SPL
-import transforms.FFT.DFT2
+import DSL.RTL.Component
+import DSL.RTL.Signals.{Plus, Sig}
+import linalg.Fields.Complex
 
-class Butterfly[T:HW] extends SB[T](0,1){
+/**
+ * Class that represents a hardware representation
+ *
+ * @tparam T Type of the equivalent software datatype. Used for computations with constants.
+ * @param size Size in bits of the representation
+ */
+abstract class HW[T: Numeric](val size: Int) {
+  final val num = implicitly[Numeric[T]]
 
-  override def toString: String = "F2"
+  def description:String
 
-  override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
+  def plus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
 
-  override def spl: SPL[T] =DFT2[T]()(implicitly[HW[T]].num)
+  def minus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
+
+  def times(lhs: Sig[T], rhs: Sig[T]): Sig[T]
+
+  def bitsOf(const: T): BigInt
+
+  def valueOf(const: BigInt): T
 }
 
-object Butterfly{
-  def apply[T:HW]=new Butterfly[T]
-  def unapply[T](arg:StreamingModule[T]):Boolean= arg match{
-    case _:Butterfly[T] => true
-    case _ => false
+object HW {
+  extension [T](x: HW[Complex[T]]) {
+    def innerHW: HW[T] = x match {
+      case x: ComplexHW[T] => x.hw
+      case _ => throw new Exception("Invalid complex HW datatype")
+    }
   }
+
 }

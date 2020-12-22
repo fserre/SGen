@@ -21,27 +21,14 @@
  *   
  */
 
-package transforms.FFT
+package DSL.RTL
 
-import DSL.RTL.HardwareType.HW
-import DSL.RTL.Signals.Sig
-import DSL.RTL.{SB, StreamingModule}
-import DSL.SPL.SPL
-import transforms.FFT.DFT2
 
-class Butterfly[T:HW] extends SB[T](0,1){
-
-  override def toString: String = "F2"
-
-  override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
-
-  override def spl: SPL[T] =DFT2[T]()(implicitly[HW[T]].num)
-}
-
-object Butterfly{
-  def apply[T:HW]=new Butterfly[T]
-  def unapply[T](arg:StreamingModule[T]):Boolean= arg match{
-    case _:Butterfly[T] => true
-    case _ => false
-  }
+/**
+ * Defines the method used to control memory banks within temporal permutations
+ */
+enum RAMControl{
+  case Dual /// Read and write addresses are computed independently. This offers the highest flexibility (a dataset can be input at any time after a previous one), but this uses more resources.
+  case Single /// Write address is the same as the read address, delayed by a constant time. This uses less resources, but it has less flexibility: a dataset must be input either immediately after the previous one, or wait that the previous dataset is completely out.
+  case SinglePorted /// Write and read addresses are the same (single-ported memory). This has the same constraints as Single, but may have a higher latency.
 }

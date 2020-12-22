@@ -24,9 +24,9 @@
 package transforms
 package WHT
 
-import RTL.HardwareType.HW
-import RTL.{RAMControl, StreamingModule}
-import SPL.{ITensor, ItProduct, Product, SPL}
+import DSL.RTL.HardwareType.HW
+import DSL.RTL.{RAMControl, StreamingModule}
+import DSL.SPL.{ITensor, ItProduct, Product, SPL}
 import transforms.FFT.DFT2
 import linalg.Fields.{Complex, F2}
 import linalg.Matrix

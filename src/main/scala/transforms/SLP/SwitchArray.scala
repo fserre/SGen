@@ -23,9 +23,9 @@
 
 package transforms.SLP
 
-import RTL.HardwareType.HW
-import RTL.{Identity, SB}
-import RTL.Signals._
+import DSL.RTL.HardwareType.HW
+import DSL.RTL.{Identity, SB}
+import DSL.RTL.Signals._
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 

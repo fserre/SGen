@@ -23,10 +23,10 @@
 
 package transforms.FFT
 
-import RTL.HardwareType.{ComplexHW, FixedPoint, HW}
-import RTL.{SB, StreamingModule,RAMControl}
-import RTL.Signals.{ROM, Sig, Timer}
-import SPL.{Identity, Repeatable, SPL}
+import DSL.RTL.HardwareType.{ComplexHW, FixedPoint, HW}
+import DSL.RTL.{SB, StreamingModule,RAMControl}
+import DSL.RTL.Signals.{ROM, Sig, Timer}
+import DSL.SPL.{Identity, Repeatable, SPL}
 import linalg.Fields.Complex
 import linalg.Fields.Complex._
 

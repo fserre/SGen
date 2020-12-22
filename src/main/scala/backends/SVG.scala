@@ -23,8 +23,8 @@
 
 package backends
 
-import RTL.HardwareType.{ComplexHW, FixedPoint, Unsigned}
-import RTL._
+import DSL.RTL.HardwareType.{ComplexHW, FixedPoint, Unsigned}
+import DSL.RTL._
 import transforms.FFT.{DFT, DiagE,Butterfly}
 import linalg.Vec
 import transforms.SLP.LinearPerm

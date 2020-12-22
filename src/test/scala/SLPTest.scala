@@ -27,8 +27,8 @@ import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
 import TestTools._
-import RTL.{RAMControl, SB, StreamingModule}
-import RTL.HardwareType.Unsigned
+import DSL.RTL.{RAMControl, SB, StreamingModule}
+import DSL.RTL.HardwareType.Unsigned
 import transforms.SLP.LinearPerm
 
 object SLPTest extends Properties("SLP") {

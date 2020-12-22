@@ -23,10 +23,10 @@
 
 package transforms.SLP
 
-import RTL.{SB, StreamingModule}
-import RTL.HardwareType.HW
-import SPL.SPL
-import RTL.Signals.Sig
+import DSL.RTL.{SB, StreamingModule}
+import DSL.RTL.HardwareType.HW
+import DSL.SPL.SPL
+import DSL.RTL.Signals.Sig
 import linalg.Fields.F2
 import linalg.Matrix
 import transforms.SLP.LinearPerm

@@ -24,8 +24,8 @@
 import java.io.{FileInputStream, FileOutputStream, PrintWriter}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 import transforms._
-import RTL.{SB, StreamingModule,RAMControl}
-import RTL.HardwareType._
+import DSL.RTL.{SB, StreamingModule,RAMControl}
+import DSL.RTL.HardwareType._
 import transforms.FFT.DFT
 import transforms.SLP.LinearPerm
 import transforms.WHT.WHT
