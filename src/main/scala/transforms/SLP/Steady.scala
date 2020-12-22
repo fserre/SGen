@@ -21,19 +21,24 @@
  *
  */
 
-package SPL
+package transforms.SLP
 
-import RTL.{StreamingModule,RAMControl}
+import RTL.{Identity, SB, StreamingModule}
 import RTL.HardwareType.HW
+import RTL.Signals._
+import linalg.Fields.F2
+import linalg.Matrix
+import transforms.SLP.LinearPerm
 
-abstract class SPL[T](val n: Int) {
-  val N: Int = 1 << n
+case class Steady[U: HW] private(override val P1: Seq[Matrix[F2]], override val t: Int) extends SLP(t, P1.head.m, P1.size) {
+  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
+    val set = Counter(size)
+    Vector.tabulate(K)(i => Mux(set, Vector.tabulate(P.size)(j => inputs(LinearPerm.permute(P(j).inverse, i)))))
+  }
+}
 
-  def eval(inputs: Seq[T], set: Int): Seq[T]
+object Steady {
+  def apply[U: HW](P1: Seq[Matrix[F2]], t: Int): SB[U] = if (P1.forall(_.isIdentity)) Identity(t, P1.head.m) else new Steady(P1, t)
 
-  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
-
-  def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
-
-  //def eval(inputs:Seq[Int]):Seq[Int]
+  def apply[U: HW](P1: Matrix[F2], t: Int): SB[U] = Steady(Seq(P1), t)
 }

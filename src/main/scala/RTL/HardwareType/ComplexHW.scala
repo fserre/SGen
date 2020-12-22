@@ -21,19 +21,23 @@
  *
  */
 
-package SPL
+package RTL.HardwareType
+import RTL.Signals._
+import linalg.Fields._
 
-import RTL.{StreamingModule,RAMControl}
-import RTL.HardwareType.HW
 
-abstract class SPL[T](val n: Int) {
-  val N: Int = 1 << n
+case class ComplexHW[T](hw:HW[T]) extends HW[Complex[T]](hw.size*2)(using Complex.complexIsFractional[T](using hw.num):Numeric[Complex[T]]) {
+  implicit val componentHW: HW[T] =hw
 
-  def eval(inputs: Seq[T], set: Int): Seq[T]
+  override def plus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)+Re(rhs),Im(lhs)+Im(rhs))
 
-  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
+  override def minus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)-Re(rhs),Im(lhs)-Im(rhs))
 
-  def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
+  override def times(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)*Re(rhs)-Im(lhs)*Im(rhs),Re(lhs)*Im(rhs)+Im(lhs)*Re(rhs))
 
-  //def eval(inputs:Seq[Int]):Seq[Int]
+  override def bitsOf(const: Complex[T]): BigInt = (hw.bitsOf(const.im) << hw.size) + hw.bitsOf(const.re)
+
+  override def valueOf(const: BigInt): Complex[T] = Complex(hw.valueOf(((BigInt(1)<<hw.size)-1) & const),hw.valueOf(const>>hw.size))(using hw.num)
+
+  override def description: String = "complex number in cartesian form (real and imaginary part are concatenated, each being a "+hw.description+")"
 }

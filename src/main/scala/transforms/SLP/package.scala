@@ -21,19 +21,9 @@
  *
  */
 
-package SPL
+package transforms
 
-import RTL.{StreamingModule,RAMControl}
-import RTL.HardwareType.HW
+/** Streaming blocks used for streaming linear permutations. */
+package object SLP {
 
-abstract class SPL[T](val n: Int) {
-  val N: Int = 1 << n
-
-  def eval(inputs: Seq[T], set: Int): Seq[T]
-
-  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
-
-  def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
-
-  //def eval(inputs:Seq[Int]):Seq[Int]
 }

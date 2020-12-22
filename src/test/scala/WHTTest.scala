@@ -22,10 +22,9 @@
  */
 
 import TestTools.test
-import AcyclicStreamingModule.HardwareType.FixedPoint
-import AcyclicStreamingModule.SLP.RAMControl
-import SPL.WHT.WHT
-import StreamingModule.StreamingModule
+import RTL.HardwareType.FixedPoint
+import RTL.{StreamingModule,RAMControl}
+import transforms.WHT.WHT
 import linalg.{Matrix, Vec}
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Gen, Properties, Shrink}

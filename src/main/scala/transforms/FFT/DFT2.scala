@@ -21,19 +21,34 @@
  *
  */
 
-package SPL
+package transforms.FFT
 
-import RTL.{StreamingModule,RAMControl}
 import RTL.HardwareType.HW
+import RTL.{SB, StreamingModule,RAMControl}
+import RTL.Signals.Sig
+import SPL.{Repeatable, SPL}
+import linalg.Fields.Complex
 
-abstract class SPL[T](val n: Int) {
-  val N: Int = 1 << n
+class DFT2[T](implicit val num:Numeric[T]) extends SPL[T](1) with Repeatable[T]{
+  override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs.grouped(2).toSeq.flatMap(i => Seq(num.plus(i.head, i.last), num.minus(i.head, i.last)))
 
-  def eval(inputs: Seq[T], set: Int): Seq[T]
+  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): SB[T] = {
+    require(k==1)
+    /*new SB(0,1){
+      override def toString: String = "F2"
 
-  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
+      override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
 
-  def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
+      override def spl: SPL[T] =DFT2[T]()
+    }*/
+    Butterfly[T]
+  }
+}
 
-  //def eval(inputs:Seq[Int]):Seq[Int]
+object DFT2{
+  def apply[T:Numeric]()=new DFT2[T]()
+  def unapply[T](arg:SPL[T]): Boolean =arg match{
+    case _:DFT2[T] => true
+    case _ => false
+  }
 }

@@ -21,17 +21,15 @@
  *
  */
 
-import AcyclicStreamingModule.SLP.{Steady, SwitchArray, Temporal,RAMControl}
+import transforms.SLP.{Steady, SwitchArray, Temporal}
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
-
 import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
 import TestTools._
-import AcyclicStreamingModule.SB
-import _root_.AcyclicStreamingModule.HardwareType.Unsigned
-import SPL.LinearPerm
-import StreamingModule.StreamingModule
+import RTL.{RAMControl, SB, StreamingModule}
+import RTL.HardwareType.Unsigned
+import transforms.SLP.LinearPerm
 
 object SLPTest extends Properties("SLP") {
 

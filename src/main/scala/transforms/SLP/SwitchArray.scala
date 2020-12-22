@@ -21,19 +21,33 @@
  *
  */
 
-package SPL
+package transforms.SLP
 
-import RTL.{StreamingModule,RAMControl}
 import RTL.HardwareType.HW
+import RTL.{Identity, SB}
+import RTL.Signals._
+import linalg.Fields.F2
+import linalg.{Matrix, Vec}
 
-abstract class SPL[T](val n: Int) {
-  val N: Int = 1 << n
+case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) extends SLP(v.head.m, k, v.size) {
+  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
+    val timer = Timer(T)
+    val vec = Vector.tabulate(v.size)(j => timer scalar v(j))
+    val set = Counter(size)
+    val control = Mux(set, vec)
 
-  def eval(inputs: Seq[T], set: Int): Seq[T]
+    inputs.indices.toVector.map(i => if (i % 2 == 0) control ? (inputs(i + 1), inputs(i)) else control ? (inputs(i - 1), inputs(i)))
 
-  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
+  }
 
-  def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
+  override val P2: Seq[Matrix[F2]] = v.map(v => Matrix.zeros[F2](k - 1, t) / v.transpose)
+}
 
-  //def eval(inputs:Seq[Int]):Seq[Int]
+object SwitchArray {
+  def apply[U: HW](v: Seq[Vec[F2]], k: Int): SB[U] = if (v.forall(_.isZero))
+    Identity(v.head.m, k)
+  else
+    new SwitchArray(v, k)
+
+  def apply[U: HW](v: Vec[F2], k: Int): SB[U] = apply(Seq(v), k)
 }

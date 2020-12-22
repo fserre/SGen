@@ -23,9 +23,8 @@
 
 package SPL
 
-import AcyclicStreamingModule.HardwareType.HW
-import AcyclicStreamingModule.SLP.RAMControl
-import StreamingModule.StreamingModule
+import RTL.HardwareType.HW
+import RTL.{ItProduct, StreamingModule,RAMControl}
 
 case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = None) extends SPL[T](factor.n) {
   val endLoop: SPL[T] = endLoopOpt.getOrElse(Identity[T](n))
@@ -34,7 +33,7 @@ case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = Non
 
   override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = {
     require(control==RAMControl.Dual,"Iterative product requires a dual address control of memories.")
-    StreamingModule.ItProduct(r, factor.stream(k,RAMControl.Dual), endLoopOpt.map(_.stream(k,RAMControl.Dual)))
+    RTL.ItProduct(r, factor.stream(k,RAMControl.Dual), endLoopOpt.map(_.stream(k,RAMControl.Dual)))
   }
 }
 

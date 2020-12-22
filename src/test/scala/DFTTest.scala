@@ -22,11 +22,9 @@
  */
 
 import TestTools.test
-import AcyclicStreamingModule.HardwareType.{ComplexHW, FixedPoint}
-import AcyclicStreamingModule.SB
-import AcyclicStreamingModule.SLP.RAMControl
-import SPL.FFT.{DFT, StreamDiagC}
-import StreamingModule.StreamingModule
+import RTL.HardwareType.{ComplexHW, FixedPoint}
+import RTL.{SB, StreamingModule,RAMControl}
+import transforms.FFT.{DFT, StreamDiagC}
 import linalg.Fields.Complex
 import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Properties, Shrink}

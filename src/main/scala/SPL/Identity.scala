@@ -22,9 +22,8 @@
  */
 
 package SPL
-import AcyclicStreamingModule.HardwareType.HW
-import AcyclicStreamingModule.SLP.RAMControl
-import StreamingModule.StreamingModule
+import RTL.HardwareType.HW
+import RTL.{StreamingModule,RAMControl}
 
 case class Identity[T](override val n:Int) extends SPL[T](n) {
   override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs

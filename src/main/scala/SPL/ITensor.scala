@@ -23,19 +23,18 @@
 
 package SPL
 
-import AcyclicStreamingModule.HardwareType.HW
-import AcyclicStreamingModule.SB
-import AcyclicStreamingModule.SLP.RAMControl
-import StreamingModule.StreamingModule
+import RTL.HardwareType.HW
+import RTL.{RAMControl, SB, StreamingModule}
 import linalg.Fields.F2
 import linalg.Matrix
+import transforms.SLP.LinearPerm
 
 
 case class ITensor[T] private (r:Int, factor:Repeatable[T]) extends SPL[T](factor.n+r) {
   override def eval(inputs: Seq[T], set: Int): Seq[T] = //inputs.grouped(1<<n).toSeq.map(_.grouped(1<<factor.n).toVector).transpose.flatten.map(factor.eval).map(_.grouped(1<<factor.n).toVector).transpose.flatten.flatten
     inputs.grouped(factor.N).toSeq.flatMap(factor.eval(_, set))
 
-  override def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = AcyclicStreamingModule.ITensor(r,factor.stream(Math.min(factor.n,k),control),k)
+  override def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = RTL.ITensor(r,factor.stream(Math.min(factor.n,k),control),k)
 }
 
 object ITensor{

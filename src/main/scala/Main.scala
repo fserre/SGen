@@ -23,13 +23,12 @@
 
 import java.io.{FileInputStream, FileOutputStream, PrintWriter}
 import java.util.zip.{ZipEntry, ZipOutputStream}
-
-import AcyclicStreamingModule._
-import AcyclicStreamingModule.SLP.RAMControl
-import StreamingModule.StreamingModule
-import _root_.AcyclicStreamingModule.HardwareType._
-import _root_.SPL.FFT.DFT
-import _root_.SPL.WHT.WHT
+import transforms._
+import RTL.{SB, StreamingModule,RAMControl}
+import RTL.HardwareType._
+import transforms.FFT.DFT
+import transforms.SLP.LinearPerm
+import transforms.WHT.WHT
 import _root_.SPL._
 import linalg.Fields.F2
 import linalg._

@@ -22,6 +22,11 @@
  */
 
 /** RTL DSL. */
+/** Streaming-module DSL.
+ * This DSL consists of nodes called streaming modules, i.e. hardware modules that correspond to an SPL operator. They have as many data inputs as outputs, each of the same datatype, and use a token based synchronisation system.
+ * This DSL allows to combine streaming modules, by composing them, or using tensor product.
+ * */
+/** Streaming block DSL */
 package object RTL {
 
 }

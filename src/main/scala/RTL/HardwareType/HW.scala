@@ -21,19 +21,40 @@
  *
  */
 
-package SPL
+package RTL.HardwareType
 
-import RTL.{StreamingModule,RAMControl}
-import RTL.HardwareType.HW
+import RTL.Component
+import RTL.Signals.{Plus, Sig}
+import linalg.Fields.Complex
 
-abstract class SPL[T](val n: Int) {
-  val N: Int = 1 << n
+/**
+ * Class that represents a hardware representation
+ *
+ * @tparam T Type of the equivalent software datatype. Used for computations with constants.
+ * @param size Size in bits of the representation
+ */
+abstract class HW[T: Numeric](val size: Int) {
+  final val num = implicitly[Numeric[T]]
 
-  def eval(inputs: Seq[T], set: Int): Seq[T]
+  def description:String
 
-  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
+  def plus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
 
-  def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
+  def minus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
 
-  //def eval(inputs:Seq[Int]):Seq[Int]
+  def times(lhs: Sig[T], rhs: Sig[T]): Sig[T]
+
+  def bitsOf(const: T): BigInt
+
+  def valueOf(const: BigInt): T
+}
+
+object HW {
+  extension [T](x: HW[Complex[T]]) {
+    def innerHW: HW[T] = x match {
+      case x: ComplexHW[T] => x.hw
+      case _ => throw new Exception("Invalid complex HW datatype")
+    }
+  }
+
 }
