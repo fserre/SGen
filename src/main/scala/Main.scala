@@ -21,10 +21,10 @@
  *
  */
 
-import java.io.{FileInputStream, FileOutputStream, PrintWriter}
+import java.io.{BufferedInputStream, FileInputStream, FileOutputStream, PrintWriter}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 import transforms._
-import ir.rtl.{SB, StreamingModule,RAMControl}
+import ir.rtl.{RAMControl, SB, StreamingModule}
 import ir.rtl.hardwaretype._
 import transforms.fft.DFT
 import transforms.perm.LinearPerm
@@ -37,71 +37,70 @@ import scala.collection.mutable
 import backends.DOT._
 import backends.Verilog._
 
-object Main extends App{
+object Main {
+  var testbench: Boolean = false
+  var graph: Boolean = false
+  var rtlgraph: Boolean = false
+  var dualRAMControl: Boolean = false
+  var singlePortedRAM: Boolean = false
+  var zip = false
+
+
+  var _n: Option[Int] = None
+
+  def n_=(arg: Option[Int]): Unit = _n = arg
+
+  def n: Int = _n match {
+    case Some(n) => n
+    case _ => throw new IllegalArgumentException("Parameter required: -n")
+  }
+
+  var _k: Option[Int] = None
+
+  def k_=(arg: Option[Int]): Unit = _k = arg
+
+  def k: Int = _k match {
+    case Some(k) => k
+    case _ => n
+  }
+
+  var _r: Option[Int] = None
+
+  def r_=(arg: Option[Int]): Unit = _r = arg
+
+  def r: Int = _r match {
+    case Some(r) => r
+    case _ => (1 to k).reverse.filter(n % _ == 0).head
+  }
+
+  var _hw: Option[HW[?]] = None
+
+  def hw_=(arg: Option[HW[?]]): Unit = _hw = arg
+
+  def hw: HW[?] = _hw match {
+    case Some(k) => k
+    case _ => Unsigned(16)
+  }
+
+  var _design: Option[StreamingModule[?]] = None
+
+  def design_=(arg: StreamingModule[?]): Unit = _design = Some(arg)
+
+  def design = _design match {
+    case Some(d) => d
+    case None => throw new IllegalArgumentException("No design has been specified")
+  }
+
+  var _filename: Option[String] = None
+
+  def filename_=(arg: String): Unit = _filename = Some(arg)
+
+  def filename(default: String) = _filename.getOrElse(default)
+
+  def control = if (singlePortedRAM) RAMControl.SinglePorted else if (dualRAMControl) RAMControl.Dual else RAMControl.Single
+
+  def main(args: Array[String]) = {
     val argsQ = mutable.Queue.from(args)
-
-    var testbench: Boolean = false
-    var graph: Boolean = false
-    var rtlgraph: Boolean = false
-    var dualRAMControl: Boolean = false
-    var singlePortedRAM: Boolean = false
-    var zip=false
-
-
-    var _n: Option[Int] = None
-
-    def n_=(arg: Option[Int]): Unit = _n = arg
-
-    def n: Int = _n match {
-      case Some(n) => n
-      case _ => throw new IllegalArgumentException("Parameter required: -n")
-    }
-
-    var _k: Option[Int] = None
-
-    def k_=(arg: Option[Int]): Unit = _k = arg
-
-    def k: Int = _k match {
-      case Some(k) => k
-      case _ => n
-    }
-
-    var _r: Option[Int] = None
-
-    def r_=(arg: Option[Int]): Unit = _r = arg
-
-    def r: Int = _r match {
-      case Some(r) => r
-      case _ => (1 to k).reverse.filter(n % _ == 0).head
-    }
-
-    var _hw: Option[HW[?]] = None
-
-    def hw_=(arg: Option[HW[?]]): Unit = _hw = arg
-
-    def hw: HW[?] = _hw match {
-      case Some(k) => k
-      case _ => Unsigned(16)
-    }
-
-    var _design: Option[StreamingModule[?]] = None
-
-    def design_=(arg: StreamingModule[?]): Unit = _design = Some(arg)
-
-    def design = _design match {
-      case Some(d) => d
-      case None => throw new IllegalArgumentException("No design has been specified")
-    }
-
-    var _filename: Option[String] = None
-
-    def filename_=(arg: String): Unit = _filename = Some(arg)
-
-    def filename(default: String) = _filename.getOrElse(default)
-
-    def control= if(singlePortedRAM) RAMControl.SinglePorted else if (dualRAMControl) RAMControl.Dual else RAMControl.Single
-  
-      
 
     def parseHW: Option[HW[?]] = argsQ.dequeue().toLowerCase() match {
       case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned.apply)
@@ -166,11 +165,11 @@ object Main extends App{
         design = LinearPerm.stream(matrices.toSeq, k, hw, control)
       case "wht" => design = WHT.stream(n, r, k, hw, control)
       case "dft" => hw match {
-        case hw: ComplexHW[?] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.CTDFT(n,r).stream(k,control)(hw.asInstanceOf[ComplexHW[Double]])
+        case hw: ComplexHW[?] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.CTDFT(n, r).stream(k, control)(hw.asInstanceOf[ComplexHW[Double]])
         case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")
       }
       case "dftcompact" => hw match {
-        case hw: ComplexHW[?] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.ItPeaseFused(n, r).stream(k,RAMControl.Dual)(hw.asInstanceOf[ComplexHW[Double]])
+        case hw: ComplexHW[?] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(hw.asInstanceOf[ComplexHW[Double]])
         case _ => throw new IllegalArgumentException("Compact DFT requires a complex of fractional hardware datatype.")
       }
       case arg => throw new IllegalArgumentException("Unknown argument: " + arg)
@@ -193,11 +192,11 @@ object Main extends App{
       pw.close()
       println(s"Written rtl-level graph in $file.")
     }
-    else if(zip){
+    else if (zip) {
       val file = filename("design.zip")
-      val archive=new ZipOutputStream(new FileOutputStream(file))
+      val archive = new ZipOutputStream(new FileOutputStream(file))
       archive.putNextEntry(new ZipEntry("design.v"))
-      val pw=new PrintWriter(archive)
+      val pw = new PrintWriter(archive)
       pw.write("/*\n")
       io.Source.fromResource("logo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
       io.Source.fromResource("license.txt").getLines().foreach(l => pw.write(s" * $l\n"))
@@ -213,11 +212,20 @@ object Main extends App{
         pw.write(design.getTestBench())
         pw.flush()
       }
-      design.dependencies.foreach{d=>
-        val fis=new FileInputStream(d)
+      design.dependencies.foreach { d =>
+        val fis = new FileInputStream(d)
         archive.putNextEntry(new ZipEntry(d.split('/').last))
-        fis.transferTo(archive)
+        val bis = new BufferedInputStream(fis, 2048)
+        var data = new Array[Byte](2048)
+        var b = bis.read(data, 0, 2048)
+        while (b != -1) {
+          archive.write(data, 0, b)
+          b = bis.read(data, 0, 2048)
+        }
+        bis.close()
+        //fis.transferTo(archive)
         fis.close()
+        archive.closeEntry()
       }
       pw.close()
       println(s"Written zip file in $file.")
@@ -228,7 +236,7 @@ object Main extends App{
       pw.write("/*\n")
       io.Source.fromResource("logo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
       io.Source.fromResource("license.txt").getLines().foreach(l => pw.write(s" * $l\n"))
-      design.description.foreach(l=>pw.write(s" * $l\n"))
+      design.description.foreach(l => pw.write(s" * $l\n"))
       pw.write(" */\n\n")
       pw.println(design.toVerilog)
       if (testbench)
@@ -237,5 +245,6 @@ object Main extends App{
       println(s"Written design in $file.")
     }
   }
+}
 
 
