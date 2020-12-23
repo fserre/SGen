@@ -28,8 +28,8 @@ import ir.rtl.{SB, StreamingModule,RAMControl}
 import ir.rtl.hardwaretype._
 import transforms.fft.DFT
 import transforms.perm.LinearPerm
-import transforms.WHT.WHT
-import _root_.SPL._
+import transforms.wht.WHT
+import ir.spl._
 import linalg.Fields.F2
 import linalg._
 

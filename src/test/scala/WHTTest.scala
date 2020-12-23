@@ -23,7 +23,7 @@
 
 import ir.rtl.hardwaretype.FixedPoint
 import ir.rtl.{StreamingModule,RAMControl}
-import transforms.WHT.WHT
+import transforms.wht.WHT
 import linalg.{Matrix, Vec}
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Gen, Properties, Shrink}

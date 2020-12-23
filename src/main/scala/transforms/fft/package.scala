@@ -24,6 +24,6 @@
 package transforms
 
 /** SPL nodes used for Fast Fourier Transforms. */
-package object FFT {
+package object fft {
 
 }

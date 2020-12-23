@@ -32,7 +32,7 @@ import linalg._
 
 
 /**
- * Class that represent a node in a streaming block internal graph. These nodes are comparable to ir.rtl nodes, but abstract the hardware representation, and timing.
+ * Class that represent a node in a streaming block internal graph. These nodes are comparable to RTL components, but abstract the hardware representation, and timing.
  * @tparam T Equivalent software datatype of the node
  */
 abstract class Sig[T] { that =>
