@@ -34,6 +34,8 @@ import linalg.Fields.F2
 import linalg._
 
 import scala.collection.mutable
+import backends.DOT._
+import backends.Verilog._
 
 object Main extends App{
     val argsQ = mutable.Queue.from(args)
