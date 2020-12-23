@@ -23,12 +23,13 @@
 
 package DSL.RTL
 
+import DSL.{AssociativeNode, AssociativeNodeCompanionT}
 import transforms.SLP.Steady
 import DSL.RTL.Signals.Sig
 import DSL.RTL.HardwareType.HW
 import DSL.RTL.{Component, StreamingModule}
 import DSL.SPL.SPL
-import Utils.{AssociativeNode, AssociativeNodeCompanionT}
+import DSL.AssociativeNode
 
 class Product[U] private (override val list: Seq[StreamingModule[U]]) extends StreamingModule(list.head.t, list.head.k)(list.head.hw) with AssociativeNode[StreamingModule[U]]{
 

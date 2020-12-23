@@ -25,7 +25,7 @@ package SPL
 
 import DSL.RTL.HardwareType.HW
 import DSL.RTL.{RAMControl, StreamingModule}
-import Utils.{AssociativeNode, AssociativeNodeCompanionT}
+import DSL.AssociativeNode
 import transforms.SLP
 import transforms.SLP.LinearPerm
 

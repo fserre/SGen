@@ -30,6 +30,7 @@ import TestTools._
 import DSL.RTL.{RAMControl, SB, StreamingModule}
 import DSL.RTL.HardwareType.Unsigned
 import transforms.SLP.LinearPerm
+import backends.Xsim._
 
 object SLPTest extends Properties("SLP") {
 
@@ -50,7 +51,7 @@ object SLPTest extends Properties("SLP") {
   } yield Temporal(Vector(p3), Vector(p4),dp)(Unsigned(16))
   property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
     val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
-    test(sb,2, gap2).contains(0)
+    sb.test(2, gap2).contains(0)
   }
 
   val genTemporal2: Gen[SB[Int]] = for {
@@ -65,7 +66,7 @@ object SLPTest extends Properties("SLP") {
   } yield Temporal(p3, p4,dp)(Unsigned(16))
   property("Temporal2") =  forAll(genTemporal2, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
     val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
-    test(sb,5,gap2).contains(0)
+    sb.test(5,gap2).contains(0)
   }
 
 
@@ -87,18 +88,18 @@ object SLPTest extends Properties("SLP") {
     k <- Gen.choose(1, 5)
     p1 <- genInvertible(k)
   } yield Steady(Vector(p1), t)(Unsigned(16))
-  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  test(sb,2, gap).contains(0)    }
+  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  sb.test(2, gap).contains(0)    }
 
   val genSteady2: Gen[SB[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(k))
   } yield Steady(p1, t)(Unsigned(16))
-  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  test(sb,2, gap).contains(0)   }
+  property("Steady2") = forAll(genSteady2, Gen.choose(0, 10)) { (sb, gap) =>  sb.test(2, gap).contains(0)   }
 
   property("SwitchArray") = forAll(genVec, Gen.choose(1, 5), Gen.choose(0, 10)) { (v: Vec[F2], k, gap) =>
       val sb = SwitchArray(Vector(v), k)(Unsigned(4))
-      test(sb,2, gap).contains(0)
+      sb.test(2, gap).contains(0)
     }
 
   val genSwitch2: Gen[SB[Int]] = for {
@@ -107,7 +108,7 @@ object SLPTest extends Properties("SLP") {
     v <- Gen.containerOfN[Vector, Vec[F2]](2, genVec(t))
   } yield SwitchArray(v, k)(Unsigned(16))
   property("SwitchArray 2") = forAll(genSwitch2, Gen.choose(0, 10)) { (sb, gap) =>
-      test(sb,2, gap).contains(0)
+      sb.test(2, gap).contains(0)
     }
 
 
@@ -122,7 +123,7 @@ object SLPTest extends Properties("SLP") {
 
 
   property("LinearPerm") = forAll(genLinPerm) { sb =>
-      test(sb,3).contains(0)
+      sb.test(3).contains(0)
   }
 
 

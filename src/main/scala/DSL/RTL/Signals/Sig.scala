@@ -23,9 +23,10 @@
 
 package DSL.RTL.Signals
 
+import DSL.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
 import DSL.RTL.{Component, SB}
 import DSL.RTL.HardwareType.{HW, Unsigned}
-import Utils.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
+import DSL.AssociativeNodeCompanion
 import linalg.Fields.{Complex, F2}
 import linalg._
 

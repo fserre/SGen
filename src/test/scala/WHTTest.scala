@@ -21,13 +21,13 @@
  *
  */
 
-import TestTools.test
 import DSL.RTL.HardwareType.FixedPoint
 import DSL.RTL.{StreamingModule,RAMControl}
 import transforms.WHT.WHT
 import linalg.{Matrix, Vec}
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Gen, Properties, Shrink}
+import backends.Xsim._
 
 object WHTTest extends Properties("WHT")  {
   property("WHT conforms to the definition")=
@@ -47,7 +47,7 @@ object WHTTest extends Properties("WHT")  {
   } yield WHT[Double](t + k, 1).stream(k,dp)(FixedPoint(16, 0))
 
   property("CTWHT")=
-    forAll(genSteady) {( sb:StreamingModule[Double]) => test(sb) match{
+    forAll(genSteady) {( sb:StreamingModule[Double]) => sb.test() match{
         case Some(value) if value<0.01 => true
         case _ => false
       }}
@@ -78,7 +78,7 @@ object WHTTest extends Properties("WHT")  {
 
   property("PeaseWHT") =
     forAll(peaseWHT) { (sb: StreamingModule[Double]) =>
-      test(sb) match {
+      sb.test() match {
         case Some(value) if value < 0.01 => true
         case _ => false
       }
@@ -94,7 +94,7 @@ object WHTTest extends Properties("WHT")  {
 
   property("ItPeaseWHT") =
     forAll(itpeaseWHT) { (sb: StreamingModule[Double]) =>
-      test(sb) match {
+      sb.test() match {
         case Some(value) if value < 0.01 => true
         case _ => false
       }
