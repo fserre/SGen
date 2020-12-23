@@ -22,7 +22,7 @@
  */
 
 package backends
-import DSL.RTL._
+import ir.rtl._
 import scala.collection.mutable
 import scala.annotation.tailrec
 

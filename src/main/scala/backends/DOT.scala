@@ -23,7 +23,7 @@
 
 package backends
 import scala.collection.mutable
-import DSL.RTL._
+import ir.rtl._
 import scala.sys.process._
 import java.io.PrintWriter
 
@@ -105,7 +105,7 @@ object DOT {
   extension [U](sb: SB[U]) {
     def toGraph:String = {
       //implicit val sb:SB[U] = this
-      val inputSigs = sb.dataInputs.map(c => Signals.Input(c, sb.hw, sb))
+      val inputSigs = sb.dataInputs.map(c => signals.Input(c, sb.hw, sb))
 
       val outputs = sb.implement(inputSigs)(sb)
       val toProcess = mutable.Queue[Int]()

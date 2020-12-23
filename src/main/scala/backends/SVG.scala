@@ -23,11 +23,11 @@
 
 package backends
 
-import DSL.RTL.HardwareType.{ComplexHW, FixedPoint, Unsigned}
-import DSL.RTL._
-import transforms.FFT.{DFT, DiagE,Butterfly}
+import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Unsigned}
+import ir.rtl._
+import transforms.fft.{DFT, DiagE,Butterfly}
 import linalg.Vec
-import transforms.SLP.LinearPerm
+import transforms.perm.LinearPerm
 
 import java.io.PrintWriter
 import scala.collection.mutable
@@ -79,13 +79,13 @@ object SVG extends App {
           cur.foreach(_.move(unit))
       }
       cur
-    case transforms.SLP.Steady(p1,t) =>
+    case transforms.perm.Steady(p1,t) =>
       (0 until sm.N).foreach{i =>
       val p=i%sm.K
         el(i).move(unit,unit*(LinearPerm.permute(p1.head,p)-p))
       }
       el.grouped(sm.K).toSeq.flatMap(LinearPerm.permute(p1.head,_))
-    case transforms.SLP.SwitchArray(v,k) =>
+    case transforms.perm.SwitchArray(v,k) =>
       el.grouped(2).zipWithIndex.flatMap{case (Seq(e1,e2),hi)=>{
         val c=hi*2/sm.K
         val cv=Vec.fromInt(sm.t,c)
@@ -102,7 +102,7 @@ object SVG extends App {
         }
       }
       }.toSeq
-    case sm@transforms.SLP.Temporal(p3,p4,_) =>
+    case sm@transforms.perm.Temporal(p3,p4,_) =>
       val res=Array.fill(sm.N)(el.head)
       (0 until sm.N).foreach{i=>
       val c=i/sm.K
@@ -141,9 +141,9 @@ object SVG extends App {
   def length[T](sm: StreamingModule[T]):Int= sm match{
     case Product(list) => list.map(length).sum+(list.size-1)*unit
     case AcyclicProduct(list) => list.map(length).sum+(list.size-1)*unit
-    case transforms.SLP.Steady(_,_) => unit
-    case transforms.SLP.SwitchArray(_,_) => unit//3*unit/2
-    case sm@transforms.SLP.Temporal(p3,p4,_) => ((1<<sm.innerP4.head.m)+1)*3*Element.size/2
+    case transforms.perm.Steady(_,_) => unit
+    case transforms.perm.SwitchArray(_,_) => unit//3*unit/2
+    case sm@transforms.perm.Temporal(p3,p4,_) => ((1<<sm.innerP4.head.m)+1)*3*Element.size/2
     case ITensor(_,factor,_) => length(factor)
     case Butterfly() => unit
     case sm if sm.spl.isInstanceOf[DiagE] => 0//unit/2
@@ -182,8 +182,8 @@ object SVG extends App {
         static(list(i),pw,curx,y)
         curx += length(list(i))+unit
       }
-    case transforms.SLP.Steady(p1,t) => (0 until sm.K).foreach(i => pw ++= s"""<line x1="$x" y1="${i*unit+unit/2}" x2="${x+unit}" y2="${LinearPerm.permute(p1.head,i)*unit+unit/2}" stroke="#000"/>\n""")
-    case transforms.SLP.SwitchArray(v,k) =>
+    case transforms.perm.Steady(p1,t) => (0 until sm.K).foreach(i => pw ++= s"""<line x1="$x" y1="${i*unit+unit/2}" x2="${x+unit}" y2="${LinearPerm.permute(p1.head,i)*unit+unit/2}" stroke="#000"/>\n""")
+    case transforms.perm.SwitchArray(v,k) =>
       for(i<-0 until 1<<(k-1)) {
         pw ++= s"""<rect x="${x-0.25*unit}" y="${y + 2 * i * unit + 0.25 * unit}" width="${unit * 1.5}" height="${unit * 1.5}" rx="0" style="fill:#d5d5d5"/>"""
         pw ++= s"""<line x1="${x}" y1="${y+2*i*unit+unit/2}" x2="${x+unit}" y2="${y+2*i*unit+unit/2}" stroke="#000"/>\n"""
@@ -192,7 +192,7 @@ object SVG extends App {
         pw ++= s"""<line x1="${x}" y1="${y+2*i*unit+3*unit/2}" x2="${x+unit}" y2="${y+2*i*unit+unit/2}" stroke="#000"/>\n"""
 
       }
-    case sm@transforms.SLP.Temporal(p3,p4,_) =>
+    case sm@transforms.perm.Temporal(p3,p4,_) =>
       (0 until sm.K).foreach { i =>
       val l=length(sm)
         pw ++= s"""<line x1="$x" y1="${y+i*unit+unit/2}" x2="${x+l}" y2="${y+i*unit+unit/2}" stroke="#000"/>\n"""

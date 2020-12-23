@@ -24,10 +24,10 @@
 import java.io.{FileInputStream, FileOutputStream, PrintWriter}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 import transforms._
-import DSL.RTL.{SB, StreamingModule,RAMControl}
-import DSL.RTL.HardwareType._
-import transforms.FFT.DFT
-import transforms.SLP.LinearPerm
+import ir.rtl.{SB, StreamingModule,RAMControl}
+import ir.rtl.hardwaretype._
+import transforms.fft.DFT
+import transforms.perm.LinearPerm
 import transforms.WHT.WHT
 import _root_.SPL._
 import linalg.Fields.F2
@@ -191,7 +191,7 @@ object Main extends App{
       val pw = new PrintWriter(file)
       pw.write(design.toRTLGraph)
       pw.close()
-      println(s"Written RTL-level graph in $file.")
+      println(s"Written rtl-level graph in $file.")
     }
     else if(zip){
       val file = filename("design.zip")

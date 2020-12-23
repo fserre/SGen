@@ -23,7 +23,7 @@
 
 import scala.language.implicitConversions
 import java.io.PrintWriter
-import DSL.RTL.{AcyclicProduct, ITensor, ItProduct, StreamingModule,Product,RAMControl}
+import ir.rtl.{AcyclicProduct, ITensor, ItProduct, StreamingModule,Product,RAMControl}
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Shrink}
@@ -73,9 +73,9 @@ object TestTools {
   implicit def shrinkSB[T]: Shrink[StreamingModule[T]] = Shrink.withLazyList {
     case Product(factors) => factors.indices.to(LazyList).map(i => Product[T](factors.take(i) ++ factors.drop(i + 1)))
     case AcyclicProduct(factors) => factors.indices.to(LazyList).map(i => AcyclicProduct[T](factors.take(i) ++ factors.drop(i + 1)))
-    case ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => DSL.RTL.ITensor(r - i, factor, k - i))
-    case ItProduct(r, factor: AcyclicProduct[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => DSL.RTL.ItProduct(r, f, endLoop))
-    case ItProduct(r, factor, endLoop) => (1 until r).reverse.to(LazyList).map(i => DSL.RTL.ItProduct(i, factor, endLoop))
+    case ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => ir.rtl.ITensor(r - i, factor, k - i))
+    case ItProduct(r, factor: AcyclicProduct[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => ir.rtl.ItProduct(r, f, endLoop))
+    case ItProduct(r, factor, endLoop) => (1 until r).reverse.to(LazyList).map(i => ir.rtl.ItProduct(i, factor, endLoop))
     case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k,if(input.hasSinglePortedMem) RAMControl.Single else RAMControl.Dual)(input.hw))
   }
 

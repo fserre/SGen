@@ -22,10 +22,10 @@
  */
 
 
-import DSL.RTL.HardwareType.{ComplexHW, FixedPoint, Unsigned}
-import transforms.SLP.{Steady, SwitchArray, Temporal}
-import DSL.RTL.{AcyclicProduct, StreamingModule,RAMControl}
-import transforms.FFT.DiagE
+import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Unsigned}
+import transforms.perm.{Steady, SwitchArray, Temporal}
+import ir.rtl.{AcyclicProduct, StreamingModule,RAMControl}
+import transforms.fft.DiagE
 import linalg.Fields.{Complex, F2}
 import linalg.{Matrix, Vec}
 import backends.DOT._

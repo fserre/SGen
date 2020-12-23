@@ -24,7 +24,7 @@
 package backends
 
 import java.nio.file.{Files, Paths}
-import DSL.RTL.StreamingModule
+import ir.rtl.StreamingModule
 import java.io.PrintWriter
 import backends.Verilog._
 import scala.sys.process._

@@ -21,9 +21,9 @@
  *
  */
 
-import DSL.RTL.HardwareType.{ComplexHW, FixedPoint}
-import DSL.RTL.{SB, StreamingModule,RAMControl}
-import transforms.FFT.{DFT, StreamDiagC}
+import ir.rtl.hardwaretype.{ComplexHW, FixedPoint}
+import ir.rtl.{SB, StreamingModule,RAMControl}
+import transforms.fft.{DFT, StreamDiagC}
 import linalg.Fields.Complex
 import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Properties, Shrink}

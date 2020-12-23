@@ -21,15 +21,15 @@
  *
  */
 
-import transforms.SLP.{Steady, SwitchArray, Temporal}
+import transforms.perm.{Steady, SwitchArray, Temporal}
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
 import TestTools._
-import DSL.RTL.{RAMControl, SB, StreamingModule}
-import DSL.RTL.HardwareType.Unsigned
-import transforms.SLP.LinearPerm
+import ir.rtl.{RAMControl, SB, StreamingModule}
+import ir.rtl.hardwaretype.Unsigned
+import transforms.perm.LinearPerm
 import backends.Xsim._
 
 object SLPTest extends Properties("SLP") {
