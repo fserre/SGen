@@ -110,7 +110,7 @@ object DOT {
       val outputs = sb.implement(inputSigs)(sb)
       val toProcess = mutable.Queue[Int]()
       val processed = mutable.BitSet()
-      assert(outputs.forall(_.sb == this))
+      assert(outputs.forall(_.sb == sb))
       toProcess.enqueueAll(outputs.map(_.ref.i))
       processed.addAll(outputs.map(_.ref.i))
       val res = new StringBuilder
