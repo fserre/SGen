@@ -90,29 +90,37 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE+wF+3) {
   override def minus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FloMinus(lhs, rhs)
 
   override def times(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FloTimes(lhs, rhs)
-  private val biasDouble=(1<<(11-1))-1
-  private val bias=(1<<(wE-1))-1
+  private val biasDouble=(BigInt(1)<<(11-1))-1
+  private val bias=(BigInt(1)<<(wE-1))-1
   override def bitsOf(const: Double): BigInt = {
     if (const.isNaN)
-      3L<<(wE+wF+1)
+      BigInt(3)<<(wE+wF+1)
     else if (const.isPosInfinity)
-      4L<<(wE+wF)
+      BigInt(4)<<(wE+wF)
     else if (const.isNegInfinity)
-      5L<<(wE+wF)
+      BigInt(5)<<(wE+wF)
     else if(const>=0 && const<java.lang.Double.MIN_NORMAL)
-      0L
+      BigInt(0)
     else if(const<=0 && -const<java.lang.Double.MIN_NORMAL)
-      1L<<(wE+wF)
+      BigInt(1)<<(wE+wF)
     else{
       val bits=java.lang.Double.doubleToLongBits(const)
-      val exponent = ((bits & 0x7ff0000000000000L) >> 52)-biasDouble+bias
-      val mantissa = (bits & 0x000fffffffffffffL)>>(52-wF)
-      if(exponent<0)
-        if(const<0) 1L<<(wE+wF) else 0L
-      else if(exponent>=(1L<<wE))
-        if(const<0) 5L<<(wE+wF) else  4L<<(wE+wF)
+      val exponent = (bits & 0x7ff0000000000000L) >> 52
+      val mantissa = bits & 0x000fffffffffffffL
+      val newExponent = BigInt(exponent)-biasDouble+bias
+      val newMantissa = BigInt(mantissa)>>(52-wF)
+      if(newExponent<0)
+        if (const<0) 
+          BigInt(1)<<(wE+wF)
+        else 
+          BigInt(0)
+      else if(newExponent>=(BigInt(1)<<wE))
+        if (const<0) 
+          BigInt(5)<<(wE+wF)
+        else
+          BigInt(4)<<(wE+wF)
       else
-        mantissa+(exponent<<wF)+(if(const<0) 1L<<(wE+wF) else 0)+(1L<<(wE+wF+1))
+        newMantissa+(newExponent<<wF)+(if(const<0) BigInt(1)<<(wE+wF) else BigInt(0))+(BigInt(1)<<(wE+wF+1))
     }
   }
 

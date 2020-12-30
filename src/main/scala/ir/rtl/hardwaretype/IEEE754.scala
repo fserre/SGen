@@ -45,8 +45,8 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1) {
     println("flopoco outputFile=" + path.toAbsolutePath + " target=Virtex6 frequency=700 InputIEEE name=IEEE2Flopoco wEIn=" + wE + " wFIn=" + wF + " wEOut=" + wE + " wFOut=" + wF + " OutputIEEE name=Flopoco2IEEE wEIn=" + wE + " wFIn=" + wF + " wEOut=" + wE + " wFOut=" + wF)
     throw new Exception("Flopoco conversion file not found for wE=" + wE + " and wF=" + wF)
   }
-  private val biasDouble = (1 << (11 - 1)) - 1
-  private val bias = (1 << (wE - 1)) - 1
+  private val biasDouble = (BigInt(1) << (11 - 1)) - 1
+  private val bias = (BigInt(1) << (wE - 1)) - 1
 
   override def plus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = {
     require(lhs.hw == this)
@@ -68,25 +68,27 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1) {
 
   override def bitsOf(const: Double): BigInt = {
     if (const.isNaN)
-      (((1L << wE) - 1) << wF) + 1
+      (((BigInt(1) << wE) - 1) << wF) + 1
     else if (const.isPosInfinity)
-      ((1L << wE) - 1) << wF
+      ((BigInt(1) << wE) - 1) << wF
     else if (const.isNegInfinity)
-      (1L << (wE + wF)) + (((1L << wE) - 1) << wF)
+      (BigInt(1) << (wE + wF)) + (((BigInt(1) << wE) - 1) << wF)
     else if (const >= 0 && const < java.lang.Double.MIN_NORMAL)
-      0L
+      BigInt(0)
     else if (const <= 0 && -const < java.lang.Double.MIN_NORMAL)
-      1L << (wE + wF)
+      BigInt(1) << (wE + wF)
     else {
       val bits = java.lang.Double.doubleToLongBits(const)
-      val exponent = ((bits & 0x7ff0000000000000L) >> 52) - biasDouble + bias
-      val mantissa = (bits & 0x000fffffffffffffL) >> (52 - wF)
-      if (exponent < 0)
-        if (const < 0) 1L << (wE + wF) else 0L
-      else if (exponent >= (1L << wE))
-        if (const < 0) (1L << (wE + wF)) + (((1L << wE) - 1) << wF) else ((1L << wE) - 1) << wF
+      val exponent = (bits & 0x7ff0000000000000L) >> 52
+      val mantissa = bits & 0x000fffffffffffffL
+      val newExponent = BigInt(exponent) - biasDouble + bias
+      val newMantissa=BigInt(mantissa)>> (52 - wF)
+      if (newExponent < 0)
+        if (const < 0) BigInt(1) << (wE + wF) else BigInt(0)
+      else if (newExponent >= (BigInt(1) << wE))
+        if (const < 0) (BigInt(1) << (wE + wF)) + (((BigInt(1) << wE) - 1) << wF) else ((BigInt(1) << wE) - 1) << wF
       else
-        mantissa + (exponent << wF) + (if (const < 0) 1L << (wE + wF) else 0)
+        newMantissa + (newExponent << wF) + (if (const < 0) BigInt(1) << (wE + wF) else BigInt(0))
     }
   }
 

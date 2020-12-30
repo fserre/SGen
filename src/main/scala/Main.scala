@@ -100,41 +100,41 @@ object Main {
   def control = if (singlePortedRAM) RAMControl.SinglePorted else if (dualRAMControl) RAMControl.Dual else RAMControl.Single
   
   var logoDisplayed = false
+
+  def parseHW(argsQ:mutable.Queue[String]): Option[HW[?]] = argsQ.dequeue().toLowerCase() match {
+    case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned.apply)
+    case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
+    case "char" => Some(FixedPoint(8, 0))
+    case "short" => Some(FixedPoint(16, 0))
+    case "int" => Some(FixedPoint(32, 0))
+    case "long" => Some(FixedPoint(64, 0))
+    case "uchar" => Some(Unsigned(8))
+    case "ushort" => Some(Unsigned(16))
+    case "uint" => Some(Unsigned(32))
+    case "ulong" => Some(Unsigned(64))
+    case "fixedpoint" => for {
+      magnitude <- Numeric[Int].parseString(argsQ.dequeue())
+      fractional <- Numeric[Int].parseString(argsQ.dequeue())
+    } yield FixedPoint(magnitude, fractional)
+    case "flopoco" => for {
+      wE <- Numeric[Int].parseString(argsQ.dequeue())
+      wF <- Numeric[Int].parseString(argsQ.dequeue())
+    } yield Flopoco(wE, wF)
+    case "ieee754" => for {
+      wE <- Numeric[Int].parseString(argsQ.dequeue())
+      wF <- Numeric[Int].parseString(argsQ.dequeue())
+    } yield IEEE754(wE, wF)
+    case "half" => Some(IEEE754(5, 10))
+    case "float" => Some(IEEE754(8, 23))
+    case "double" => Some(IEEE754(11, 52))
+    case "minifloat" => Some(IEEE754(4, 3))
+    case "bfloat16" => Some(IEEE754(8, 7))
+    case "complex" => parseHW(argsQ).map(ComplexHW(_))
+    case _ => None
+  }
   
   def main(args: Array[String]) = {
     val argsQ = mutable.Queue.from(args)
-
-    def parseHW: Option[HW[?]] = argsQ.dequeue().toLowerCase() match {
-      case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned.apply)
-      case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
-      case "char" => Some(FixedPoint(8, 0))
-      case "short" => Some(FixedPoint(16, 0))
-      case "int" => Some(FixedPoint(32, 0))
-      case "long" => Some(FixedPoint(64, 0))
-      case "uchar" => Some(Unsigned(8))
-      case "ushort" => Some(Unsigned(16))
-      case "uint" => Some(Unsigned(32))
-      case "ulong" => Some(Unsigned(64))
-      case "fixedpoint" => for {
-        magnitude <- Numeric[Int].parseString(argsQ.dequeue())
-        fractional <- Numeric[Int].parseString(argsQ.dequeue())
-      } yield FixedPoint(magnitude, fractional)
-      case "flopoco" => for {
-        wE <- Numeric[Int].parseString(argsQ.dequeue())
-        wF <- Numeric[Int].parseString(argsQ.dequeue())
-      } yield Flopoco(wE, wF)
-      case "ieee754" => for {
-        wE <- Numeric[Int].parseString(argsQ.dequeue())
-        wF <- Numeric[Int].parseString(argsQ.dequeue())
-      } yield IEEE754(wE, wF)
-      case "half" => Some(IEEE754(5, 10))
-      case "float" => Some(IEEE754(8, 23))
-      case "double" => Some(IEEE754(11, 52))
-      case "minifloat" => Some(IEEE754(4, 3))
-      case "bfloat16" => Some(IEEE754(8, 7))
-      case "complex" => parseHW.map(ComplexHW(_))
-      case _ => None
-    }
     
     if(!logoDisplayed) {
       io.Source.fromResource("logo.txt").getLines().foreach(println)
@@ -146,7 +146,7 @@ object Main {
       case "-n" => n = Numeric[Int].parseString(argsQ.dequeue())
       case "-k" => k = Numeric[Int].parseString(argsQ.dequeue())
       case "-r" => r = Numeric[Int].parseString(argsQ.dequeue())
-      case "-hw" => hw = parseHW
+      case "-hw" => hw = parseHW(argsQ)
       case "-o" => filename = argsQ.dequeue()
       case "-testbench" => testbench = true
       case "-dualramcontrol" => dualRAMControl = true
