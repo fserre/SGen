@@ -30,7 +30,7 @@ import ir.AssociativeNodeCompanion
 
 import scala.annotation.tailrec
 
-final class And private (override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," & ",8){
+final class And private (override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," & "){
   override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.And(terms.map(cp))
   override val hashCode: Int = Seq("And",terms).hashCode()
   override def equals(other:Any)=other match{
@@ -78,7 +78,7 @@ object Not{
   }
 }
 
-final class Xor private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms, " ^ ",9) {
+final class Xor private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms, " ^ ") {
   override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Xor(terms.map(cp))
   override val pipeline = 1
   override val hashCode: Int = Seq("Xor",terms).hashCode()
@@ -108,7 +108,7 @@ object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg.map(_.re
 object RedXor {
   def apply(input: Sig[Int]): Sig[Int] = Xor((0 until input.hw.size).map(input(_)))
 }
-final class Concat private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," :: ",12)(Unsigned(terms.map(_.hw.size).sum)) {
+final class Concat private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," :: ")(Unsigned(terms.map(_.hw.size).sum)) {
   override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Concat(terms.map(cp))
   override val hashCode: Int = Seq("Concat",terms).hashCode()
   override def equals(other:Any)=other match{

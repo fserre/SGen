@@ -50,8 +50,9 @@ abstract class HW[T: Numeric](val size: Int) {
 }
 
 object HW {
+  inline def apply[T](using hw: HW[T]) = hw
   extension [T](x: HW[Complex[T]]) {
-    def innerHW: HW[T] = x match {
+    inline def innerHW: HW[T] = x match {
       case x: ComplexHW[T] => x.hw
       case _ => throw new Exception("Invalid complex HW datatype")
     }

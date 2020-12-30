@@ -38,7 +38,7 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
 
   private val signals = new mutable.ArrayBuffer[Sig[?]]()
   private val refs = new mutable.HashMap[Sig[?], Int]()
-  private implicit val sb:SB[U] = this
+  //private implicit val sb:SB[U] = this
 
   final def signal(i: Int):Sig[?] = signals(i)
   final def ref(sig: Sig[?]):Int = refs.getOrElseUpdate(sig, {
@@ -51,7 +51,7 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     val inputSigs = inputs.map(c => Input(c,hw,this))
     val inputIndexes = inputSigs.map(_.ref.i)
 
-    val outputs = implement(inputSigs)
+    val outputs = implement(inputSigs)(this)
     assert(outputs.forall(_.sb == this))
 
     val synch = mutable.HashMap[Int, Int]()
@@ -105,4 +105,8 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
     if (_latency.isEmpty) outputs
     _latency.get
   }
+}
+
+object SB{
+  def apply[U](using sb:SB[U]) = sb
 }
