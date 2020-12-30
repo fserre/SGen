@@ -22,7 +22,7 @@
  */
 
 
-import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Unsigned}
+import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, IEEE754, Unsigned}
 import transforms.perm.{Steady, SwitchArray, Temporal}
 import ir.rtl.{AcyclicProduct, RAMControl, StreamingModule}
 import transforms.fft.DFT
@@ -54,13 +54,13 @@ object GenerateWeb extends App{
     hw <- Vector("char","short","int","long","half","float","double","bfloat16")
   do
     val name = s"$transform-$n-$k-$r-$hw"
-    if hw=="int" then
+    if hw=="double" then
       print(name + " - ")
       val uut=
         if transform=="dft" then
-          DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(FixedPoint(32, 0)))
+          DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(IEEE754(11, 52)))
         else
-          DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(FixedPoint(32, 0)))
+          DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(IEEE754(11, 52)))
       println(uut.test())
     Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw complex $hw $transform".split(" "))
   
