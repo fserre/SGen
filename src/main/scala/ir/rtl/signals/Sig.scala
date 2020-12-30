@@ -36,16 +36,21 @@ import linalg._
  * @tparam T Equivalent software datatype of the node
  */
 abstract class Sig[T] { that =>
+  /// Parent signals of the node (each given as a pair: SigRef and number of cycles of advance this parent must have compared to this signal).  
   def parents: Seq[(SigRef[?], Int)]
 
+  /// Hardware datatype (given as an instance of HW[T])
   val hw: HW[T]
 
+  /// Main streaming block (the one that called the "implement" method). It is the one that stores references of signals.
   val sb: SB[?]
 
+  /// Number of registers that should be put after this signal.
   def pipeline = 0
 
-  def precedence =0
+  // def precedence =0
 
+  /// Implementation of this signal (using RTL components)
   def implement(cp: (SigRef[?], Int) => Component): Component
 
   /*def toString(s: SigRef[_] => String):String = that.getClass.getSimpleName + parents.map(_._1).map(s).mkString("(", ", ", ")")
@@ -57,18 +62,25 @@ abstract class Sig[T] { that =>
 
   override def toString: String = toString(4)*/
 
+  /// Adds two signals
   final def +(lhs: Sig[T]):Sig[T] = Plus(this, lhs)
 
+  /// Multiplies two signals
   final def *(lhs: Sig[T]):Sig[T] = Times(this, lhs)
 
+  /// Substract two signals
   final def -(lhs: Sig[T]):Sig[T] = Minus(this, lhs)
 
+  /// Get the reference of this signal (indirection to speedup method equals) 
   final lazy val ref=SigRef[T](sb.ref(this),sb)
 
+  // TODO: Move these to DOT backend
   def graphNode:Seq[String] = parents.map(p => p._1.graphName + " -> " + graphName + ";")
 
+  // TODO: Move these to DOT backend
   def graphDeclaration:String = graphName + "[label=\"" + this.getClass.getSimpleName + "\"];"
 
+  // TODO: Move these to DOT backend
   def graphName:String = "s" + ref.i
 }
 
@@ -116,7 +128,7 @@ object SigRef{
   implicit def refToSig[T](ref:SigRef[T]):Sig[T]=ref.sig
 }
 
-abstract class AssociativeSig[T](val terms: Seq[SigRef[T]], op: String, override val precedence: Int)(implicit hw: HW[T] = terms.head.hw) extends Operator(terms: _*)(hw) with AssociativeNode[Sig[T]] { that =>
+abstract class AssociativeSig[T](val terms: Seq[SigRef[T]], op: String/*, override val precedence: Int*/)(implicit hw: HW[T] = terms.head.hw) extends Operator(terms: _*)(hw) with AssociativeNode[Sig[T]] { that =>
   override val list:Seq[Sig[T]]=terms.map(_.sig)
 
   override def graphDeclaration:String = graphName + "[label=\"" + op + "\"];"

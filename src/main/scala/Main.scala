@@ -98,7 +98,9 @@ object Main {
   def filename(default: String) = _filename.getOrElse(default)
 
   def control = if (singlePortedRAM) RAMControl.SinglePorted else if (dualRAMControl) RAMControl.Dual else RAMControl.Single
-
+  
+  var logoDisplayed = false
+  
   def main(args: Array[String]) = {
     val argsQ = mutable.Queue.from(args)
 
@@ -133,9 +135,12 @@ object Main {
       case "complex" => parseHW.map(ComplexHW(_))
       case _ => None
     }
-
-    io.Source.fromResource("logo.txt").getLines().foreach(println)
-    io.Source.fromResource("lic.txt").getLines().foreach(println)
+    
+    if(!logoDisplayed) {
+      io.Source.fromResource("logo.txt").getLines().foreach(println)
+      io.Source.fromResource("lic.txt").getLines().foreach(println)
+      logoDisplayed=true
+    }
 
     while (argsQ.nonEmpty) argsQ.dequeue().toLowerCase match {
       case "-n" => n = Numeric[Int].parseString(argsQ.dequeue())

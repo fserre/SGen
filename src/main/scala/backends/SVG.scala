@@ -34,7 +34,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import sys.process._
 
-object SVG extends App {
+object SVG {
   val unit=50
   class Element(x:Int, y:Int, color:String){
     val path=ArrayBuffer[(Int,Int)]((x-Element.radius,y-Element.radius))
@@ -44,7 +44,7 @@ object SVG extends App {
     def apply(sb:mutable.StringBuilder)={
 
       sb ++= s"""<rect x="0" y="0" width="${Element.size}" height="${Element.size}" stroke="#000" style="fill:#${color}" rx="5">\n"""
-      sb ++= s"""<animateMotion dur="5s" values="${path.map((x,y)=>s"$x,$y").mkString(";")}" calcMode="linear" repeatCount="indefinite"/>\n"""
+      sb ++= s"""<animateMotion dur="${path.size/4}s" values="${path.map((x,y)=>s"$x,$y").mkString(";")}" calcMode="linear" repeatCount="indefinite"/>\n"""
       sb ++= s"""</rect>\n"""
     }
   }
@@ -212,7 +212,8 @@ object SVG extends App {
         static(factor,pw,x,y)
     case Butterfly() =>
       pw ++= s"""<rect x="${x-0.25*unit}" y="${y+0.25*unit}" width="${unit*1.5}" height="${unit*1.5}" rx="10" style="fill:#a1e47e"/>"""
-      pw ++= s"""<text x="${x+0.5*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">Butterfly</text>"""
+      //pw ++= s"""<text x="${x+0.5*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">Butterfly</text>"""
+      pw ++= s"""<text x="${x+0.5*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:24px; font-weight: bold;font-style:italic;">DFT<tspan dy="10" style="font-size:18px;">2</tspan></text>"""
     case sm if sm.spl.isInstanceOf[DiagE] =>
       val de:DiagE=sm.spl.asInstanceOf[DiagE]
       (0 until sm.K).map{p =>
@@ -243,40 +244,47 @@ object SVG extends App {
     case _ => pw ++= s"""<rect x="${x}" y="${y}" width="${2*unit}" height="${sm.K*unit}" rx="10" />"""
     }
 
-  def apply[T](sm: StreamingModule[T])={
-    val res=new mutable.StringBuilder
-    val height=sm.N*unit //unit/2 up and down
-    val width=length(sm)+4*unit //unit on each side
-    res ++= s"""<?xml version="1.0" encoding="utf-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 ${width} $height">\n"""
-    res ++= """<defs><marker id="triangle" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/> </marker><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7"/></marker></defs>"""
-    (0 until sm.K).foreach(i => res ++= s"""<line x1="$unit" y1="${i*unit+unit/2}" x2="${2*unit}" y2="${i*unit+unit/2}" stroke="#000"/>\n""")
-    (0 until sm.K).foreach(i => res ++= s"""<line x1="${length(sm)+2*unit}" y1="${i*unit+unit/2}" x2="${length(sm)+3*unit}" y2="${i*unit+unit/2}" stroke="#000" marker-end="url(#triangle)"/>\n""")
-    static(sm,res,2*unit,0)
-    val elements=Seq.tabulate(sm.N) { i =>
-      val p = i % sm.K
-      val c=i/sm.K
-      val res=Element(0,i*unit+unit/2)
-      (0 until c).foreach(_=>res.stay)
-      res.moveTo(unit,p*unit+unit/2)
-      res.move(unit)
-      res
-    }
-    animate(sm,elements,0).zipWithIndex.foreach{(e,i)=>
-      val p = i % sm.K
-      val c=i/sm.K
-      e.moveTo(length(sm)+4*unit,i*unit+unit/2)
-      (0 until (sm.T-c-1)).foreach(_ => e.stay)
-      e(res)
-    }
+  extension [T](sm: StreamingModule[T]) {
+    def toSVG = {
+      val res = new mutable.StringBuilder
+      val dyElements=Math.max(Element.size,sm.K*unit/sm.N)
+      val height = sm.N * dyElements //unit/2 up and down
+      val width = length(sm) + 4 * unit //unit on each side
+      res ++= s"""<?xml version="1.0" encoding="utf-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="${-Element.radius} 0 ${width+Element.size} ${height+Element.size}">\n"""
+      res ++= """<defs><marker id="triangle" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/> </marker><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7"/></marker></defs>"""
+      (0 until sm.K).foreach(i => res ++= s"""<line x1="$unit" y1="${i * unit + unit / 2}" x2="${2 * unit}" y2="${i * unit + unit / 2}" stroke="#000"/>\n""")
+      (0 until sm.K).foreach(i => res ++= s"""<line x1="${length(sm) + 2 * unit}" y1="${i * unit + unit / 2}" x2="${length(sm) + 3 * unit}" y2="${i * unit + unit / 2}" stroke="#000" marker-end="url(#triangle)"/>\n""")
+      static(sm, res, 2 * unit, 0)
+      
+      val elements = Seq.tabulate(sm.N) { i =>
+        val p = i % sm.K
+        val c = i / sm.K
+        val res = Element(0, i * dyElements + unit/2-(height-sm.K*unit)/2)
+        (0 until (c+2)).foreach(_ => res.stay)
+        res.moveTo(unit, p * unit + unit / 2)
+        res.move(unit)
+        res
+      }
+      animate(sm, elements, 0).zipWithIndex.foreach { (e, i) =>
+        val p = i % sm.K
+        val c = i / sm.K
+        e.moveTo(length(sm) + 4 * unit, i * dyElements + unit/2-(height-sm.K*unit)/2)
+        (0 until (sm.T - c + 1)).foreach(_ => e.stay)
+        e(res)
+      }
 
-    res++="</svg>\n"
-    res.toString()
+      res ++= "</svg>\n"
+      res.toString()
+    }
+    def writeSVG(filename:String="test.svg")={
+      val pw = new PrintWriter(filename)
+      pw.write(sm.toSVG)
+      pw.close()
+      
+    }
+    def showSVG(filename:String="test.svg")={
+      sm.writeSVG(filename)
+      s"cmd /c start $filename".!!
+    }
   }
-  val sm=DFT.CTDFT(3,1).stream(2,RAMControl.SinglePorted)(ComplexHW(FixedPoint(4,4)))
-  //val sm=LinearPerm.stream(Vector(LinearPerm.Rmat(1,3)),2,Unsigned(16),false)
-  val pw = new PrintWriter("test.svg")
-  println(sm)
-  pw.write(apply(sm))
-  pw.close()
-  "cmd /c start test.svg".!!
 }
