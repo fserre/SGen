@@ -22,7 +22,7 @@
  */
 
 
-import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, IEEE754, Unsigned}
+import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Flopoco, IEEE754, Unsigned}
 import transforms.perm.{Steady, SwitchArray, Temporal}
 import ir.rtl.{AcyclicProduct, RAMControl, StreamingModule}
 import transforms.fft.DFT
@@ -41,27 +41,33 @@ import java.io.PrintWriter
  * Script to generate all the elements used in the different websites.
  */
 object GenerateWeb extends App{
-  if false then
+  //val hw=Flopoco(11, 52)
+  //val hw=Flopoco(8, 23)
+  //println(hw.valueOf(hw.bitsOf(0.1)))
+  
+  
+  
+  if true then
     transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")
-  for
-    transform <- Vector("dft","dftcompact")
-    n <- 1 to 15
-    k <- 1 to Math.min(n,8)
-    r <- 1 to k
-    if n % r == 0
-    hw <- Vector("char","short","int","long","half","float","double","bfloat16")
-  do
-    val name = s"$transform-$n-$k-$r-$hw"
-    if hw=="double" then
-      print(name + " - ")
-      val uut=
-        if transform=="dft" then
-          DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(IEEE754(11, 52)))
-        else
-          DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(IEEE754(11, 52)))
-      println(uut.test())
-    Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw complex $hw $transform".split(" "))
+    for
+      transform <- Vector("dft","dftcompact")
+      n <- 1 to 15
+      k <- 1 to Math.min(n,8)
+      r <- 1 to k
+      if n % r == 0
+      hw <- Vector("char","short","int","long","half","float","double","bfloat16")
+    do
+      val name = s"$transform-$n-$k-$r-$hw"
+      if hw=="float" then
+        print(name + " - ")
+        val uut=
+          if transform=="dft" then
+            DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(IEEE754(8, 23)))
+          else
+            DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(IEEE754(8, 23)))
+        println(uut.test())
+      Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw complex $hw $transform".split(" "))
   
 }
