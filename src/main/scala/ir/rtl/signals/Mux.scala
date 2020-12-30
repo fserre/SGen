@@ -97,4 +97,8 @@ object Mux {
 
 object ROM {
   def apply[U](values: Seq[U], addr: Sig[Int])(implicit hw: HW[U], sb: SB[?]): Sig[U] =  Mux(addr, values.map(v => Const(v)))
+  def unapply[U](arg:Sig[U]):Option[(Seq[U],Sig[Int])]=arg match {
+    case arg:Mux[U] if arg.isRom => Some(arg.inputs.map(_.sig).map{case Const(value) => value.asInstanceOf[U]},arg.address)
+    case _ => None
+  }
 }

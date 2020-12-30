@@ -48,8 +48,18 @@ object DFT {
   }
 
   def omega(n: Int, pow: Int): Complex[Double] = {
-    val angle = -2 * Math.PI * pow / (1 << n)
-    Complex(Math.cos(angle), Math.sin(angle))
+    if(pow%(1<<n)==0)
+      Complex(1)
+    else if (2*(pow%(1<<n))==(1<<n))
+      Complex(-1)
+    else if (4*(pow%(1<<n))==(1<<n))
+      Complex(0,-1)
+    else if (4*(pow%(1<<n))==3*(1<<n))
+      Complex(0,1)
+    else {
+      val angle = -2 * Math.PI * pow / (1 << n)
+      Complex(Math.cos(angle), Math.sin(angle))
+    }
   }
   def Pease(n: Int, r: Int): SPL[Complex[Double]] = {
     assert(n%r==0)

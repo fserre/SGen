@@ -24,7 +24,7 @@
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Flopoco, IEEE754, Unsigned, HW}
 import transforms.perm.{Steady, SwitchArray, Temporal}
-import ir.rtl.{AcyclicProduct, RAMControl, StreamingModule}
+import ir.rtl._
 import transforms.fft.DFT
 import linalg.Fields.{Complex, F2}
 import linalg.{Matrix, Vec}
@@ -41,6 +41,11 @@ import java.io.PrintWriter
  * Script to generate all the elements used in the different websites.
  */
 object GenerateWeb extends App{
+  /*val uut = DFT.CTDFT(2,1).stream(1,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[SB[?]]
+  uut.showGraph
+  System.exit(0)*/
+  
+  
     transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")

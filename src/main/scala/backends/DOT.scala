@@ -138,8 +138,8 @@ object DOT {
       res.toString()
     }
 
-    def showGraph():String = {
-      val graph = toGraph
+    def showGraph = {
+      val graph = sb.toGraph
       new PrintWriter("graph.gv") {
         write(graph)
         close()

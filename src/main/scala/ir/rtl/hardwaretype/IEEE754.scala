@@ -24,7 +24,7 @@
 package ir.rtl.hardwaretype
 
 import ir.rtl.{Component, Extern}
-import ir.rtl.signals.{Operator, Sig, SigRef}
+import ir.rtl.signals._
 
 case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1) {
   that =>
@@ -115,24 +115,43 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1) {
       else
         res
     }
-
-
   }
 
-  private case class IEEEToFlopoco(input: Sig[Double]) extends Operator[Double](input)(Flopoco(wE, wF)) {
-
+  private case class IEEEToFlopoco private (input: SigRef[Double]) extends Operator[Double](input)(Flopoco(wE, wF)) {
     require(input.hw == that)
-
-    //override def implement(implicit cp: SigRef[_] => Component): Component = new Extern(hw.size,filename,"IEEE2Flopoco",)
     override def implement(implicit cp: SigRef[?] => Component): Component = new Extern(hw.size, filename, "IEEE2Flopoco", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
   }
-
-  private case class FlopocoToIEEE(input: Sig[Double]) extends Operator[Double](input)(that) {
+  private object IEEEToFlopoco{
+    def apply(input: Sig[Double]):Sig[Double]=input match{
+      case Const(value) => Const(value,Flopoco(wE, wF),input.sb)
+      //case ROM(values,address) => ROM(values,address)(Flopoco(wE, wF),address.sb)  
+      case FlopocoToIEEE(input) => input
+      case Mux(address, inputs) if inputs.forall(i=>i.sig.isInstanceOf[Const[?]] || i.sig.isInstanceOf[FlopocoToIEEE]) => Mux(address,inputs.map(i=>IEEEToFlopoco(i.sig)))
+      case _ => new IEEEToFlopoco(input)
+    }
+    def unapply(arg:Sig[Double]):Option[Sig[Double]]=arg match{
+      case arg:IEEEToFlopoco => Some(arg.input.sig)
+      case _ => None
+    }
+  }
+  
+  private case class FlopocoToIEEE private (input: SigRef[Double]) extends Operator[Double](input)(that) {
     require(input.hw == Flopoco(wE, wF))
-
     override def implement(implicit cp: SigRef[?] => Component): Component = new Extern(size, filename, "Flopoco2IEEE", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
   }
-
+  private object FlopocoToIEEE{
+    def apply(input: Sig[Double]):Sig[Double]=input match{
+      case Const(value) => Const(value,that,input.sb)
+      //case ROM(values,address) => ROM(values,address)(that,address.sb)
+      case IEEEToFlopoco(input) => input
+      case Mux(address, inputs) if inputs.forall(i=>i.sig.isInstanceOf[Const[?]] || i.sig.isInstanceOf[IEEEToFlopoco]) => Mux(address,inputs.map(i=>FlopocoToIEEE(i.sig)))
+      case _ => new FlopocoToIEEE(input)
+    }
+    def unapply(arg:Sig[Double]):Option[Sig[Double]]=arg match{
+      case arg:FlopocoToIEEE => Some(arg.input.sig)
+      case _ => None
+    }
+  }
 }
 
 object IEEE754 {
