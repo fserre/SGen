@@ -116,10 +116,10 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
 
       val addressesRead = offsetListRead.map(_ ^ basisRead)
 
-      inputs.zipWithIndex.map { case (i, p) => DualPortedRAM(i, addressesWrite(p), addressesRead(p), innerLatency) }
+      inputs.zipWithIndex.map { case (i, p) => DualControlRAM(i, addressesWrite(p), addressesRead(p), innerLatency) }
     }
     else
-      inputs.zipWithIndex.map { case (i, p) => SinglePortedRAM(i, addressesWrite(p), if(control==RAMControl.Single) innerLatency else T/R-1, T/R) }
+      inputs.zipWithIndex.map { case (i, p) => SingleControlRAM(i, addressesWrite(p), if(control==RAMControl.Single) innerLatency else T/R-1, T/R) }
   }
 
   override def hasSinglePortedMem: Boolean = control!=RAMControl.Dual

@@ -27,10 +27,10 @@ import ir.rtl.{Component, SB}
 import ir.rtl.hardwaretype.HW
 
 
-case class DualPortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {
+case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {
   override def parents: Seq[(SigRef[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
 
-  override val hw: HW[U] = implicitly
+  override val hw: HW[U] = input.hw
   override val sb: SB[?] = input.sb
   override val pipeline = 1
 
@@ -51,12 +51,12 @@ case class DualPortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int
 
 }
 
-case class SinglePortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
+case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
   val timeRd: Int = T + 1
 
   override def parents: Seq[(SigRef[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
 
-  override val hw: HW[U] = implicitly
+  override val hw: HW[U] = input.hw
   override val sb: SB[?] = input.sb
   override val pipeline = 1
 
@@ -75,6 +75,7 @@ case class SinglePortedRAM[U: HW](input: Sig[U], addrWr: Sig[Int], latency: Int,
   }
 
 }
+
 /*
 object RAM {
 
