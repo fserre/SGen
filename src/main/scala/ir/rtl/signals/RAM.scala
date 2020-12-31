@@ -24,7 +24,7 @@
 package ir.rtl.signals
 
 import ir.rtl.{Component, SB}
-import ir.rtl.hardwaretype.HW
+import ir.rtl.hardwaretype.{HW,Unsigned}
 
 
 case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {
@@ -74,6 +74,14 @@ case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T:
     )
   }
 
+}
+case class DoubleShiftReg[U](input:Sig[U], control:Sig[Int]) extends Sig[U]{
+  require(control.hw==Unsigned(1))
+  override val hw: HW[U] = input.hw
+  override val sb: SB[?] = input.sb
+  override val pipeline = 1
+  override def parents: Seq[(SigRef[?], Int)] = Seq((input, 2), (input, 0), (control, 0))
+  def implement(cp: (SigRef[?], Int) => Component): Component =new ir.rtl.Mux(cp(control,0), Seq(cp(input,0),cp(input,2)))
 }
 
 /*
