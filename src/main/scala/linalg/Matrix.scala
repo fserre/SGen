@@ -493,8 +493,8 @@ object Matrix {
 
   def fromBigInt(m: Int, n: Int, value: BigInt):Matrix[F2] = Matrix(m, n, Vector.tabulate(m * n)(i => F2(value.testBit(m * n - i - 1))))
 
-  implicit class MatrixF2(m: Matrix[F2]) {
-    lazy val order:Int = {
+  extension (m: Matrix[F2]) {
+    def order:Int = {
       assert(m.isInvertible)
       var result = 1
       var current = m
@@ -504,10 +504,8 @@ object Matrix {
       }
       result
     }
-    lazy val toBigInt:BigInt = {
-      (0 until (m.m * m.n)).foldLeft(BigInt(0))((cur, i) => if (m.values(i).value) cur.setBit(i) else cur)
-    }
-    lazy val toByteArray:Array[Byte] = toBigInt.toByteArray
+    def toBigInt:BigInt = (0 until (m.m * m.n)).foldLeft(BigInt(0))((cur, i) => if (m.values(i).value) cur.setBit(i) else cur)
+    def toByteArray:Array[Byte] = toBigInt.toByteArray
   }
 
 }
@@ -541,7 +539,7 @@ class Vec[T: Fractional](override val values: Vector[T]) extends Matrix[T](value
     new Vec[T](Vector.tabulate(values.size)(i => num.plus(values(i), rhs.values(i))))
   }
 
-  def scalar(rhs: Vec[T]):T = values.zip(rhs.values).map(i => num.times(i._1, i._2)).sum
+  infix def scalar(rhs: Vec[T]):T = values.zip(rhs.values).map(i => num.times(i._1, i._2)).sum
 }
 
 /**
@@ -584,7 +582,7 @@ object Vec {
 
   def fromInt(size: Int, value: Int) = new Vec[F2](Vector.tabulate(size)(i => F2((value & (1 << (size - i - 1))) != 0)))
 
-  implicit class VecF2(v: Vec[F2]) {
+  extension (v: Vec[F2]) {
     def toInt:Int = (0 until v.m).foldLeft(0)((res, k) => if (v(v.m - k - 1).value) res + (1 << k) else res)
 
     def bitCount:Int = (0 until v.m).foldLeft(0)((res, k) => if (v(k).value) res + 1 else res)

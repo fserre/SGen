@@ -170,11 +170,11 @@ object Main {
         design = LinearPerm.stream(matrices.toSeq, k, hw, control)
       case "wht" => design = WHT.stream(n, r, k, hw, control)
       case "dft" => hw match {
-        case hw: ComplexHW[?] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.CTDFT(n, r).stream(k, control)(hw.asInstanceOf[ComplexHW[Double]])
+        case hw: ComplexHW[Double@unchecked] => design = DFT.CTDFT(n, r).stream(k, control)(hw/*.asInstanceOf[ComplexHW[Double]]*/)
         case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")
       }
       case "dftcompact" => hw match {
-        case hw: ComplexHW[?] if hw.innerHW.num.zero.isInstanceOf[Double] => design = DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(hw.asInstanceOf[ComplexHW[Double]])
+        case hw: ComplexHW[Double@unchecked] => design = DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(hw/*.asInstanceOf[ComplexHW[Double]]*/)
         case _ => throw new IllegalArgumentException("Compact DFT requires a complex of fractional hardware datatype.")
       }
       case arg => throw new IllegalArgumentException("Unknown argument: " + arg)

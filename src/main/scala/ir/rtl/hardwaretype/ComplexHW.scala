@@ -22,11 +22,12 @@
  */
 
 package ir.rtl.hardwaretype
+
 import ir.rtl.signals._
 import linalg.Fields._
 
-
-case class ComplexHW[T](hw:HW[T]) extends HW[Complex[T]](hw.size*2)(using Complex.complexIsFractional[T](using hw.num):Numeric[Complex[T]]) {
+case class ComplexHW[T](hw:HW[T]) extends HW[Complex[T]](hw.size*2) (using Complex.complexIsFractional[T](using hw.num))/*:Numeric[Complex[T]]) */
+{
   implicit val componentHW: HW[T] =hw
 
   override def plus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)+Re(rhs),Im(lhs)+Im(rhs))
