@@ -28,7 +28,7 @@ import linalg.Fields.Complex
 import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop.forAll
-import backends.Xsim._
+import backends.xilinx.Xsim._
 
 object DFTTest extends Properties("DFT") {
   import TestTools.shrinkSB

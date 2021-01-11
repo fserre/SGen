@@ -27,7 +27,7 @@ import transforms.wht.WHT
 import linalg.{Matrix, Vec}
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Gen, Properties, Shrink}
-import backends.Xsim._
+import backends.xilinx.Xsim._
 
 object WHTTest extends Properties("WHT")  {
   property("WHT conforms to the definition")=

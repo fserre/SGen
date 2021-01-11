@@ -30,7 +30,7 @@ import TestTools._
 import ir.rtl.{RAMControl, SB, StreamingModule}
 import ir.rtl.hardwaretype.Unsigned
 import transforms.perm.LinearPerm
-import backends.Xsim._
+import backends.xilinx.Xsim._
 
 object SLPTest extends Properties("SLP") {
 

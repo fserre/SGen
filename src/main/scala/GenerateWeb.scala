@@ -31,7 +31,7 @@ import linalg.{Matrix, Vec}
 import backends.DOT._
 import backends.SVG._
 import backends.Verilog._
-import backends.Xsim._
+import backends.xilinx.Xsim._
 
 import scala.sys.process._
 import java.io.PrintWriter
