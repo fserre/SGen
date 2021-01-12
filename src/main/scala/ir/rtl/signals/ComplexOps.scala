@@ -27,8 +27,8 @@ import ir.rtl.Component
 import ir.rtl.hardwaretype.{ComplexHW, HW}
 import linalg.Fields.Complex
 
-case class Re[T] private(input: SigRef[Complex[T]]) extends Operator[T](input)(using input.sig.hw.innerHW) {
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Tap(cp(input),0 until hw.size)
+case class Re[T] private(input: Sig[Complex[T]]) extends Operator[T](input)(using input.hw.innerHW) {
+  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Tap(cp(input),0 until hw.size)
   }
 object Re{
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match{
@@ -43,8 +43,8 @@ object Re{
   }
 }
 
-case class Im[T] private(input: SigRef[Complex[T]]) extends Operator[T](input)(using input.sig.hw.innerHW) {
-  override def implement(implicit cp: SigRef[?] => Component): Component =new ir.rtl.Tap(cp(input),hw.size until (hw.size*2))
+case class Im[T] private(input: Sig[Complex[T]]) extends Operator[T](input)(using input.hw.innerHW) {
+  override def implement(implicit cp: Sig[?] => Component): Component =new ir.rtl.Tap(cp(input),hw.size until (hw.size*2))
 
 }
 
@@ -62,8 +62,8 @@ object Im{
 }
 
 
-case class Cpx[T] private(real: SigRef[T], im: SigRef[T]) extends Operator[Complex[T]](real, im)(using ComplexHW(real.sig.hw)) {
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Concat(Vector(cp(im),cp(real)))
+case class Cpx[T] private(real: Sig[T], im: Sig[T]) extends Operator[Complex[T]](real, im)(using ComplexHW(real.hw)) {
+  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Concat(Vector(cp(im),cp(real)))
 
 }
 object Cpx{

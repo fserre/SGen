@@ -31,7 +31,9 @@ case class Input[T](input: Component, override val hw: HW[T], override val sb: S
 
   //override def toString: String = input.name
 
-  override def graphName: String = "inputs:i" + ref.i
+  override lazy val graphName: String = 
+    Sig.dotNumber+=1
+    "inputs:s" + Sig.dotNumber
 
   override def graphDeclaration: String = ""
 }
@@ -64,20 +66,20 @@ object Reset{
 }
 
 case class Const[T](value: T, override val hw: HW[T], override val sb: SB[?]) extends Source(hw, sb) {
-  //override def toString(s: SigRef[_] => String): String = value.toString
+  //override def toString(s: Sig[_] => String): String = value.toString
 
   override def implement = new ir.rtl.Const(hw.size, hw.bitsOf(value))
 
   override def graphDeclaration = "" //graphName + "[label=\""+value.toString+"\"];"
 
-  override def graphName: String = value.toString
+  override lazy val graphName: String = value.toString
 
   override def equals(obj: Any): Boolean = obj match {
     case other: Const[?] => other.hw == hw && other.sb == sb && hw.bitsOf(value) == other.hw.bitsOf(other.value)
     case _ => false
   }
 
-  override val hashCode: Int = hw.bitsOf(value).hashCode()
+  override lazy val hashCode: Int = hw.bitsOf(value).hashCode()
 }
 object Const{
   def apply[T](value:T)(implicit hw:HW[T],sb:SB[?]):Sig[T]=Const(value,hw,sb)

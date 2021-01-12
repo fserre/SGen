@@ -30,9 +30,8 @@ import ir.AssociativeNodeCompanion
 
 import scala.annotation.tailrec
 
-final class And private (override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," & "){
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.And(terms.map(cp))
-  override val hashCode: Int = Seq("And",terms).hashCode()
+final class And private (override val terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms," & "){
+  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.And(terms.map(cp))
   override def equals(other:Any)=other match{
     case other:And => other.terms==terms
     case _ => false
@@ -40,7 +39,7 @@ final class And private (override val terms: Seq[SigRef[Int]]) extends Associati
   override val pipeline = 1
 }
 
-object And extends AssociativeSigCompanion[Int, And](arg => new And(arg.map(_.ref)), (lhs: Sig[Int], rhs: Sig[Int]) => {
+object And extends AssociativeSigCompanion[Int, And](arg => new And(arg), (lhs: Sig[Int], rhs: Sig[Int]) => {
   require(lhs.hw == rhs.hw)
   implicit val hw: HW[Int] = lhs.hw
   implicit val sb: SB[?] =lhs.sb
@@ -57,8 +56,8 @@ object And extends AssociativeSigCompanion[Int, And](arg => new And(arg.map(_.re
 })
 
 
-case class Not private(input: SigRef[Int]) extends Operator[Int](input)(input.hw) {
-  override def implement(implicit cp: SigRef[?] => Component): Component =new ir.rtl.Not(cp(input))
+case class Not private(input: Sig[Int]) extends Operator[Int](input)(input.hw) {
+  override def implement(implicit cp: Sig[?] => Component): Component =new ir.rtl.Not(cp(input))
 }
 
 object Not{
@@ -78,17 +77,16 @@ object Not{
   }
 }
 
-final class Xor private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms, " ^ ") {
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Xor(terms.map(cp))
+final class Xor private(override val terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms, " ^ ") {
+  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Xor(terms.map(cp))
   override val pipeline = 1
-  override val hashCode: Int = Seq("Xor",terms).hashCode()
   override def equals(other:Any)=other match{
     case other:Xor => other.terms==terms
     case _ => false
   }
 }
 
-object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg.map(_.ref)), (lhs: Sig[Int], rhs: Sig[Int]) => {
+object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg), (lhs: Sig[Int], rhs: Sig[Int]) => {
 //println(lhs+" "+rhs)
 
   require(lhs.hw == rhs.hw)
@@ -108,16 +106,15 @@ object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg.map(_.re
 object RedXor {
   def apply(input: Sig[Int]): Sig[Int] = Xor((0 until input.hw.size).map(input(_)))
 }
-final class Concat private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," :: ")(Unsigned(terms.map(_.hw.size).sum)) {
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Concat(terms.map(cp))
-  override val hashCode: Int = Seq("Concat",terms).hashCode()
+final class Concat private(override val terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms," :: ")(Unsigned(terms.map(_.hw.size).sum)) {
+  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Concat(terms.map(cp))
   override def equals(other:Any)=other match{
     case other:Concat => other.terms==terms
     case _ => false
   }
 }
 
-object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]]) => new Concat(list.map(_.ref)) }, (lhs: Sig[Int], rhs: Sig[Int]) => {
+object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]]) => new Concat(list) }, (lhs: Sig[Int], rhs: Sig[Int]) => {
   implicit val sb: SB[?] =lhs.sb
   (lhs,rhs) match{
     case (lhs:Const[Int], rhs:Const[Int]) => Left(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size),sb))
@@ -128,8 +125,8 @@ object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]
   }
 })
 
-case class Tap private(input: SigRef[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)) {
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Tap(cp(input), range)
+case class Tap private(input: Sig[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)) {
+  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Tap(cp(input), range)
 }
 
 object Tap {

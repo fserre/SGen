@@ -42,10 +42,11 @@ import java.io.PrintWriter
  * Script to generate all the elements used in the different websites.
  */
 object GenerateWeb extends App:
-  /*val uut = DFT.CTDFT(4,1).stream(2,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[SB[?]]
-  uut.showGraph
+  val uut = DFT.CTDFT(14,2).stream(2,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[SB[?]]
+  println(uut.toVerilog)
+  //uut.showGraph
   //println(uut.synthetize())
-  System.exit(0)*/
+  System.exit(0)
   
   
     transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")

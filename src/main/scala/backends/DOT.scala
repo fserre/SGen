@@ -24,6 +24,8 @@
 package backends
 import scala.collection.mutable
 import ir.rtl._
+import ir.rtl.signals.Sig
+
 import scala.sys.process._
 import java.io.PrintWriter
 
@@ -108,29 +110,30 @@ object DOT {
       val inputSigs = sb.dataInputs.map(c => signals.Input(c, sb.hw, sb))
 
       val outputs = sb.implement(inputSigs)(sb)
-      val toProcess = mutable.Queue[Int]()
-      val processed = mutable.BitSet()
+      val toProcess = mutable.HashSet[Sig[?]]()
+      val processed = mutable.HashSet[Sig[?]]()
       assert(outputs.forall(_.sb == sb))
-      toProcess.enqueueAll(outputs.map(_.ref.i))
-      processed.addAll(outputs.map(_.ref.i))
+      toProcess.addAll(outputs)
+      //processed.addAll(outputs)
       val res = new StringBuilder
       res ++= "digraph " + sb.name + " {\n"
       res ++= "  rankdir=RL;\n"
       res ++= "  ranksep=1.5;\n"
       res ++= "  outputs[shape=record,label=\"" + outputs.indices.map(i => "<o" + i + "> " + i + " ").mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
-      res ++= "  inputs[shape=record,label=\"" + inputSigs.zipWithIndex.map { case (p, i) => "<i" + p.ref.i + "> " + i + " " }.mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
+      //res ++= "  inputs[shape=record,label=\"" + inputSigs.zipWithIndex.map { case (p, i) => "<i" + p.ref.i + "> " + i + " " }.mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
       while (toProcess.nonEmpty) {
-        val cur = toProcess.dequeue()
-        val curSig = sb.signal(cur)
-        curSig.parents.map(_._1).foreach(f =>
-          if (!processed(f.i)) {
-            processed.add(f.i)
-            toProcess.enqueue(f.i)
+        val cur = toProcess.head
+        toProcess.remove(cur)
+        //val curSig = sb.signal(cur)
+        cur.parents.map(_._1).foreach(f =>
+          if (!processed(f)) {
+            processed.add(f)
+            toProcess.add(f)
           }
 
         )
       }
-      val nodes = processed.toSeq.map(sb.signal)
+      val nodes = processed.toSeq
       res ++= nodes.map(s => s.graphDeclaration).mkString("\n")
       res ++= nodes.flatMap(s => s.graphNode).mkString("\n")
       res ++= outputs.zipWithIndex.map { case (s, i) => s.graphName + " -> outputs:o" + i + ";\n" }.mkString("")

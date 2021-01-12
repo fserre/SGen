@@ -36,60 +36,58 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
 
   def implement(inputs: Seq[Sig[U]])(implicit sb: SB[?]): Seq[Sig[U]]
 
-  private val signals = new mutable.ArrayBuffer[Sig[?]]()
+/*  private val signals = new mutable.ArrayBuffer[Sig[?]]()
   private val refs = new mutable.HashMap[Sig[?], Int]()
-  //private implicit val sb:SB[U] = this
-
   final def signal(i: Int):Sig[?] = signals(i)
   final def ref(sig: Sig[?]):Int = refs.getOrElseUpdate(sig, {
     val res = signals.size
     signals += sig
     res
-  })
+  })*/
 
   final override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = {
     val inputSigs = inputs.map(c => Input(c,hw,this))
-    val inputIndexes = inputSigs.map(_.ref.i)
+    //val inputIndexes = inputSigs.map(_.ref.i)
 
     val outputs = implement(inputSigs)(this)
     assert(outputs.forall(_.sb == this))
 
-    val synch = mutable.HashMap[Int, Int]()
-    outputs.foreach(cur => synch.put(cur.ref.i, cur.pipeline))
-    inputSigs.foreach(cur => synch.put(cur.ref.i, 0))
-    val toImplement = mutable.BitSet.fromSpecific(outputs.map(_.ref.i))
+    val synch = mutable.HashMap[Sig[?], Int]()
+    outputs.foreach(cur => synch.put(cur, cur.pipeline))
+    inputSigs.foreach(cur => synch.put(cur, 0))
+    val toImplement = mutable.HashSet.from[Sig[?]](outputs)
     while (toImplement.nonEmpty) {
       val cur = toImplement.last
       toImplement.remove(cur)
-      val curSig = signal(cur)
-      curSig.parents.foreach { case (s: SigRef[?], advance: Int) =>
+      //val curSig = signal(cur)
+      cur.parents.foreach { case (s: Sig[?], advance: Int) =>
         val time = synch(cur) + advance + s.pipeline
         //println(time)
-        synch.get(s.i) match {
+        synch.get(s) match {
           case Some(i) if i > time =>
-          case _ => synch.put(s.i, time)
-                    toImplement.add(s.i)
+          case _ => synch.put(s, time)
+                    toImplement.add(s)
         }
       }
     }
 
-    val latency = inputIndexes.map(synch).max
-    inputIndexes.foreach(synch(_) = latency)
+    val latency = inputSigs.map(synch).max
+    inputSigs.foreach(synch(_) = latency)
     _latency = Some(latency)
-    val implemented = new mutable.HashMap[(Int, Int), Component]()
+    val implemented = new mutable.HashMap[(Sig[?], Int), Component]()
 
-    def implementComp(time: Int)(ref: SigRef[?], advance: Int): Component = {
+    def implementComp(time: Int)(ref: Sig[?], advance: Int): Component = {
       val advancedTime = time + advance
-      ref.sig match {
-        case Next() => token(latency - advancedTime)
-        case Reset() => rst
-        case _: Const[?] => implemented.getOrElseUpdate((ref.i, advancedTime), ref.implement(implementComp(advancedTime)))
+      ref match {
+        case Next(_) => token(latency - advancedTime)
+        case Reset(_) => rst
+        case _: Const[?] => implemented.getOrElseUpdate((ref, advancedTime), ref.implement(implementComp(advancedTime)))
         case _ =>
-          val diff = synch(ref.i) - advancedTime
+          val diff = synch(ref) - advancedTime
           assert(diff >= 0)
-          implemented.getOrElseUpdate((ref.i, advancedTime), if (diff == 0) {
+          implemented.getOrElseUpdate((ref, advancedTime), if (diff == 0) {
             val res = ref.implement(implementComp(advancedTime))
-            res.description = ref.sig.toString
+//            res.description = ref.toString
             res
           } else
             implementComp(advancedTime)(ref, 1).register)

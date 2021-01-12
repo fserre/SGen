@@ -59,28 +59,28 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE+wF+3) {
     val latMult = flopoco.slice(pos, posEnd).toInt
     (latPlus, latDiff, latMult)
   }
-  case class FloPlus(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Plus(lhs, rhs) {
+  case class FloPlus(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Plus(lhs, rhs) {
     override def latency: Int = latPlus
 
     override def pipeline = 1
 
-    override def implement(implicit cp: SigRef[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "add", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "add", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
   }
 
-  case class FloMinus(override val lhs: SigRef[Double],override val rhs: SigRef[Double]) extends Minus(lhs,rhs) {
+  case class FloMinus(override val lhs: Sig[Double],override val rhs: Sig[Double]) extends Minus(lhs,rhs) {
     override def latency: Int = latDiff
 
     override def pipeline = 1
 
-    override def implement(implicit cp: SigRef[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "diff", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "diff", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
   }
 
-  case class FloTimes(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Times(lhs, rhs) {
+  case class FloTimes(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Times(lhs, rhs) {
     override def pipeline = 1
 
     override def latency: Int = latMult
 
-    override def implement(implicit cp: SigRef[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "mult", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "mult", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(lhs)), ("Y", cp(rhs)))
 
   }
 

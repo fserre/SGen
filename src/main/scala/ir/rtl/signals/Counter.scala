@@ -26,12 +26,12 @@ package ir.rtl.signals
 import ir.rtl.{SB, _}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
-case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int] {
+case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int] {
   //Operator(trigger, reset)(Unsigned(BigInt(limit - 1).bitLength))
   override implicit val sb: SB[?] = trigger.sb
   override implicit val hw: HW[Int] = Unsigned(BigInt(limit - 1).bitLength)
 
-  override def implement(cp: (SigRef[?], Int) => Component): Component = /*Counter.mkCounter(limit,resetValue,cp(reset,1),trigger.sig match{
+  override def implement(cp: (Sig[?], Int) => Component): Component = /*Counter.mkCounter(limit,resetValue,cp(reset,1),trigger.sig match{
     case One()=> None
     case _ => Some(cp(trigger,1-delayTrigger))
   })*/ {
@@ -41,7 +41,7 @@ case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetVa
       new Mux(new Equals(prev, new Const(hw.size, limit - 1)),Seq(prevpp,new Const(hw.size, 0)))
     else
       prevpp
-    val res1 = trigger.sig match {
+    val res1 = trigger match {
       case One() => prevInc
       case _ => new Mux(cp(trigger, 1 - delayTrigger), Vector(prev, prevInc))
     }
@@ -51,7 +51,7 @@ case class Counter(limit: Int, trigger: SigRef[Int], reset: SigRef[Int], resetVa
   }
 
   //override def latency = 1
-  override def parents: Seq[(SigRef[?], Int)] = Seq((trigger, 1 - delayTrigger), (reset, 1))
+  override def parents: Seq[(Sig[?], Int)] = Seq((trigger, 1 - delayTrigger), (reset, 1))
 }
 
 object Counter {

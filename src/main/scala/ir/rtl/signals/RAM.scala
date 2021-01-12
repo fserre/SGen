@@ -28,13 +28,13 @@ import ir.rtl.hardwaretype.{HW,Unsigned}
 
 
 case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {
-  override def parents: Seq[(SigRef[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
+  override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
 
   override val hw: HW[U] = input.hw
   override val sb: SB[?] = input.sb
   override val pipeline = 1
 
-  override def implement(cp: (SigRef[?], Int) => Component): Component = {
+  override def implement(cp: (Sig[?], Int) => Component): Component = {
     val mem = new ir.rtl.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
     new ir.rtl.RAMRd(mem, cp(addrRd, 1))
   }
@@ -54,13 +54,13 @@ case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], 
 case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
   val timeRd: Int = T + 1
 
-  override def parents: Seq[(SigRef[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
+  override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
 
   override val hw: HW[U] = input.hw
   override val sb: SB[?] = input.sb
   override val pipeline = 1
 
-  override def implement(cp: (SigRef[?], Int) => Component): Component = {
+  override def implement(cp: (Sig[?], Int) => Component): Component = {
     val mem = new ir.rtl.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
     new ir.rtl.RAMRd(mem, cp(addrWr, timeRd))
   }
@@ -80,15 +80,15 @@ case class DoubleShiftReg[U](input:Sig[U], control:Sig[Int]) extends Sig[U]{
   override val hw: HW[U] = input.hw
   override val sb: SB[?] = input.sb
   override val pipeline = 1
-  override def parents: Seq[(SigRef[?], Int)] = Seq((input, 2), (input, 0), (control, 0))
-  def implement(cp: (SigRef[?], Int) => Component): Component =new ir.rtl.Mux(cp(control,0), Seq(cp(input,0),cp(input,2)))
+  override def parents: Seq[(Sig[?], Int)] = Seq((input, 2), (input, 0), (control, 0))
+  def implement(cp: (Sig[?], Int) => Component): Component =new ir.rtl.Mux(cp(control,0), Seq(cp(input,0),cp(input,2)))
 }
 
 /*
 object RAM {
 
-  case class RAMWr[U](wrAddress: SigRef[Int], input: SigRef[U], _latency: Int) extends Operator[U](wrAddress, input)(input.hw) {
-    override def implement(implicit cp: SigRef[_] => Component): Component = new ir.rtl.RAMWr(wrAddress, input)
+  case class RAMWr[U](wrAddress: Sig[Int], input: Sig[U], _latency: Int) extends Operator[U](wrAddress, input)(input.hw) {
+    override def implement(implicit cp: Sig[_] => Component): Component = new ir.rtl.RAMWr(wrAddress, input)
 
     override val latency = _latency + 1
 
@@ -97,8 +97,8 @@ object RAM {
     override def graphNode = List()
   }
 
-  case class RAMRd[U](mem: RAMWr[U], rdAddress: SigRef[Int]) extends Operator[U](mem, rdAddress)(mem.hw) {
-    override def implement(implicit cp: SigRef[_] => Component): Component = cp(mem) match {
+  case class RAMRd[U](mem: RAMWr[U], rdAddress: Sig[Int]) extends Operator[U](mem, rdAddress)(mem.hw) {
+    override def implement(implicit cp: Sig[_] => Component): Component = cp(mem) match {
       case mem: ir.rtl.RAMWr => new ir.rtl.RAMRd(mem, rdAddress)
       case _ => throw new Exception("Expecting a RAM component")
     }

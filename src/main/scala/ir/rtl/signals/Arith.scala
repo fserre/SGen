@@ -30,7 +30,7 @@ import Utils._
 import scala.annotation.tailrec
 
 
-/*abstract class Plus[T] (override val terms: Seq[SigRef[T]]) extends AssociativeSig[T](terms," + ",4)
+/*abstract class Plus[T] (override val terms: Seq[Sig[T]]) extends AssociativeSig[T](terms," + ",4)
 
 object Plus extends AssociativeSigCompanionT[Plus] {
   override def create[T](inputs: Seq[Sig[T]]): Sig[T] = {
@@ -52,7 +52,7 @@ object Plus extends AssociativeSigCompanionT[Plus] {
     }
   }
 }*/
-abstract class Plus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
+abstract class Plus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
   override def graphDeclaration: String = graphName + "[label=\"+\"];"
 }
 object Plus{
@@ -73,11 +73,11 @@ object Plus{
 
 }
 
-abstract class Minus[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
+abstract class Minus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
   override def graphDeclaration: String = graphName + "[label=\"-\"];"
 }
 
-abstract class Times[T](val lhs: SigRef[T], val rhs: SigRef[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
+abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
   override def graphDeclaration: String = graphName + "[label=\"*\"];"
 }
 

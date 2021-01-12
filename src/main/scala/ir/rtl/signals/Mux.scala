@@ -27,12 +27,12 @@ import ir.rtl.{Component, SB}
 import ir.rtl.hardwaretype.{ComplexHW, HW, Unsigned}
 import linalg.Fields.Complex
 
-case class Mux[U] private(address: SigRef[Int], inputs: Seq[SigRef[U]]) extends Operator[U](address +: inputs: _*)(using inputs.head.hw) {
-  def isRom: Boolean = inputs.forall(_.sig.isInstanceOf[Const[?]])
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Mux(cp(address), inputs.map(cp))
+case class Mux[U] private(address: Sig[Int], inputs: Seq[Sig[U]]) extends Operator[U](address +: inputs: _*)(using inputs.head.hw) {
+  def isRom: Boolean = inputs.forall(_.isInstanceOf[Const[?]])
+  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Mux(cp(address), inputs.map(cp))
 
   override def graphDeclaration: String = if (isRom)
-    graphName + "[label=\"<title>ROM (" + inputs.size + " × " + hw.size + " bits) |" + inputs.map(_.sig.asInstanceOf[Const[U]].value.toString).mkString("|") + "\",shape=record];"
+    graphName + "[label=\"<title>ROM (" + inputs.size + " × " + hw.size + " bits) |" + inputs.map(_.asInstanceOf[Const[U]].value.toString).mkString("|") + "\",shape=record];"
   else
     super.graphDeclaration
 
@@ -79,9 +79,9 @@ object Mux {
               else if (address.hw == hw && inputs.zipWithIndex.forall(i => i._1 == Not(Const(i._2)(address.hw, sb))))
                 Not(address).asInstanceOf[Sig[U]]
               else
-                new Mux(address, inputs.map(_.ref))
+                new Mux(address, inputs)
             }
-            case _ => new Mux(address, inputs.map(_.ref))
+            case _ => new Mux(address, inputs)
           }
 
         }
@@ -90,7 +90,7 @@ object Mux {
   }
 
   def unapply[U](arg: Sig[U]): Option[(Sig[Int], Seq[Sig[U]])] = arg match {
-    case arg: Mux[U] => Some((arg.address.sig, arg.inputs.map(_.sig)))
+    case arg: Mux[U] => Some((arg.address, arg.inputs))
     case _ => None
   }
 }
@@ -98,7 +98,7 @@ object Mux {
 object ROM {
   def apply[U](values: Seq[U], addr: Sig[Int])(implicit hw: HW[U], sb: SB[?]): Sig[U] =  Mux(addr, values.map(v => Const(v)))
   def unapply[U](arg:Sig[U]):Option[(Seq[U],Sig[Int])]=arg match {
-    case arg:Mux[U] if arg.isRom => Some(arg.inputs.map(_.sig).map{case Const(value) => value.asInstanceOf[U]},arg.address)
+    case arg:Mux[U] if arg.isRom => Some(arg.inputs.map{case Const(value) => value.asInstanceOf[U]},arg.address)
     case _ => None
   }
 }

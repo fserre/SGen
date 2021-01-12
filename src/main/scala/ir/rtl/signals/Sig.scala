@@ -36,8 +36,8 @@ import linalg._
  * @tparam T Equivalent software datatype of the node
  */
 abstract class Sig[T] { that =>
-  /// Parent signals of the node (each given as a pair: SigRef and number of cycles of advance this parent must have compared to this signal).  
-  def parents: Seq[(SigRef[?], Int)]
+  /// Parent signals of the node (each given as a pair: Sig and number of cycles of advance this parent must have compared to this signal).  
+  def parents: Seq[(Sig[?], Int)]
 
   /// Hardware datatype (given as an instance of HW[T])
   val hw: HW[T]
@@ -51,14 +51,14 @@ abstract class Sig[T] { that =>
   // def precedence =0
 
   /// Implementation of this signal (using RTL components)
-  def implement(cp: (SigRef[?], Int) => Component): Component
+  def implement(cp: (Sig[?], Int) => Component): Component
 
-  /*def toString(s: SigRef[_] => String):String = that.getClass.getSimpleName + parents.map(_._1).map(s).mkString("(", ", ", ")")
+  /*def toString(s: Sig[_] => String):String = that.getClass.getSimpleName + parents.map(_._1).map(s).mkString("(", ", ", ")")
 
   final def toString(depth:Int):String=if(depth==0)
     this.ref.toString
   else
-    toString((s:SigRef[_])=>s.ref.toString(depth-1))
+    toString((s:Sig[_])=>s.ref.toString(depth-1))
 
   override def toString: String = toString(4)*/
 
@@ -71,9 +71,6 @@ abstract class Sig[T] { that =>
   /// Substract two signals
   final def -(lhs: Sig[T]):Sig[T] = Minus(this, lhs)
 
-  /// Get the reference of this signal (indirection to speedup method equals) 
-  final lazy val ref=SigRef[T](sb.ref(this),sb)
-
   // TODO: Move these to DOT backend
   def graphNode:Seq[String] = parents.map(p => p._1.graphName + " -> " + graphName + ";")
 
@@ -81,7 +78,9 @@ abstract class Sig[T] { that =>
   def graphDeclaration:String = graphName + "[label=\"" + this.getClass.getSimpleName + "\"];"
 
   // TODO: Move these to DOT backend
-  def graphName:String = "s" + ref.i
+  lazy val graphName:String = 
+    Sig.dotNumber+=1
+    "s" + Sig.dotNumber
 }
 
 object Sig {
@@ -89,6 +88,8 @@ object Sig {
 
   implicit def vecToConst(v: Vec[F2])(implicit sb:SB[?]): Sig[Int] = Const(v.toInt)(Unsigned(v.m),sb)
 
+  var dotNumber = 0
+  
   extension [T](lhs: Sig[Int]) {
     def ::(rhs: Sig[Int]):Sig[Int] = Concat(lhs, rhs)
 
@@ -114,26 +115,15 @@ object Sig {
     def im:Sig[T] = Im(lhs)
   }
 
-  implicit def sigToRef[T](sig:Sig[T]):SigRef[T]=sig.ref
+  
 }
 
-case class SigRef[T](i:Int, sb:SB[?]){
-  val sig:Sig[T]=sb.signal(i).asInstanceOf[Sig[T]]
-
-  override def toString: String = "S"+i
-}
-object SigRef{
-  import scala.language.implicitConversions
-
-  implicit def refToSig[T](ref:SigRef[T]):Sig[T]=ref.sig
-}
-
-abstract class AssociativeSig[T](val terms: Seq[SigRef[T]], op: String/*, override val precedence: Int*/)(implicit hw: HW[T] = terms.head.hw) extends Operator(terms: _*)(hw) with AssociativeNode[Sig[T]] { that =>
-  override val list:Seq[Sig[T]]=terms.map(_.sig)
+abstract class AssociativeSig[T](val terms: Seq[Sig[T]], op: String/*, override val precedence: Int*/)(implicit hw: HW[T] = terms.head.hw) extends Operator(terms: _*)(hw) with AssociativeNode[Sig[T]] { that =>
+  override val list:Seq[Sig[T]]=terms
 
   override def graphDeclaration:String = graphName + "[label=\"" + op + "\"];"
 
-  //override def toString(s: SigRef[_] => String): String = terms.map(t=>if(t.precedence>=precedence)"("+s(t)+")" else s(t)).mkString(op)
+  //override def toString(s: Sig[_] => String): String = terms.map(t=>if(t.precedence>=precedence)"("+s(t)+")" else s(t)).mkString(op)
 
 
 }
@@ -147,17 +137,19 @@ abstract class Source[T](override val hw: HW[T], override val sb: SB[?]) extends
 
   final override val parents = Seq()
 
-  final override def implement(cp: (SigRef[?], Int) => Component): Component = implement
+  final override def implement(cp: (Sig[?], Int) => Component): Component = implement
 }
 
-abstract class Operator[T](operands: SigRef[?]*)(implicit override val hw: HW[T]) extends Sig[T] {
+abstract class Operator[T](operands: Sig[?]*)(implicit override val hw: HW[T]) extends Sig[T] {
   def latency = 0
 
-  def implement(implicit cp: SigRef[?] => Component): Component
+  def implement(implicit cp: Sig[?] => Component): Component
 
-  final override def parents:Seq[(SigRef[?],Int)] = operands.map((_, latency))
+  final override def parents:Seq[(Sig[?],Int)] = operands.map((_, latency))
 
   final override val sb: SB[?] = operands.head.sb
 
-  final override def implement(cp: (SigRef[?], Int) => Component): Component = implement(sr => cp(sr, latency))
+  final override def implement(cp: (Sig[?], Int) => Component): Component = implement(sr => cp(sr, latency))
+
+  final override lazy val hashCode: Int = Seq(this.getClass().getSimpleName, parents).hashCode()
 }
