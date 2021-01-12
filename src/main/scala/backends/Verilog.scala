@@ -120,9 +120,9 @@ object Verilog {
       var res = new StringBuilder
       res ++= "module test;\n"
       res ++= "    reg clk,rst,next;\n"
-      sm.dataInputs.foreach(res ++= "    reg [" ++= (sm.busSize - 1).toString ++= ":0] " ++= _.name ++= ";\n")
+      sm.dataInputs.foreach(res ++= "    reg [" ++= (sm.hw.size - 1).toString ++= ":0] " ++= _.name ++= ";\n")
       res ++= "    wire next_out;\n"
-      sm.dataOutputs.foreach(res ++= "    wire [" ++= (sm.busSize - 1).toString ++= ":0] " ++= _.name ++= ";\n")
+      sm.dataOutputs.foreach(res ++= "    wire [" ++= (sm.hw.size - 1).toString ++= ":0] " ++= _.name ++= ";\n")
       res ++= "\n"
       res ++= " //Clock\n"
       res ++= "    always\n"

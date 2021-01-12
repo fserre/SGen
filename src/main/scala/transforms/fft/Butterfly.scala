@@ -33,7 +33,7 @@ class Butterfly[T:HW] extends SB[T](0,1){
 
   override def toString: String = "F2"
 
-  override def implement(inputs: Seq[Sig[T]])(implicit sb:SB[?]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
+  override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
 
   override def spl: SPL[T] =DFT2[T]()(implicitly[HW[T]].num)
 }

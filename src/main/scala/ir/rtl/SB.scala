@@ -28,83 +28,64 @@ import ir.rtl.signals._
 import ir.rtl.{Component, StreamingModule}
 
 import java.io.PrintWriter
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.sys.process._
 
 
-abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(t, k) {
+abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(t, k):
 
-  def implement(inputs: Seq[Sig[U]])(implicit sb: SB[?]): Seq[Sig[U]]
+  def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]]
 
-/*  private val signals = new mutable.ArrayBuffer[Sig[?]]()
-  private val refs = new mutable.HashMap[Sig[?], Int]()
-  final def signal(i: Int):Sig[?] = signals(i)
-  final def ref(sig: Sig[?]):Int = refs.getOrElseUpdate(sig, {
-    val res = signals.size
-    signals += sig
-    res
-  })*/
+  final override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = 
+    val inputSigs = inputs.map(c => Input(c,hw))
 
-  final override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = {
-    val inputSigs = inputs.map(c => Input(c,hw,this))
-    //val inputIndexes = inputSigs.map(_.ref.i)
-
-    val outputs = implement(inputSigs)(this)
-    assert(outputs.forall(_.sb == this))
+    val outputs = implement(inputSigs)
 
     val synch = mutable.HashMap[Sig[?], Int]()
     outputs.foreach(cur => synch.put(cur, cur.pipeline))
     inputSigs.foreach(cur => synch.put(cur, 0))
-    val toImplement = mutable.HashSet.from[Sig[?]](outputs)
-    while (toImplement.nonEmpty) {
-      val cur = toImplement.last
-      toImplement.remove(cur)
-      //val curSig = signal(cur)
-      cur.parents.foreach { case (s: Sig[?], advance: Int) =>
-        val time = synch(cur) + advance + s.pipeline
-        //println(time)
-        synch.get(s) match {
-          case Some(i) if i > time =>
-          case _ => synch.put(s, time)
-                    toImplement.add(s)
-        }
-      }
-    }
-
+    var toImplement:Seq[Sig[?]] = outputs.distinct
+    while toImplement.nonEmpty do
+      toImplement = toImplement.flatMap(cur=>
+        val curTime=synch(cur)
+        cur.parents.flatMap ((s: Sig[?], advance: Int) =>
+          val time = curTime + advance + s.pipeline
+          synch.get(s) match 
+            case Some(i) if i > time => None
+            case _ =>
+              synch.put(s, time)
+              Some(s)
+        )
+      ).distinct
+    
     val latency = inputSigs.map(synch).max
     inputSigs.foreach(synch(_) = latency)
     _latency = Some(latency)
     val implemented = new mutable.HashMap[(Sig[?], Int), Component]()
 
-    def implementComp(time: Int)(ref: Sig[?], advance: Int): Component = {
+    def implementComp(time: Int)(ref: Sig[?], advance: Int): Component = 
       val advancedTime = time + advance
-      ref match {
-        case Next(_) => token(latency - advancedTime)
-        case Reset(_) => rst
+      ref match 
+        case Next => token(latency - advancedTime)
+        case Reset => rst
         case _: Const[?] => implemented.getOrElseUpdate((ref, advancedTime), ref.implement(implementComp(advancedTime)))
         case _ =>
           val diff = synch(ref) - advancedTime
           assert(diff >= 0)
-          implemented.getOrElseUpdate((ref, advancedTime), if (diff == 0) {
-            val res = ref.implement(implementComp(advancedTime))
-//            res.description = ref.toString
-            res
-          } else
-            implementComp(advancedTime)(ref, 1).register)
-      }
-    }
-
+          implemented.getOrElseUpdate((ref, advancedTime), 
+            if diff == 0 then
+              val res = ref.implement(implementComp(advancedTime))
+              // res.description = ref.toString
+              res
+            else 
+              implementComp(advancedTime)(ref, 1).register)
     outputs.map(implementComp(0)(_, 0))
-  }
 
   private var _latency: Option[Int] = None
 
-  final def latency: Int = {
-    if (_latency.isEmpty) outputs
+  final def latency: Int = 
+    if _latency.isEmpty then outputs
     _latency.get
-  }
-}
+  
 
-object SB{
-  def apply[U](using sb:SB[U]) = sb
-}

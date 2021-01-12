@@ -107,12 +107,11 @@ object DOT {
   extension [U](sb: SB[U]) {
     def toGraph:String = {
       //implicit val sb:SB[U] = this
-      val inputSigs = sb.dataInputs.map(c => signals.Input(c, sb.hw, sb))
+      val inputSigs = sb.dataInputs.map(c => signals.Input(c, sb.hw))
 
-      val outputs = sb.implement(inputSigs)(sb)
+      val outputs = sb.implement(inputSigs)
       val toProcess = mutable.HashSet[Sig[?]]()
       val processed = mutable.HashSet[Sig[?]]()
-      assert(outputs.forall(_.sb == sb))
       toProcess.addAll(outputs)
       //processed.addAll(outputs)
       val res = new StringBuilder

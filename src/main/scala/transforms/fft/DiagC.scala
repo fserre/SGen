@@ -42,7 +42,7 @@ case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
 
   override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = new SB(n - k, k) {
-    override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[?]): Seq[Sig[Complex[Double]]] = {
+    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = {
       (0 until K).map(p => {
         val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
         val twiddleHW = hw match {
@@ -50,7 +50,7 @@ case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
           case _ => hw
         }
         val control = Timer(T)
-        val twiddle = ROM(twiddles, control)(twiddleHW, sb)
+        val twiddle = ROM(twiddles, control)(twiddleHW)
         inputs(p) * twiddle
       })
     }
@@ -73,7 +73,7 @@ case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]]
   override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = {
     //require(k>=r)
     new SB(n - k, k) {
-      override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[?]): Seq[Sig[Complex[Double]]] = {
+      override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = {
         (0 until K).map(p => {
           val j = p % (1 << r)
           val coefs = Vector.tabulate(1 << (this.n - r))(i => DFT.omega(this.n, i * j))
@@ -84,12 +84,12 @@ case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]]
           }
           /*val control = Timer(T)
           val twiddle = ROM(twiddles, control)(twiddleHW, sb)*/
-          val control1 = Timer(T) :: Const(p >> r)(Unsigned(this.k - r), implicitly)
+          val control1 = Timer(T) :: Const(p >> r)(Unsigned(this.k - r))
           //println(control1)
           val control2a = Counter(this.n / r)
-          val control2 = ROM(Vector.tabulate(this.n / r)(i => ((1 << (i * r)) - 1) ^ ((1 << (this.n - r)) - 1)), control2a)(Unsigned(this.n - r), implicitly)
+          val control2 = ROM(Vector.tabulate(this.n / r)(i => ((1 << (i * r)) - 1) ^ ((1 << (this.n - r)) - 1)), control2a)(Unsigned(this.n - r))
           val control = control1 & control2
-          val twiddle = ROM(coefs, control)(twiddleHW, implicitly)
+          val twiddle = ROM(coefs, control)(twiddleHW)
           inputs(p) * twiddle
         })
       }

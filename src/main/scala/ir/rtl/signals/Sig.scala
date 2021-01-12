@@ -36,14 +36,15 @@ import linalg._
  * @tparam T Equivalent software datatype of the node
  */
 abstract class Sig[T] { that =>
+  val hash:Int
+  
+  final override inline def hashCode() = hash
+  
   /// Parent signals of the node (each given as a pair: Sig and number of cycles of advance this parent must have compared to this signal).  
   def parents: Seq[(Sig[?], Int)]
 
   /// Hardware datatype (given as an instance of HW[T])
   val hw: HW[T]
-
-  /// Main streaming block (the one that called the "implement" method). It is the one that stores references of signals.
-  val sb: SB[?]
 
   /// Number of registers that should be put after this signal.
   def pipeline = 0
@@ -86,7 +87,7 @@ abstract class Sig[T] { that =>
 object Sig {
   import scala.language.implicitConversions
 
-  implicit def vecToConst(v: Vec[F2])(implicit sb:SB[?]): Sig[Int] = Const(v.toInt)(Unsigned(v.m),sb)
+  implicit def vecToConst(v: Vec[F2]): Sig[Int] = Const(v.toInt)(Unsigned(v.m))
 
   var dotNumber = 0
   
@@ -118,8 +119,8 @@ object Sig {
   
 }
 
-abstract class AssociativeSig[T](val terms: Seq[Sig[T]], op: String/*, override val precedence: Int*/)(implicit hw: HW[T] = terms.head.hw) extends Operator(terms: _*)(hw) with AssociativeNode[Sig[T]] { that =>
-  override val list:Seq[Sig[T]]=terms
+abstract class AssociativeSig[T](override val list: Seq[Sig[T]], op: String)(implicit hw: HW[T] = list.head.hw) extends Operator(list: _*)(hw) with AssociativeNode[Sig[T]] { that =>
+  //override val list:Seq[Sig[T]]=terms
 
   override def graphDeclaration:String = graphName + "[label=\"" + op + "\"];"
 
@@ -132,7 +133,7 @@ abstract class AssociativeSigCompanionT[U[T]<:Sig[T] & AssociativeSig[T]] extend
 
 abstract class AssociativeSigCompanion[T,U<:Sig[T]  & AssociativeSig[T]](create:Seq[Sig[T]]=>Sig[T], simplify:(Sig[T],Sig[T])=>Either[Sig[T],(Sig[T],Sig[T])]= (lhs:Sig[T], rhs:Sig[T])=>Right(lhs,rhs)) extends AssociativeNodeCompanion[Sig[T],U](create,simplify)
 
-abstract class Source[T](override val hw: HW[T], override val sb: SB[?]) extends Sig[T] {
+abstract class Source[T](override val hw: HW[T]) extends Sig[T] {
   def implement: Component
 
   final override val parents = Seq()
@@ -147,9 +148,7 @@ abstract class Operator[T](operands: Sig[?]*)(implicit override val hw: HW[T]) e
 
   final override def parents:Seq[(Sig[?],Int)] = operands.map((_, latency))
 
-  final override val sb: SB[?] = operands.head.sb
-
   final override def implement(cp: (Sig[?], Int) => Component): Component = implement(sr => cp(sr, latency))
 
-  final override lazy val hashCode: Int = Seq(this.getClass().getSimpleName, parents).hashCode()
+  final override val hash = Seq(this.getClass().getSimpleName, parents).hashCode()
 }

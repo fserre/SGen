@@ -79,7 +79,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
     simplify(compOff())
   })
 
-  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
+  override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] = {
 
     val offsetLength = Utils.lcm(offset1.map(_.size))
     val offset2 = offset1.map(l => Vector.tabulate(offsetLength)(i => l(i % l.size)))
@@ -87,7 +87,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
     val timerWrite = Timer(T)
     val timerWriteL = timerWrite(0 until t-r)
     val timerWriteH = timerWrite(t-r until t)
-    val basisListWrite = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const(m.row(c).toInt)(Unsigned(t-r), sb) scalar timerWriteL)))
+    val basisListWrite = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const(m.row(c).toInt)(Unsigned(t-r)) scalar timerWriteL)))
 
 
     val controlWriteH = LateCounter((basis.size+R-1)/R, T)
@@ -96,7 +96,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
 
     val controlWrite2H = LateCounter((offsetLength+R-1)/R, T)
     val controlWrite2=controlWrite2H::timerWriteH
-    val offsetListWrite = offset2.map(i => ROM(i.map(x => x.toInt), controlWrite2)(Unsigned(t-r), sb))
+    val offsetListWrite = offset2.map(i => ROM(i.map(x => x.toInt), controlWrite2)(Unsigned(t-r)))
 
     val addressesWrite = offsetListWrite.map(_ ^ basisWrite)
 
@@ -104,7 +104,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
       val timerRead = Timer(T)
       val timerReadL=timerRead(0 until t-r)
       val timerReadH=timerRead(t-r until t)
-      val basisListRead = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const[Int](m.row(c).toInt)(Unsigned(t-r), sb) scalar timerReadL)))
+      val basisListRead = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const[Int](m.row(c).toInt)(Unsigned(t-r)) scalar timerReadL)))
 
       val controlReadH = Counter((basis.size+R-1)/R)
       val controlRead=controlReadH::timerReadH
@@ -112,7 +112,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
 
       val controlRead2H = Counter((offsetLength+R-1)/R)
       val controlRead2 = controlRead2H::timerReadH
-      val offsetListRead = offset2.map(i => ROM(shift(i).map(x => x.toInt), controlRead2)(Unsigned(t-r), sb))
+      val offsetListRead = offset2.map(i => ROM(shift(i).map(x => x.toInt), controlRead2)(Unsigned(t-r)))
 
       val addressesRead = offsetListRead.map(_ ^ basisRead)
 

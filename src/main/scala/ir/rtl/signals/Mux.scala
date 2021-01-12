@@ -45,7 +45,6 @@ object Mux {
     require(inputs.nonEmpty)
     val head=inputs.head
     val hw = head.hw
-    implicit val sb: SB[?] = address.sb
     require(inputs.forall(_.hw == hw))
 
     address match {
@@ -74,9 +73,9 @@ object Mux {
                 val res1 = part1 :: part2
                 val res= res1:: part3
                 res.asInstanceOf[Sig[U]]
-              case _ => if (address.hw == hw && inputs.zipWithIndex.forall(i => i._1 == Const(i._2)(address.hw, sb)))
+              case _ => if (address.hw == hw && inputs.zipWithIndex.forall(i => i._1 == Const(i._2)(address.hw)))
                 address.asInstanceOf[Sig[U]]
-              else if (address.hw == hw && inputs.zipWithIndex.forall(i => i._1 == Not(Const(i._2)(address.hw, sb))))
+              else if (address.hw == hw && inputs.zipWithIndex.forall(i => i._1 == Not(Const(i._2)(address.hw))))
                 Not(address).asInstanceOf[Sig[U]]
               else
                 new Mux(address, inputs)
@@ -96,7 +95,7 @@ object Mux {
 }
 
 object ROM {
-  def apply[U](values: Seq[U], addr: Sig[Int])(implicit hw: HW[U], sb: SB[?]): Sig[U] =  Mux(addr, values.map(v => Const(v)))
+  def apply[U](values: Seq[U], addr: Sig[Int])(implicit hw: HW[U]): Sig[U] =  Mux(addr, values.map(v => Const(v)))
   def unapply[U](arg:Sig[U]):Option[(Seq[U],Sig[Int])]=arg match {
     case arg:Mux[U] if arg.isRom => Some(arg.inputs.map{case Const(value) => value.asInstanceOf[U]},arg.address)
     case _ => None

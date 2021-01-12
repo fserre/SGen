@@ -26,7 +26,7 @@ package ir.rtl.signals
 import ir.rtl.{Component, SB}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
-case class Input[T](input: Component, override val hw: HW[T], override val sb: SB[T]) extends Source[T](hw, sb) {
+case class Input[T](input: Component, override val hw: HW[T]) extends Source[T](hw) {
   override def implement: Component = input
 
   //override def toString: String = input.name
@@ -36,36 +36,24 @@ case class Input[T](input: Component, override val hw: HW[T], override val sb: S
     "inputs:s" + Sig.dotNumber
 
   override def graphDeclaration: String = ""
+  
+  override val hash = input.hashCode()
 }
 
-case class Next(override val sb: SB[?]) extends Source(Unsigned(1), sb) {
+case object Next extends Source(Unsigned(1)) {
+  override val hash="Next".hashCode()
+  
   override def implement: Component = ???
+
   override def toString="Next"
 }
-object Next{
-  //def apply()(implicit sb:SB[_])=new Next(sb)
 
-  def unapply[T](arg: Sig[T]): Boolean = arg match{
-    case _:Next => true
-    case _ => false
-  }
-}
-
-case class Reset(override val sb: SB[?]) extends Source(Unsigned(1), sb) {
+case object Reset extends Source(Unsigned(1)) {
   override def implement: Component = ???
-
-
-}
-object Reset{
-  //def apply()(implicit sb:SB[_])=new Reset(sb)
-
-  def unapply[T](arg: Sig[T]): Boolean = arg match{
-    case _:Reset => true
-    case _ => false
-  }
+  override val hash="Reset".hashCode()
 }
 
-case class Const[T](value: T, override val hw: HW[T], override val sb: SB[?]) extends Source(hw, sb) {
+case class Const[T](value: T, override val hw: HW[T]) extends Source(hw) {
   //override def toString(s: Sig[_] => String): String = value.toString
 
   override def implement = new ir.rtl.Const(hw.size, hw.bitsOf(value))
@@ -74,15 +62,15 @@ case class Const[T](value: T, override val hw: HW[T], override val sb: SB[?]) ex
 
   override lazy val graphName: String = value.toString
 
-  override def equals(obj: Any): Boolean = obj match {
-    case other: Const[?] => other.hw == hw && other.sb == sb && hw.bitsOf(value) == other.hw.bitsOf(other.value)
+  /*override def equals(obj: Any): Boolean = obj match {
+    case other: Const[?] => other.hw == hw && hw.bitsOf(value) == other.hw.bitsOf(other.value)
     case _ => false
-  }
+  }*/
 
-  override lazy val hashCode: Int = hw.bitsOf(value).hashCode()
+  override val hash = hw.bitsOf(value).hashCode()
 }
 object Const{
-  def apply[T](value:T)(implicit hw:HW[T],sb:SB[?]):Sig[T]=Const(value,hw,sb)
+  def apply[T](value:T)(implicit hw:HW[T]):Sig[T]=Const(value,hw)
 
   def unapply[T](arg: Sig[T]): Option[T] = arg match{
     case arg:Const[T]=>Some(arg.value)
@@ -92,7 +80,7 @@ object Const{
 
 }
 case object Null {
-  def apply()(implicit sb:SB[?]): Sig[Int] = Const(0)(Unsigned(0),sb)
+  def apply(): Sig[Int] = Const(0)(Unsigned(0))
 
   def unapply[T](arg: Sig[T]): Boolean = arg.hw == Unsigned(0)
 }

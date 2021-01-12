@@ -125,11 +125,11 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
 
   private case class IEEEToFlopoco private (input: Sig[Double]) extends Operator[Double](input)(Flopoco(wE, wF)):
     require(input.hw == that)
-    override def implement(implicit cp: Sig[?] => Component): Component = new Extern(hw.size, filename, "IEEE2Flopoco", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
+    override def implement(implicit cp: Sig[?] => Component): Component = new Extern(hw.size, filename, "IEEE2Flopoco", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(input)))
 
   private object IEEEToFlopoco:
     def apply(input: Sig[Double]):Sig[Double]=input match
-      case Const(value) => Const(value,Flopoco(wE, wF),input.sb)
+      case Const(value) => Const(value,Flopoco(wE, wF))
       //case ROM(values,address) => ROM(values,address)(Flopoco(wE, wF),address.sb)  
       case FlopocoToIEEE(input) => input
       case Mux(address, inputs) if inputs.forall(i=>i.isInstanceOf[Const[?]] || i.isInstanceOf[FlopocoToIEEE]) => Mux(address,inputs.map(i=>IEEEToFlopoco(i)))
@@ -142,11 +142,11 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
   
   private case class FlopocoToIEEE private (input: Sig[Double]) extends Operator[Double](input)(that):
     require(input.hw == Flopoco(wE, wF))
-    override def implement(implicit cp: Sig[?] => Component): Component = new Extern(size, filename, "Flopoco2IEEE", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
+    override def implement(implicit cp: Sig[?] => Component): Component = new Extern(size, filename, "Flopoco2IEEE", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(input)))
   
   private object FlopocoToIEEE:
     def apply(input: Sig[Double]):Sig[Double]=input match
-      case Const(value) => Const(value,that,input.sb)
+      case Const(value) => Const(value,that)
       //case ROM(values,address) => ROM(values,address)(that,address.sb)
       case IEEEToFlopoco(input) => input
       case Mux(address, inputs) if inputs.forall(i=>i.isInstanceOf[Const[?]] || i.isInstanceOf[IEEEToFlopoco]) => Mux(address,inputs.map(i=>FlopocoToIEEE(i)))

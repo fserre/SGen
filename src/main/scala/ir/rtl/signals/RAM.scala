@@ -31,7 +31,6 @@ case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], 
   override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
 
   override val hw: HW[U] = input.hw
-  override val sb: SB[?] = input.sb
   override val pipeline = 1
 
   override def implement(cp: (Sig[?], Int) => Component): Component = {
@@ -48,7 +47,7 @@ case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], 
       addrRd.graphName + " -> " + graphName + ":rd;"
     )
   }
-
+  override val hash = Seq(input,addrWr,latency).hashCode()
 }
 
 case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
@@ -57,7 +56,7 @@ case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T:
   override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
 
   override val hw: HW[U] = input.hw
-  override val sb: SB[?] = input.sb
+
   override val pipeline = 1
 
   override def implement(cp: (Sig[?], Int) => Component): Component = {
@@ -73,17 +72,18 @@ case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T:
       input.graphName + " -> " + graphName + ":data;"
     )
   }
-
+  override val hash = Seq(input,addrWr,latency).hashCode()
 }
+
+/*
 case class DoubleShiftReg[U](input:Sig[U], control:Sig[Int]) extends Sig[U]{
   require(control.hw==Unsigned(1))
   override val hw: HW[U] = input.hw
-  override val sb: SB[?] = input.sb
   override val pipeline = 1
   override def parents: Seq[(Sig[?], Int)] = Seq((input, 2), (input, 0), (control, 0))
   def implement(cp: (Sig[?], Int) => Component): Component =new ir.rtl.Mux(cp(control,0), Seq(cp(input,0),cp(input,2)))
 }
-
+*/
 /*
 object RAM {
 

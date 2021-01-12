@@ -32,7 +32,7 @@ case class Re[T] private(input: Sig[Complex[T]]) extends Operator[T](input)(usin
   }
 object Re{
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match{
-    case Const(value) => Const(value.re)(input.hw.innerHW, input.sb)
+    case Const(value) => Const(value.re)(input.hw.innerHW)
     case Cpx(real,_)=>real
     case _ => new Re(input)
   }
@@ -50,7 +50,7 @@ case class Im[T] private(input: Sig[Complex[T]]) extends Operator[T](input)(usin
 
 object Im{
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match{
-    case Const(value) => Const(value.im)(input.hw.innerHW, input.sb)
+    case Const(value) => Const(value.im)(input.hw.innerHW)
     case Cpx(_,im)=>im
     case _ => new Im(input)
   }
@@ -68,7 +68,7 @@ case class Cpx[T] private(real: Sig[T], im: Sig[T]) extends Operator[Complex[T]]
 }
 object Cpx{
   def apply[T](real: Sig[T], im: Sig[T]): Sig[Complex[T]] = (real, im) match {
-    case (Const(re), Const(im)) => Const(Complex(re, im)(using real.hw.num))(using ComplexHW(real.hw), real.sb)
+    case (Const(re), Const(im)) => Const(Complex(re, im)(using real.hw.num))(using ComplexHW(real.hw))
     case (Re(cpxReal),Im(cpxIm)) if cpxReal==cpxIm => cpxReal
     case _ => new Cpx(real,im)
   }

@@ -28,7 +28,8 @@ import ir.rtl.hardwaretype.{HW, Unsigned}
 
 case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int] {
   //Operator(trigger, reset)(Unsigned(BigInt(limit - 1).bitLength))
-  override implicit val sb: SB[?] = trigger.sb
+  override val hash = Seq("Counter",limit,trigger,reset,resetValue,delayTrigger).hashCode()
+  
   override implicit val hw: HW[Int] = Unsigned(BigInt(limit - 1).bitLength)
 
   override def implement(cp: (Sig[?], Int) => Component): Component = /*Counter.mkCounter(limit,resetValue,cp(reset,1),trigger.sig match{
@@ -55,7 +56,7 @@ case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: I
 }
 
 object Counter {
-  def apply(limit: Int)(implicit sb:SB[?]): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0),sb) else new Counter(limit, Next(sb), Reset(sb), limit - 1)
+  def apply(limit: Int): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0)) else new Counter(limit, Next, Reset, limit - 1)
 
   /*def mkCounter(limit:Int,resetValue:Int,reset:Component,trigger:Option[Component])={
     val size=BigInt(limit - 1).bitLength
@@ -76,9 +77,9 @@ object Counter {
 }
 
 object LateCounter {
-  def apply(limit: Int, delay: Int)(implicit sb: SB[?]): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0), sb) else new Counter(limit, Next(sb), Reset(sb), 0, delay)
+  def apply(limit: Int, delay: Int): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0)) else new Counter(limit, Next, Reset, 0, delay)
 }
 
 object Timer {
-  def apply(limit: Int)(implicit sb: SB[?]): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0), sb) else new Counter(limit, One()(Unsigned(1), sb), Next(sb), 0)
+  def apply(limit: Int): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0)) else new Counter(limit, One()(Unsigned(1)), Next, 0)
 }
