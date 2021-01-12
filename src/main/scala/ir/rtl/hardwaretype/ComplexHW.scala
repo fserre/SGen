@@ -26,19 +26,16 @@ package ir.rtl.hardwaretype
 import ir.rtl.signals._
 import linalg.Fields._
 
-case class ComplexHW[T](hw:HW[T]) extends HW[Complex[T]](hw.size*2) (using Complex.complexIsFractional[T](using hw.num))/*:Numeric[Complex[T]]) */
-{
-  implicit val componentHW: HW[T] =hw
+case class ComplexHW[T](hw: HW[T]) extends HW[Complex[T]](hw.size * 2) (using Complex.complexIsFractional[T](using hw.num)):
+  override def plus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs) + Re(rhs), Im(lhs) + Im(rhs))
 
-  override def plus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)+Re(rhs),Im(lhs)+Im(rhs))
+  override def minus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs) - Re(rhs), Im(lhs) - Im(rhs))
 
-  override def minus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)-Re(rhs),Im(lhs)-Im(rhs))
-
-  override def times(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs)*Re(rhs)-Im(lhs)*Im(rhs),Re(lhs)*Im(rhs)+Im(lhs)*Re(rhs))
+  override def times(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs) * Re(rhs) - Im(lhs) * Im(rhs), Re(lhs) * Im(rhs) + Im(lhs) * Re(rhs))
 
   override def bitsOf(const: Complex[T]): BigInt = (hw.bitsOf(const.im) << hw.size) + hw.bitsOf(const.re)
 
-  override def valueOf(const: BigInt): Complex[T] = Complex(hw.valueOf(((BigInt(1)<<hw.size)-1) & const),hw.valueOf(const>>hw.size))(using hw.num)
+  override def valueOf(const: BigInt): Complex[T] = Complex(hw.valueOf(((BigInt(1) << hw.size) - 1) & const), hw.valueOf(const >> hw.size))(using hw.num)
 
-  override def description: String = "complex number in cartesian form (real and imaginary part are concatenated, each being a "+hw.description+")"
-}
+  override def description: String = s"complex number in cartesian form (real and imaginary part are concatenated, each being a ${hw.description})"
+

@@ -40,5 +40,5 @@ object Xilinx:
   private val ext = if (System.getProperty("os.name") contains "Windows") ".bat" else ""
   
   def run(command: String, param: String = "") =
-    val commandLine = xDir + (if(xDir.last == '/' || xDir.last == '\\') "" else "/") + command + xDir + " " + param
+    val commandLine = xDir + (if(xDir.last == '/' || xDir.last == '\\') "" else "/") + command + ext + " " + param
     commandLine.!!

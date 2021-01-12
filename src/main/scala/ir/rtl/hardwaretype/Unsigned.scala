@@ -26,32 +26,29 @@ package ir.rtl.hardwaretype
 import ir.rtl.Component
 import ir.rtl.signals._
 
-case class Unsigned(_size: Int) extends HW[Int](_size) {
-
-  class UnsignedPlus(override val lhs: SigRef[Int],override val rhs: SigRef[Int]) extends Plus(lhs,rhs) {
-    //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
+case class Unsigned(_size: Int) extends HW[Int](_size):
+  class UnsignedPlus(override val lhs: SigRef[Int],override val rhs: SigRef[Int]) extends Plus(lhs,rhs):
     override def pipeline = 1
 
     override def implement(implicit cp: SigRef[?] => Component) =new ir.rtl.Plus(Seq(cp(lhs),cp(rhs)))
-  }
 
-  override def plus(lhs: Sig[Int], rhs: Sig[Int]): Sig[Int] = new UnsignedPlus(lhs,rhs)
-  case class UnsignedMinus(override val lhs: SigRef[Int],override val rhs: SigRef[Int]) extends Minus(lhs,rhs) {
-    //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
+  case class UnsignedMinus(override val lhs: SigRef[Int],override val rhs: SigRef[Int]) extends Minus(lhs,rhs):
     override def pipeline = 1
 
     override def implement(implicit cp: SigRef[?] => Component) =new ir.rtl.Minus(cp(lhs),cp(rhs))
-  }
+
+  override def plus(lhs: Sig[Int], rhs: Sig[Int]): Sig[Int] = new UnsignedPlus(lhs,rhs)
+
   override def minus(lhs: Sig[Int], rhs: Sig[Int]): Sig[Int] = UnsignedMinus(lhs, rhs)
 
   override def times(lhs: Sig[Int], rhs: Sig[Int]): Sig[Int] = ???
 
-  val mask: BigInt = (BigInt(1) << size) - 1
+  private val mask: BigInt = (BigInt(1) << size) - 1
 
   override def bitsOf(const: Int): BigInt = BigInt(const) & mask
 
   override def valueOf(const: BigInt): Int = const.toInt
 
   override def description: String = s"$size-bits unsigned integer"
-}
+
 

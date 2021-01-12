@@ -26,135 +26,132 @@ package ir.rtl.hardwaretype
 import ir.rtl.{Component, Extern}
 import ir.rtl.signals._
 
-case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1) {
+case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
   that =>
 
-  override def description: String = if(wE==8 && wF==23)
-  "IEEE754 single precision floating-point"
-  else if  (wE==11 && wF==52)
-    "IEEE754 double precision floating-point"
-  else
-    s"floating-point number in IEEE754 format (1 bit sign, $wE bits exponent, $wF bits mantissa)"
+  override def description: String = 
+    if wE==8 && wF==23 then
+      "IEEE754 single precision floating-point"
+    else if wE==11 && wF==52 then
+      "IEEE754 double precision floating-point"
+    else
+      s"floating-point number in IEEE754 format (1 bit sign, $wE bits exponent, $wF bits mantissa)"
 
   private val filename = "flopoco/ieee_" + wE + "_" + wF + ".vhdl"
+  
+  
   private val path = java.nio.file.Paths.get(filename)
-  if (!java.nio.file.Files.isRegularFile(path)) {
+  
+  if !java.nio.file.Files.isRegularFile(path) then
     println("Error: Flopoco conversion file not found for wE=" + wE + " and wF=" + wF)
     println("Please execute the command:")
     println()
     println("flopoco outputFile=" + path.toAbsolutePath + " target=Virtex6 frequency=700 InputIEEE name=IEEE2Flopoco wEIn=" + wE + " wFIn=" + wF + " wEOut=" + wE + " wFOut=" + wF + " OutputIEEE name=Flopoco2IEEE wEIn=" + wE + " wFIn=" + wF + " wEOut=" + wE + " wFOut=" + wF)
     throw new Exception("Flopoco conversion file not found for wE=" + wE + " and wF=" + wF)
-  }
+
   private val biasDouble = (BigInt(1) << (11 - 1)) - 1
+
   private val bias = (BigInt(1) << (wE - 1)) - 1
 
-  override def plus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = {
+  override def plus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = 
     require(lhs.hw == this)
     require(rhs.hw == this)
     FlopocoToIEEE(IEEEToFlopoco(lhs) + IEEEToFlopoco(rhs))
-  }
 
-  override def minus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = {
+  override def minus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = 
     require(lhs.hw == this)
     require(rhs.hw == this)
     FlopocoToIEEE(IEEEToFlopoco(lhs) - IEEEToFlopoco(rhs))
-  }
 
-  override def times(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = {
+  override def times(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = 
     require(lhs.hw == this)
     require(rhs.hw == this)
     FlopocoToIEEE(IEEEToFlopoco(lhs) * IEEEToFlopoco(rhs))
-  }
 
-  override def bitsOf(const: Double): BigInt = {
-    if (const.isNaN)
+  override def bitsOf(const: Double): BigInt = 
+    if const.isNaN then
       (((BigInt(1) << wE) - 1) << wF) + 1
-    else if (const.isPosInfinity)
+    else if const.isPosInfinity then
       ((BigInt(1) << wE) - 1) << wF
-    else if (const.isNegInfinity)
+    else if const.isNegInfinity then
       (BigInt(1) << (wE + wF)) + (((BigInt(1) << wE) - 1) << wF)
-    else if (const >= 0 && const < java.lang.Double.MIN_NORMAL)
+    else if const >= 0 && const < java.lang.Double.MIN_NORMAL then
       BigInt(0)
-    else if (const <= 0 && -const < java.lang.Double.MIN_NORMAL)
+    else if const <= 0 && -const < java.lang.Double.MIN_NORMAL then
       BigInt(1) << (wE + wF)
-    else {
+    else
       val bits = java.lang.Double.doubleToLongBits(const)
       val exponent = (bits & 0x7ff0000000000000L) >> 52
       val mantissa = bits & 0x000fffffffffffffL
       val newExponent = BigInt(exponent) - biasDouble + bias
       val newMantissa=BigInt(mantissa)>> (52 - wF)
-      if (newExponent < 0)
-        if (const < 0) BigInt(1) << (wE + wF) else BigInt(0)
-      else if (newExponent >= (BigInt(1) << wE))
-        if (const < 0) (BigInt(1) << (wE + wF)) + (((BigInt(1) << wE) - 1) << wF) else ((BigInt(1) << wE) - 1) << wF
+      if newExponent < 0 then
+        if const < 0 then 
+          BigInt(1) << (wE + wF) 
+        else
+          BigInt(0)
+      else if newExponent >= (BigInt(1) << wE) then
+        if const < 0 then
+          (BigInt(1) << (wE + wF)) + (((BigInt(1) << wE) - 1) << wF)
+        else 
+          ((BigInt(1) << wE) - 1) << wF
       else
         newMantissa + (newExponent << wF) + (if (const < 0) BigInt(1) << (wE + wF) else BigInt(0))
-    }
-  }
-
-  override def valueOf(const: BigInt): Double = {
+        
+  override def valueOf(const: BigInt): Double = 
     val exponent = ((const & ((BigInt(1) << (wE + wF)) - 1)) >> wF) - bias
     val mantissa = (const & ((BigInt(1) << wF) - 1)) << (52 - wF)
     val negative = const.testBit(wE + wF)
-    if (exponent == -bias)
-      if (negative)
+    if exponent == -bias then
+      if negative then
         -0d
       else
         0d
-    else if (exponent == bias + 1 && mantissa != 0)
+    else if exponent == bias + 1 && mantissa != 0 then
       Double.NaN
-    else if (exponent == bias + 1)
-      if (negative)
+    else if exponent == bias + 1 then
+      if negative then
         Double.NegativeInfinity
       else
         Double.PositiveInfinity
-    else {
+    else 
       val res = java.lang.Double.longBitsToDouble((((exponent + biasDouble) << 52) + mantissa).toLong)
-      if (negative)
+      if negative then
         -res
       else
         res
-    }
-  }
+    
+  
 
-  private case class IEEEToFlopoco private (input: SigRef[Double]) extends Operator[Double](input)(Flopoco(wE, wF)) {
+  private case class IEEEToFlopoco private (input: SigRef[Double]) extends Operator[Double](input)(Flopoco(wE, wF)):
     require(input.hw == that)
     override def implement(implicit cp: SigRef[?] => Component): Component = new Extern(hw.size, filename, "IEEE2Flopoco", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
-  }
-  private object IEEEToFlopoco{
-    def apply(input: Sig[Double]):Sig[Double]=input match{
+
+  private object IEEEToFlopoco:
+    def apply(input: Sig[Double]):Sig[Double]=input match
       case Const(value) => Const(value,Flopoco(wE, wF),input.sb)
       //case ROM(values,address) => ROM(values,address)(Flopoco(wE, wF),address.sb)  
       case FlopocoToIEEE(input) => input
       case Mux(address, inputs) if inputs.forall(i=>i.sig.isInstanceOf[Const[?]] || i.sig.isInstanceOf[FlopocoToIEEE]) => Mux(address,inputs.map(i=>IEEEToFlopoco(i.sig)))
       case _ => new IEEEToFlopoco(input)
-    }
-    def unapply(arg:Sig[Double]):Option[Sig[Double]]=arg match{
+    
+    def unapply(arg:Sig[Double]):Option[Sig[Double]] = arg match
       case arg:IEEEToFlopoco => Some(arg.input.sig)
       case _ => None
-    }
-  }
+      
   
-  private case class FlopocoToIEEE private (input: SigRef[Double]) extends Operator[Double](input)(that) {
+  private case class FlopocoToIEEE private (input: SigRef[Double]) extends Operator[Double](input)(that):
     require(input.hw == Flopoco(wE, wF))
     override def implement(implicit cp: SigRef[?] => Component): Component = new Extern(size, filename, "Flopoco2IEEE", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", sb.reset), ("X", cp(input)))
-  }
-  private object FlopocoToIEEE{
-    def apply(input: Sig[Double]):Sig[Double]=input match{
+  
+  private object FlopocoToIEEE:
+    def apply(input: Sig[Double]):Sig[Double]=input match
       case Const(value) => Const(value,that,input.sb)
       //case ROM(values,address) => ROM(values,address)(that,address.sb)
       case IEEEToFlopoco(input) => input
       case Mux(address, inputs) if inputs.forall(i=>i.sig.isInstanceOf[Const[?]] || i.sig.isInstanceOf[IEEEToFlopoco]) => Mux(address,inputs.map(i=>FlopocoToIEEE(i.sig)))
       case _ => new FlopocoToIEEE(input)
-    }
-    def unapply(arg:Sig[Double]):Option[Sig[Double]]=arg match{
+    
+    def unapply(arg:Sig[Double]):Option[Sig[Double]]=arg match
       case arg:FlopocoToIEEE => Some(arg.input.sig)
       case _ => None
-    }
-  }
-}
-
-object IEEE754 {
-
-
-}
