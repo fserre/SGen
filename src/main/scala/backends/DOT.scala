@@ -69,7 +69,7 @@ object DOT:
           case _ => node(cur, s"""label="${cur.getClass.getSimpleName}"""")
       ).mkString("")
 
-      inline def edge(from: Component, to: String) = s"  ${getName(from)} -> $to[penwidth=${1 + BigInt(from.size).bitLength}];\n"
+      inline def edge(from: Component, to: String) = s"  ${getName(from)}:e -> $to[penwidth=${1 + BigInt(from.size).bitLength}];\n"
       val edges=mod.components.flatMap {cur => cur match
           case Wire(_) | _: RAMWr => Seq()
           case RAMRd(RAMWr(wr,input),rd) => Seq(edge(wr,getName(cur)+":wr"),edge(rd,getName(cur)+":rd"),edge(input,getName(cur)+":data"))
@@ -99,7 +99,7 @@ object DOT:
   
   extension [U](sb: SB[U])
     def toGraph:String = 
-      val inputSigs = sb.dataInputs.map(c => signals.Input(c, sb.hw))
+      val inputSigs = (0 until sb.K).map(c => signals.Input(c, sb.hw))
 
       val outputs = sb.implement(inputSigs)
       val toProcess = mutable.HashSet[Sig[?]]()

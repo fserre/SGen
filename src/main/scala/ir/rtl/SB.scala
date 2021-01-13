@@ -34,58 +34,45 @@ import scala.sys.process._
 
 
 abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(t, k):
-
   def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]]
 
-  final override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = 
-    val inputSigs = inputs.map(c => Input(c,hw))
-
-    val outputs = implement(inputSigs)
-
-    val synch = mutable.HashMap[Sig[?], Int]()
-    outputs.foreach(cur => synch.put(cur, cur.pipeline))
-    inputSigs.foreach(cur => synch.put(cur, 0))
-    var toImplement:Seq[Sig[?]] = outputs.distinct
+  final lazy val inputSigs = (0 until K).map(c => Input(c,hw))
+  final lazy val outputSigs = implement(inputSigs)
+  final lazy val synch =     
+    val res = mutable.HashMap[Sig[?], Int]()
+    outputSigs.foreach(cur => res.put(cur, cur.pipeline))
+    inputSigs.foreach(cur => res.put(cur, 0))
+    var toImplement:Seq[Sig[?]] = outputSigs.distinct
     while toImplement.nonEmpty do
       toImplement = toImplement.flatMap(cur=>
-        val curTime=synch(cur)
+        val curTime=res(cur)
         cur.parents.flatMap ((s: Sig[?], advance: Int) =>
           val time = curTime + advance + s.pipeline
-          synch.get(s) match 
+          res.get(s) match
             case Some(i) if i > time => None
             case _ =>
-              synch.put(s, time)
-              Some(s)
-        )
-      ).distinct
-    
-    val latency = inputSigs.map(synch).max
-    inputSigs.foreach(synch(_) = latency)
-    _latency = Some(latency)
+              res.put(s, time)
+              Some(s))).distinct
+    _latency = Some(inputSigs.map(res).max)
+    res.toMap
+  
+  final override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] =
     val implemented = new mutable.HashMap[(Sig[?], Int), Component]()
-
     def implementComp(time: Int)(ref: Sig[?], advance: Int): Component = 
       val advancedTime = time + advance
       ref match 
         case Next => token(latency - advancedTime)
         case Reset => rst
-        case _: Const[?] => implemented.getOrElseUpdate((ref, advancedTime), ref.implement(implementComp(advancedTime)))
+        case Input(i,_) if advancedTime == latency => inputs(i)  
+        case Const(_,_) => implemented.getOrElseUpdate((ref, 0), ref.implement(implementComp(0)))
         case _ =>
-          val diff = synch(ref) - advancedTime
+          val diff = synch(ref) - advancedTime          
           assert(diff >= 0)
-          implemented.getOrElseUpdate((ref, advancedTime), 
-            if diff == 0 then
-              val res = ref.implement(implementComp(advancedTime))
-              // res.description = ref.toString
-              res
-            else 
-              implementComp(advancedTime)(ref, 1).register)
-    outputs.map(implementComp(0)(_, 0))
+          implemented.getOrElseUpdate((ref, advancedTime), if diff == 0 then ref.implement(implementComp(advancedTime)) else implementComp(advancedTime)(ref, 1).register)
+    outputSigs.map(implementComp(0)(_, 0))
 
   private var _latency: Option[Int] = None
 
   final def latency: Int = 
-    if _latency.isEmpty then outputs
+    if _latency.isEmpty then synch
     _latency.get
-  
-

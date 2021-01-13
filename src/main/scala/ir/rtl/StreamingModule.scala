@@ -32,14 +32,13 @@ import scala.collection.mutable
 import scala.sys.process._
 
 abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
-  val n: Int = t + k
-  val N: Int = 1 << n
-  val K: Int = 1 << k
-  val T: Int = 1 << t
-
+  final val n: Int = t + k
+  final val N: Int = 1 << n
+  final val K: Int = 1 << k
+  final val T: Int = 1 << t
+  final val hw = HW[U]
+  
   def spl: SPL[U]
-
-  val hw = HW[U]
   
   override lazy val name: String = spl.getClass.getSimpleName.toLowerCase
 
@@ -59,8 +58,6 @@ abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
       replace("START",if(nextAt==0) "at the same time as" else if(nextAt>0) s"$nextAt cycles after" else s"${-nextAt} cycles before").
       replace("HW",hw.description)
   )
-    /*filterNot(s=>(s contains "Computer Generation") && params("arch")!="full" && params("arch")!="iter").
-    filterNot(s=>(s contains "Memory-Efficient") && params("arch")!="fused")*/
 
   def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component]
 
@@ -70,14 +67,14 @@ abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
 
   def hasSinglePortedMem:Boolean=false
 
-  lazy val dataInputs: Vector[Input] = Vector.tabulate(K)(i => new Input(hw.size, "i" + i))
-  val reset = new Input(1, "reset")
-  val next = new Input(1, "next")
+  final lazy val dataInputs: Vector[Input] = Vector.tabulate(K)(i => new Input(hw.size, "i" + i))
+  final val reset = new Input(1, "reset")
+  final val next = new Input(1, "next")
 
   def *(rhs: StreamingModule[U]): StreamingModule[U] = Product(this, rhs)
 
-  override lazy val inputs: Seq[Input] = reset +: next +: dataInputs
-  override lazy val outputs: Seq[Output] = 
+  final override lazy val inputs: Seq[Input] = reset +: next +: dataInputs
+  final override lazy val outputs: Seq[Output] = 
     val tokens = mutable.Map[Int, Wire]()
 
     def getToken(time: Int) = tokens.getOrElseUpdate(time, Wire(1))
@@ -95,17 +92,17 @@ abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
     next_out +: res
   
   
-  lazy val dataOutputs: Seq[Output] = outputs.drop(1)
+  final lazy val dataOutputs: Seq[Output] = outputs.drop(1)
   
-  lazy val next_out: Output = outputs.head
+  final lazy val next_out: Output = outputs.head
   
   private var _nextAt: Option[Int] = None
 
-  def nextAt: Int = 
+  final def nextAt: Int = 
     if (_nextAt.isEmpty) outputs
     _nextAt.get
 
-  def eval(inputs: Seq[BigInt], set: Int): Seq[BigInt] = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
+  final def eval(inputs: Seq[BigInt], set: Int): Seq[BigInt] = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
 
   def testBenchInput(repeat:Int): Seq[BigInt]=(0 until repeat*N).map(i=>hw.bitsOf(hw.num.fromInt(i)))
 

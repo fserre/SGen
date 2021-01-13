@@ -26,14 +26,10 @@ package ir.rtl.signals
 import ir.rtl.{Component, SB}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
-case class Input[T](input: Component, override val hw: HW[T]) extends Source[T](hw) {
-  override def implement: Component = input
+case class Input[T](input: Int, override val hw: HW[T]) extends Source[T](hw) {
+  override def implement: Component = ???
 
-  //override def toString: String = input.name
-
-  override lazy val graphName: String = 
-    Sig.dotNumber+=1
-    "inputs:s" + Sig.dotNumber
+  override lazy val graphName: String = "inputs:s" + input
 
   override def graphDeclaration: String = ""
   

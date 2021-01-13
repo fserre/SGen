@@ -80,7 +80,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
   })
 
   override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] = {
-
+    require (inputs.size==K)
     val offsetLength = Utils.lcm(offset1.map(_.size))
     val offset2 = offset1.map(l => Vector.tabulate(offsetLength)(i => l(i % l.size)))
 
