@@ -37,16 +37,6 @@ case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], 
     val mem = new ir.rtl.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
     new ir.rtl.RAMRd(mem, cp(addrRd, 1))
   }
-
-  override def graphDeclaration: String = graphName + "[label=\"RAM bank (" + (1 << addrRd.hw.size) + " × " + hw.size + " bits, latency=" + latency + ") |<data> Data|<wr> Write address |<rd> Read address \",shape=record];"
-
-  override def graphNode: Seq[String] = {
-    List(addrWr.graphName + " -> " + graphName + ":wr;",
-      //m.we.sigDef.graphName + " -> " + graphName + ":we;",
-      input.graphName + " -> " + graphName + ":data;",
-      addrRd.graphName + " -> " + graphName + ":rd;"
-    )
-  }
   override val hash = Seq(input,addrWr,latency).hashCode()
 }
 
@@ -62,15 +52,6 @@ case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T:
   override def implement(cp: (Sig[?], Int) => Component): Component = {
     val mem = new ir.rtl.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
     new ir.rtl.RAMRd(mem, cp(addrWr, timeRd))
-  }
-
-  override def graphDeclaration: String = graphName + "[label=\"RAM bank (" + (1 << addrWr.hw.size) + " × " + hw.size + " bits, latency=" + latency + ") |<data> Data|<wr> Write address\",shape=record];"
-
-  override def graphNode: Seq[String] = {
-    List(addrWr.graphName + " -> " + graphName + ":wr;",
-      //m.we.sigDef.graphName + " -> " + graphName + ":we;",
-      input.graphName + " -> " + graphName + ":data;"
-    )
   }
   override val hash = Seq(input,addrWr,latency).hashCode()
 }

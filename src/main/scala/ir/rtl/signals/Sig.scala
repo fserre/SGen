@@ -35,7 +35,7 @@ import linalg._
  * Class that represent a node in a streaming block internal graph. These nodes are comparable to RTL components, but abstract the hardware representation, and timing.
  * @tparam T Equivalent software datatype of the node
  */
-abstract class Sig[T] { that =>
+abstract class Sig[T]:
   val hash:Int
   
   final override inline def hashCode() = hash
@@ -49,19 +49,8 @@ abstract class Sig[T] { that =>
   /// Number of registers that should be put after this signal.
   def pipeline = 0
 
-  // def precedence =0
-
   /// Implementation of this signal (using RTL components)
   def implement(cp: (Sig[?], Int) => Component): Component
-
-  /*def toString(s: Sig[_] => String):String = that.getClass.getSimpleName + parents.map(_._1).map(s).mkString("(", ", ", ")")
-
-  final def toString(depth:Int):String=if(depth==0)
-    this.ref.toString
-  else
-    toString((s:Sig[_])=>s.ref.toString(depth-1))
-
-  override def toString: String = toString(4)*/
 
   /// Adds two signals
   final def +(lhs: Sig[T]):Sig[T] = Plus(this, lhs)
@@ -72,25 +61,12 @@ abstract class Sig[T] { that =>
   /// Substract two signals
   final def -(lhs: Sig[T]):Sig[T] = Minus(this, lhs)
 
-  // TODO: Move these to DOT backend
-  def graphNode:Seq[String] = parents.map(p => p._1.graphName + " -> " + graphName + ";")
-
-  // TODO: Move these to DOT backend
-  def graphDeclaration:String = graphName + "[label=\"" + this.getClass.getSimpleName + "\"];"
-
-  // TODO: Move these to DOT backend
-  lazy val graphName:String = 
-    Sig.dotNumber+=1
-    "s" + Sig.dotNumber
-}
 
 object Sig {
   import scala.language.implicitConversions
 
   implicit def vecToConst(v: Vec[F2]): Sig[Int] = Const(v.toInt)(Unsigned(v.m))
 
-  var dotNumber = 0
-  
   extension [T](lhs: Sig[Int]) {
     def ::(rhs: Sig[Int]):Sig[Int] = Concat(lhs, rhs)
 
@@ -119,15 +95,7 @@ object Sig {
   
 }
 
-abstract class AssociativeSig[T](override val list: Seq[Sig[T]], op: String)(implicit hw: HW[T] = list.head.hw) extends Operator(list: _*)(hw) with AssociativeNode[Sig[T]] { that =>
-  //override val list:Seq[Sig[T]]=terms
-
-  override def graphDeclaration:String = graphName + "[label=\"" + op + "\"];"
-
-  //override def toString(s: Sig[_] => String): String = terms.map(t=>if(t.precedence>=precedence)"("+s(t)+")" else s(t)).mkString(op)
-
-
-}
+abstract class AssociativeSig[T](override val list: Seq[Sig[T]], val op: String)(implicit hw: HW[T] = list.head.hw) extends Operator(list: _*)(hw) with AssociativeNode[Sig[T]]
 
 abstract class AssociativeSigCompanionT[U[T]<:Sig[T] & AssociativeSig[T]] extends AssociativeNodeCompanionT[Sig,U]
 

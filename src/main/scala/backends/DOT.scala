@@ -26,6 +26,7 @@ import scala.collection.mutable
 import scala.collection.immutable
 import scala.annotation.tailrec
 import ir.rtl._
+import ir.rtl.signals
 import ir.rtl.signals.Sig
 
 import scala.sys.process._
@@ -98,32 +99,60 @@ object DOT:
       "cmd /c start rtl.pdf".!!
   
   extension [U](sb: SB[U])
-    def toGraph:String = 
-      val inputSigs = (0 until sb.K).map(c => signals.Input(c, sb.hw))
+    def toGraph:String =
+      val sigs=sb.synch.keys
+      val indexes = immutable.HashMap.from(sigs.filter(_ match
+        case _: signals.Input[?] | signals.Next | signals.Reset => false
+        case _ => true
+      ).zipWithIndex)
 
-      val outputs = sb.implement(inputSigs)
-      val toProcess = mutable.HashSet[Sig[?]]()
-      val processed = mutable.HashSet[Sig[?]]()
-      toProcess.addAll(outputs)
+      val consts = mutable.ArrayBuffer[String]()
+
+      def getName(sig: Sig[?]): String = sig match
+        case signals.Input(i,_) => s"inputs:i$i"
+        case signals.Const(value,_) =>
+          consts.addOne(value.toString)
+          s"c${consts.size}"
+        case signals.Next =>
+          consts.addOne("Next")
+          s"c${consts.size}"
+        case signals.Reset =>
+          consts.addOne("Reset")
+          s"c${consts.size}"
+        case _ => s"s${indexes(sig) + 1}"
+
+      inline def node(sig:Sig[?], options: String) = Some(s"      ${getName(sig)}[$options];\n")
+      val nodes=sigs.flatMap(cur => cur match
+        case _: signals.Input[?] | _: signals.Const[?] | signals.Next | signals.Reset => None
+        case cur:signals.AssociativeSig[?] => node(cur, s"""label="${cur.op}"""")
+        case cur:signals.Plus[?] => node(cur, s"""label="+"""")
+        case cur:signals.Minus[?] => node(cur, s"""label="-"""")
+        case cur:signals.Times[?] => node(cur, s"""label="*"""")
+        case signals.ROM(values,address) => node(cur, s"""label="<title>ROM (${values.size} × ${cur.hw.size} bits) |${values.map(_.toString).mkString("|")}",shape=record""")
+        case signals.DualControlRAM(input,wr,rd,_) => node(cur, s"""label="RAM bank (${1 << rd.hw.size} × ${cur.hw.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record""")
+        case signals.SingleControlRAM(input,wr,_,_) => node(cur, s"""label="RAM bank (${1 << wr.hw.size} × ${cur.hw.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record""")
+        case _ => node(cur, s"""label="${cur.getClass.getSimpleName}"""")
+      ).mkString("")
+
+      inline def edge(from: Sig[?], to: String) = s"  ${getName(from)}:e -> $to[penwidth=${1 + BigInt(from.hw.size).bitLength}];\n"
+      val edges=sigs.flatMap {cur => cur match
+        case signals.ROM(_,address) => Seq(edge(address,s"${getName(cur)}:title:w"))
+        case signals.DualControlRAM(input,wr,rd,_) => Seq(edge(input,s"${getName(cur)}:data:w"),edge(wr,s"${getName(cur)}:wr:w"),edge(rd,s"${getName(cur)}:rd:w"))
+        case signals.SingleControlRAM(input,wr,_,_) => Seq(edge(input,s"${getName(cur)}:data:w"),edge(wr,s"${getName(cur)}:wr:w"),edge(wr,s"${getName(cur)}:rd:w"))
+        case _ => cur.parents.map(parent=>edge(parent._1,getName(cur)))
+      }.mkString("")
+        
+        
       val res = new StringBuilder
       res ++= "digraph " + sb.name + " {\n"
-      res ++= "  rankdir=RL;\n"
+      res ++= "  rankdir=LR;\n"
       res ++= "  ranksep=1.5;\n"
-      res ++= "  outputs[shape=record,label=\"" + outputs.indices.map(i => "<o" + i + "> " + i + " ").mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
-      //res ++= "  inputs[shape=record,label=\"" + inputSigs.zipWithIndex.map { case (p, i) => "<i" + p.ref.i + "> " + i + " " }.mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
-      while toProcess.nonEmpty do
-        val cur = toProcess.head
-        toProcess.remove(cur)
-        //val curSig = sb.signal(cur)
-        cur.parents.map(_._1).foreach(f =>
-          if !processed(f) then
-            processed.add(f)
-            toProcess.add(f))
-
-      val nodes = processed.toSeq
-      res ++= nodes.map(s => s.graphDeclaration).mkString("\n")
-      res ++= nodes.flatMap(s => s.graphNode).mkString("\n")
-      res ++= outputs.zipWithIndex.map { case (s, i) => s.graphName + " -> outputs:o" + i + ";\n" }.mkString("")
+      res ++= "  outputs[shape=record,label=\"" + (0 until sb.K).map(i => "<o" + i + "> " + i + " ").mkString("|") + "\",height=" + (sb.K * 1.5) + "];\n"
+      res ++= "  inputs[shape=record,label=\"" + (0 until sb.K).map(i => "<i" + i + "> " + i + " ").mkString("|") + "\",height=" + (sb.K * 1.5) + "];\n"
+      res ++= nodes
+      res ++= consts.zipWithIndex.map((v,i)=>s"""      c${i+1}[label="$v",shape=none];\n""").mkString("")
+      res ++= edges
+      res ++= sb.outputSigs.zipWithIndex.map { case (s, i) => s"  ${getName(s)} -> outputs:o$i:w[penwidth=${1 + BigInt(s.hw.size).bitLength}];\n"}.mkString("")
       res ++= "}\n"
       res.toString()
 

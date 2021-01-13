@@ -29,10 +29,6 @@ import ir.rtl.hardwaretype.{HW, Unsigned}
 case class Input[T](input: Int, override val hw: HW[T]) extends Source[T](hw) {
   override def implement: Component = ???
 
-  override lazy val graphName: String = "inputs:s" + input
-
-  override def graphDeclaration: String = ""
-  
   override val hash = input.hashCode()
 }
 
@@ -50,18 +46,14 @@ case object Reset extends Source(Unsigned(1)) {
 }
 
 case class Const[T](value: T, override val hw: HW[T]) extends Source(hw) {
-  //override def toString(s: Sig[_] => String): String = value.toString
+  val bits = hw.bitsOf(value)
+  
+  override def implement = new ir.rtl.Const(hw.size, bits)
 
-  override def implement = new ir.rtl.Const(hw.size, hw.bitsOf(value))
-
-  override def graphDeclaration = "" //graphName + "[label=\""+value.toString+"\"];"
-
-  override lazy val graphName: String = value.toString
-
-  /*override def equals(obj: Any): Boolean = obj match {
-    case other: Const[?] => other.hw == hw && hw.bitsOf(value) == other.hw.bitsOf(other.value)
+  override def equals(obj: Any): Boolean = obj match {
+    case other: Const[?] => other.hw == hw && bits == other.bits
     case _ => false
-  }*/
+  }
 
   override val hash = hw.bitsOf(value).hashCode()
 }

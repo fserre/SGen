@@ -52,9 +52,8 @@ object Plus extends AssociativeSigCompanionT[Plus] {
     }
   }
 }*/
-abstract class Plus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
-  override def graphDeclaration: String = graphName + "[label=\"+\"];"
-}
+abstract class Plus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
+
 object Plus{
   def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
     require(lhs.hw == rhs.hw)
@@ -72,13 +71,9 @@ object Plus{
 
 }
 
-abstract class Minus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
-  override def graphDeclaration: String = graphName + "[label=\"-\"];"
-}
+abstract class Minus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
 
-abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw) {
-  override def graphDeclaration: String = graphName + "[label=\"*\"];"
-}
+abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
 
 /*object Plus {
   def apply[T: HW](lhs: Sig[T], rhs: Sig[T]):Sig[T] = {

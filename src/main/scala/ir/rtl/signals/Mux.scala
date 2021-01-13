@@ -30,13 +30,6 @@ import linalg.Fields.Complex
 case class Mux[U] private(address: Sig[Int], inputs: Seq[Sig[U]]) extends Operator[U](address +: inputs: _*)(using inputs.head.hw) {
   def isRom: Boolean = inputs.forall(_.isInstanceOf[Const[?]])
   override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Mux(cp(address), inputs.map(cp))
-
-  override def graphDeclaration: String = if (isRom)
-    graphName + "[label=\"<title>ROM (" + inputs.size + " × " + hw.size + " bits) |" + inputs.map(_.asInstanceOf[Const[U]].value.toString).mkString("|") + "\",shape=record];"
-  else
-    super.graphDeclaration
-
-  override def graphNode: Seq[String] = if (isRom) List(address.graphName + " -> " + graphName + ":title;") else super.graphNode
   override val pipeline = 1
 }
 
