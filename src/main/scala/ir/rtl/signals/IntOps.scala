@@ -103,7 +103,7 @@ object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg), (lhs: 
 object RedXor {
   def apply(input: Sig[Int]): Sig[Int] = Xor((0 until input.hw.size).map(input(_)))
 }
-final class Concat private(terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms," :: ")(Unsigned(terms.map(_.hw.size).sum)) {
+final class Concat private(terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms," :: ")(using Unsigned(terms.map(_.hw.size).sum)) {
   override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Concat(terms.map(cp))
   override def equals(other:Any)=other match{
     case other:Concat => other.list==list

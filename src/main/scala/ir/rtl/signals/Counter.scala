@@ -26,12 +26,10 @@ package ir.rtl.signals
 import ir.rtl.{SB, _}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
-case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int] {
+case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig(using Unsigned(BigInt(limit - 1).bitLength)) {
   //Operator(trigger, reset)(Unsigned(BigInt(limit - 1).bitLength))
   override val hash = Seq("Counter",limit,trigger,reset,resetValue,delayTrigger).hashCode()
   
-  override implicit val hw: HW[Int] = Unsigned(BigInt(limit - 1).bitLength)
-
   override def implement(cp: (Sig[?], Int) => Component): Component = /*Counter.mkCounter(limit,resetValue,cp(reset,1),trigger.sig match{
     case One()=> None
     case _ => Some(cp(trigger,1-delayTrigger))
@@ -81,5 +79,5 @@ object LateCounter {
 }
 
 object Timer {
-  def apply(limit: Int): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0)) else new Counter(limit, One()(Unsigned(1)), Next, 0)
+  def apply(limit: Int): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0)) else new Counter(limit, One(using Unsigned(1)), Next, 0)
 }

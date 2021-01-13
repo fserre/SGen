@@ -144,15 +144,10 @@ object Times {
 }
 
 object Zero{
-  def unapply[T:HW](arg:Sig[T]): Boolean ={
-    val hw=implicitly[HW[T]]
-
+  def unapply[T](arg:Sig[T]): Boolean ={
+    val hw=arg.hw
     arg match{
       case Const(value) if hw.bitsOf(value) == hw.bitsOf(hw.num.zero) => true
-      /* case Const(value) =>
-         println(value)
-         println(hw.bitsOf(value))
-         false*/
       case _ => false
     }
   }
@@ -160,21 +155,21 @@ object Zero{
 }
 
 object One{
-  def unapply[T:HW](arg:Sig[T]): Boolean ={
-    val hw=implicitly[HW[T]]
+  def unapply[T](arg:Sig[T]): Boolean ={
+    val hw=arg.hw
     arg match{
       case Const(value) if hw.valueOf(hw.bitsOf(value))==hw.num.one => true
       case _ => false
     }
   }
-  def apply[T]()(implicit hw:HW[T]): Sig[T] =Const(implicitly[HW[T]].num.one)
+  def apply[T: HW]: Sig[T] = Const(HW[T].num.one)
 }
 
 object Opposite {
-  def unapply[T: HW](arg: Sig[T]): Option[Sig[T]] = {
-    val hw = implicitly[HW[T]]
+  def unapply[T](arg: Sig[T]): Option[Sig[T]] = {
+    val hw = arg.hw
     arg match {
-      case Const(value) if hw.num.lt(value, hw.num.zero) => Some(Const(hw.num.negate(value)))
+      case Const(value) if hw.num.lt(value, hw.num.zero) => Some(Const(hw.num.negate(value))(using hw))
       case Minus(Zero(), arg) => Some(arg)
       case _ => None
     }

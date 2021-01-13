@@ -129,7 +129,7 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
 
   private object IEEEToFlopoco:
     def apply(input: Sig[Double]):Sig[Double]=input match
-      case Const(value) => Const(value,Flopoco(wE, wF))
+      case Const(value) => Const(value)(using Flopoco(wE, wF))
       //case ROM(values,address) => ROM(values,address)(Flopoco(wE, wF),address.sb)  
       case FlopocoToIEEE(input) => input
       case Mux(address, inputs) if inputs.forall(i=>i.isInstanceOf[Const[?]] || i.isInstanceOf[FlopocoToIEEE]) => Mux(address,inputs.map(i=>IEEEToFlopoco(i)))
@@ -146,7 +146,7 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
   
   private object FlopocoToIEEE:
     def apply(input: Sig[Double]):Sig[Double]=input match
-      case Const(value) => Const(value,that)
+      case Const(value) => Const(value)(using that)
       //case ROM(values,address) => ROM(values,address)(that,address.sb)
       case IEEEToFlopoco(input) => input
       case Mux(address, inputs) if inputs.forall(i=>i.isInstanceOf[Const[?]] || i.isInstanceOf[IEEEToFlopoco]) => Mux(address,inputs.map(i=>FlopocoToIEEE(i)))

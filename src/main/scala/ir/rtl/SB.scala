@@ -33,12 +33,12 @@ import scala.collection.mutable
 import scala.sys.process._
 
 
-abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(t, k):
+abstract class SB[U: HW](t: Int, k: Int) extends StreamingModule(t, k):
   def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]]
 
-  final lazy val inputSigs = (0 until K).map(c => Input(c,hw))
+  final lazy val inputSigs = (0 until K).map(c => Input(c))
   final lazy val outputSigs = implement(inputSigs)
-  final lazy val synch =     
+  final lazy val synch =
     val res = mutable.HashMap[Sig[?], Int]()
     outputSigs.foreach(cur => res.put(cur, cur.pipeline))
     inputSigs.foreach(cur => res.put(cur, 0))
@@ -55,18 +55,18 @@ abstract class SB[U](t: Int, k: Int)(implicit hw:HW[U]) extends StreamingModule(
               Some(s))).distinct
     _latency = Some(inputSigs.map(res).max)
     res.toMap
-  
+
   final override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] =
     val implemented = new mutable.HashMap[(Sig[?], Int), Component]()
-    def implementComp(time: Int)(ref: Sig[?], advance: Int): Component = 
+    def implementComp(time: Int)(ref: Sig[?], advance: Int): Component =
       val advancedTime = time + advance
-      ref match 
+      ref match
         case Next => token(latency - advancedTime)
         case Reset => rst
-        case Input(i,_) if advancedTime == latency => inputs(i)  
+        case Input(i) if advancedTime == latency => inputs(i)
         case Const(_,_) => implemented.getOrElseUpdate((ref, 0), ref.implement(implementComp(0)))
         case _ =>
-          val diff = synch(ref) - advancedTime          
+          val diff = synch(ref) - advancedTime
           assert(diff >= 0)
           implemented.getOrElseUpdate((ref, advancedTime), if diff == 0 then ref.implement(implementComp(advancedTime)) else implementComp(advancedTime)(ref, 1).register)
     outputSigs.map(implementComp(0)(_, 0))

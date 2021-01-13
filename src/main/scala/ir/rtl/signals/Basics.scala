@@ -26,13 +26,13 @@ package ir.rtl.signals
 import ir.rtl.{Component, SB}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
-case class Input[T](input: Int, override val hw: HW[T]) extends Source[T](hw) {
+case class Input[T: HW](input: Int) extends Source[T] {
   override def implement: Component = ???
 
   override val hash = input.hashCode()
 }
 
-case object Next extends Source(Unsigned(1)) {
+case object Next extends Source(using Unsigned(1)) {
   override val hash="Next".hashCode()
   
   override def implement: Component = ???
@@ -40,12 +40,12 @@ case object Next extends Source(Unsigned(1)) {
   override def toString="Next"
 }
 
-case object Reset extends Source(Unsigned(1)) {
+case object Reset extends Source(using Unsigned(1)) {
   override def implement: Component = ???
   override val hash="Reset".hashCode()
 }
 
-case class Const[T](value: T, override val hw: HW[T]) extends Source(hw) {
+case class Const[T: HW](value: T) extends Source[T] {
   val bits = hw.bitsOf(value)
   
   override def implement = new ir.rtl.Const(hw.size, bits)
@@ -56,16 +56,6 @@ case class Const[T](value: T, override val hw: HW[T]) extends Source(hw) {
   }
 
   override val hash = hw.bitsOf(value).hashCode()
-}
-object Const{
-  def apply[T](value:T)(implicit hw:HW[T]):Sig[T]=Const(value,hw)
-
-  def unapply[T](arg: Sig[T]): Option[T] = arg match{
-    case arg:Const[T]=>Some(arg.value)
-    case _ =>None
-  }
-
-
 }
 case object Null {
   def apply(): Sig[Int] = Const(0)(Unsigned(0))

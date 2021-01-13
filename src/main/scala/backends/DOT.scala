@@ -109,8 +109,8 @@ object DOT:
       val consts = mutable.ArrayBuffer[String]()
 
       def getName(sig: Sig[?]): String = sig match
-        case signals.Input(i,_) => s"inputs:i$i"
-        case signals.Const(value,_) =>
+        case signals.Input(i) => s"inputs:i$i"
+        case signals.Const(value) =>
           consts.addOne(value.toString)
           s"c${consts.size}"
         case signals.Next =>

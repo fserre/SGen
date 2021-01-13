@@ -27,10 +27,9 @@ import ir.rtl.{Component, SB}
 import ir.rtl.hardwaretype.{HW,Unsigned}
 
 
-case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U] {
+case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U](using input.hw) {
   override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
 
-  override val hw: HW[U] = input.hw
   override val pipeline = 1
 
   override def implement(cp: (Sig[?], Int) => Component): Component = {
@@ -40,12 +39,10 @@ case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], 
   override val hash = Seq(input,addrWr,latency).hashCode()
 }
 
-case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U] {
+case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U](using input.hw) {
   val timeRd: Int = T + 1
 
   override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
-
-  override val hw: HW[U] = input.hw
 
   override val pipeline = 1
 

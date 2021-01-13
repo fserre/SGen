@@ -35,7 +35,7 @@ import linalg._
  * Class that represent a node in a streaming block internal graph. These nodes are comparable to RTL components, but abstract the hardware representation, and timing.
  * @tparam T Equivalent software datatype of the node
  */
-abstract class Sig[T]:
+abstract class Sig[T: HW]:
   val hash:Int
   
   final override inline def hashCode() = hash
@@ -44,7 +44,7 @@ abstract class Sig[T]:
   def parents: Seq[(Sig[?], Int)]
 
   /// Hardware datatype (given as an instance of HW[T])
-  val hw: HW[T]
+  final val hw = HW[T]
 
   /// Number of registers that should be put after this signal.
   def pipeline = 0
@@ -95,13 +95,13 @@ object Sig {
   
 }
 
-abstract class AssociativeSig[T](override val list: Seq[Sig[T]], val op: String)(implicit hw: HW[T] = list.head.hw) extends Operator(list: _*)(hw) with AssociativeNode[Sig[T]]
+abstract class AssociativeSig[T](override val list: Seq[Sig[T]], val op: String)(using hw: HW[T] = list.head.hw) extends Operator(list: _*) with AssociativeNode[Sig[T]]
 
 abstract class AssociativeSigCompanionT[U[T]<:Sig[T] & AssociativeSig[T]] extends AssociativeNodeCompanionT[Sig,U]
 
 abstract class AssociativeSigCompanion[T,U<:Sig[T]  & AssociativeSig[T]](create:Seq[Sig[T]]=>Sig[T], simplify:(Sig[T],Sig[T])=>Either[Sig[T],(Sig[T],Sig[T])]= (lhs:Sig[T], rhs:Sig[T])=>Right(lhs,rhs)) extends AssociativeNodeCompanion[Sig[T],U](create,simplify)
 
-abstract class Source[T](override val hw: HW[T]) extends Sig[T] {
+abstract class Source[T: HW] extends Sig[T] {
   def implement: Component
 
   final override val parents = Seq()
@@ -109,7 +109,7 @@ abstract class Source[T](override val hw: HW[T]) extends Sig[T] {
   final override def implement(cp: (Sig[?], Int) => Component): Component = implement
 }
 
-abstract class Operator[T](operands: Sig[?]*)(implicit override val hw: HW[T]) extends Sig[T] {
+abstract class Operator[T: HW](operands: Sig[?]*) extends Sig[T] {
   def latency = 0
 
   def implement(implicit cp: Sig[?] => Component): Component
