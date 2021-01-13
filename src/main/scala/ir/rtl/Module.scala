@@ -33,14 +33,28 @@ import scala.sys.process._
 /**
  * Class that represents a rtl module
  */
-abstract class Module {
-  def inputs: Seq[Input]
+abstract class Module: 
+  lazy val inputs: Seq[Input]
 
-  def outputs: Seq[Output]
+  lazy val outputs: Seq[Output]
 
   lazy val name: String = this.getClass.getSimpleName.toLowerCase
   
   val dependencies: mutable.Set[String] = mutable.Set[String]()
 
   def description: Iterator[String] =Iterator[String]()
-}
+
+  final lazy val components: Seq[Component] =
+    val res=mutable.HashSet.from[Component](inputs)
+    var toImplement: Seq[Component] = outputs.distinct
+    res.addAll(inputs)  
+    while toImplement.nonEmpty do
+      toImplement = toImplement.flatMap(cur=>
+        if !res(cur) then
+          res.add(cur)
+          cur.parents
+        else
+          Seq()
+      )
+    res.toSeq
+      

@@ -42,9 +42,10 @@ import java.io.PrintWriter
  * Script to generate all the elements used in the different websites.
  */
 object GenerateWeb extends App:
-  val uut = DFT.CTDFT(10,5).stream(6,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[SB[?]]
-  println(uut.toVerilog)
-  //uut.showGraph
+  //val uut = DFT.CTDFT(4,1).stream(4,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[SB[?]]
+  val uut = DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(8,23))).asInstanceOf[SB[?]]
+  //println(uut.toVerilog)
+  uut.showRTLGraph
   //println(uut.synthetize())
   System.exit(0)
   

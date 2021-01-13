@@ -23,131 +23,114 @@
 
 package backends
 import scala.collection.mutable
+import scala.collection.immutable
+import scala.annotation.tailrec
 import ir.rtl._
 import ir.rtl.signals.Sig
 
 import scala.sys.process._
 import java.io.PrintWriter
 
-object DOT {
-  extension (mod: Module) {
-    final def toRTLGraph: String = {
-      val names = mutable.AnyRefMap[Component, String]()
-      val toImplement = mutable.Queue[Component]()
-      toImplement.enqueueAll(mod.outputs)
 
-      def getName(comp: Component): String = comp match {
-        case comp: Input => s"inputs:${comp.name}"
-        case comp: Output => s"outputs:${comp.name}"
-        case _ => if (!(names contains comp)) {
-          names(comp) = s"s${names.size + 1}"
-          toImplement.enqueue(comp)
-        }
-          names(comp)
-      }
+object DOT:
+  extension (mod: Module) 
+    final def toRTLGraph: String = 
+      val indexes = immutable.HashMap.from(mod.components.filter(_ match 
+        case _: Input | _: Output | _: Wire | _: Const | _: RAMWr => false
+        case _ => true
+      ).zipWithIndex)
 
-      val edges = new mutable.StringBuilder
-      val nodes = new mutable.StringBuilder
+      val consts = mutable.ArrayBuffer[BigInt]()  
+        
+      @tailrec
+      def getName(comp: Component): String = comp match
+        case Input(_,name) => s"inputs:$name"
+        case Output(_,name) => s"outputs:$name"
+        case Wire(input) => getName(input)
+        case Const(_, value) => 
+          consts.addOne(value)
+          s"c${consts.size}"
+        case _ => s"s${indexes(comp) + 1}"
 
+      inline def node(comp:Component, options: String) = Some(s"      ${getName(comp)}[$options];\n")
+      val nodes=mod.components.flatMap(cur => cur match
+          case _: Output | _: Input | _: RAMWr | _: Wire | _: Const => None
+          case Register(_) => node(cur, """label="Reg",shape=square""")
+          case Plus(_) => node(cur, """label="+",shape=circle""")
+          case Or(_) => node(cur, """label="|",shape=circle""")
+          case Xor(_) => node(cur, """label="^",shape=circle""")
+          case And(_) => node(cur, """label="&",shape=circle""")
+          case Minus(_,_) => node(cur, """label="-",shape=circle""")
+          case Tap(_,range) => node(cur, s"""label="[${if (range.size > 1) s"${range.last}:" else ""}${range.start}]",shape=triangle,orientation=270""")
+          case ROM(address, values) => node(cur, s"""label="<title>ROM (${values.size} × ${cur.size} bits) |${values.map(_.toString).mkString("|")}",shape=record""")
+          case Mux(_, _) => node(cur, s"""label="",shape=invhouse,orientation=90""")
+          case RAMRd(_,rd) => node(cur, s"""label="RAM bank (${1 << rd.size} × ${cur.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record""")
+          case Extern(_,_,module,_,_) => node(cur, s"""label="$module"""")
+          case _ => node(cur, s"""label="${cur.getClass.getSimpleName}"""")
+      ).mkString("")
 
-      def addNode(line: String*): Unit = line.foreach(nodes ++= "      " ++= _ ++= "\n")
-
-      def addEdge(dest: Component, origins: Seq[Component]): Unit = origins.foreach( //case o: Wire => edges ++= s"  ${getName(o.input)} -> ${getName(dest)}[constraint=false,penwidth=${1 + BigInt(o.size).bitLength}];\n"
-        o => edges ++= s"  ${getName(o)} -> ${getName(dest)}[penwidth=${1 + BigInt(o.size).bitLength}];\n")
-
-      while (toImplement.nonEmpty) {
-        val cur = toImplement.dequeue()
-        cur match {
-          case _: Output | _: Input | _: RAMWr =>
-          case _: Register => addNode(s"""${getName(cur)}[label="",shape=square];""")
-          case _: Plus => addNode(s"""${getName(cur)}[label="+",shape=circle];""")
-          case _: Or => addNode(s"""${getName(cur)}[label="|",shape=circle];""")
-          case _: Xor => addNode(s"""${getName(cur)}[label="^",shape=circle];""")
-          case _: And => addNode(s"""${getName(cur)}[label="&",shape=circle];""")
-          case _: Minus => addNode(s"""${getName(cur)}[label="-",shape=circle];""")
-          case cur: Const => addNode(s"""${getName(cur)}[label="${cur.value}",shape=none];""")
-          case cur: Tap => addNode(s"""${getName(cur)}[label="[${if (cur.range.size > 1) s"${cur.range.last}:" else ""}${cur.range.start}]",shape=triangle,orientation=270];""")
-          case cur: Mux => if (cur.inputs.forall(_.isInstanceOf[Const]))
-            addNode(s"""${getName(cur)} [label="<title>ROM (${cur.inputs.size} × ${cur.size} bits) |${cur.inputs.map(_.asInstanceOf[Const].value.toString).mkString("|")}",shape=record];""")
-          else
-            addNode(s"""${getName(cur)}[label="",shape=invhouse,orientation=90];""")
-          case cur: RAMRd => addNode(s"""${getName(cur)}[label="RAM bank (${1 << cur.rdAddress.size} × ${cur.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record];""")
-          case cur: Extern => addNode(s"""${getName(cur)}[label="${cur.module}"];""")
-          case _ => addNode(s"""${getName(cur)}[label="${cur.getClass.getSimpleName}"];""")
-        }
-
-        cur match {
-          case cur: Mux if cur.inputs.forall(_.isInstanceOf[Const]) => addEdge(cur, Seq(cur.address))
-          case _ => addEdge(cur, cur.parents)
-        }
-      }
+      inline def edge(from: Component, to: String) = s"  ${getName(from)} -> $to[penwidth=${1 + BigInt(from.size).bitLength}];\n"
+      val edges=mod.components.flatMap {cur => cur match
+          case Wire(_) | _: RAMWr => Seq()
+          case RAMRd(RAMWr(wr,input),rd) => Seq(edge(wr,getName(cur)+":wr"),edge(rd,getName(cur)+":rd"),edge(input,getName(cur)+":data"))
+          case cur: Mux if cur.inputs.forall(_.isInstanceOf[Const]) => edge(cur.address,getName(cur))
+          case _ => cur.parents.map(edge(_,getName(cur)))
+      }.mkString("")
 
       var res = new StringBuilder
       res ++= s"digraph ${mod.name} {\n"
-      res ++= "  rankdir=RL;\n"
+      res ++= "  rankdir=LR;\n"
       res ++= "  ranksep=1.5;\n"
       res ++= s"""  outputs[shape=record,label="${mod.outputs.map(i => s"<${i.name}> ${i.name} ").mkString("|")}",height=${mod.outputs.size * 1.5}];\n"""
       res ++= s"""  inputs[shape=record,label="${mod.inputs.map { i => "<" + i.name + "> " + i.name + " " }.mkString("|")}",height=${mod.inputs.size * 1.5}];\n"""
       res ++= nodes
+      res ++= consts.zipWithIndex.map((v,i)=>s"""      c${i+1}[label="$v",shape=none];\n""").mkString("")
       res ++= edges
       res ++= "}\n"
       res.toString()
-    }
 
-    final def showRTLGraph(): String = {
+    final def showRTLGraph: String = 
       val graph = toRTLGraph
-      new PrintWriter("rtl.gv") {
-        write(graph)
-        close()
-      }
+      val pw = PrintWriter("rtl.gv")
+      pw.write(graph)
+      pw.close()
       "Graphviz/dot -Tpdf rtl.gv -o rtl.pdf".!!
       "cmd /c start rtl.pdf".!!
-    }
-  }
-  extension [U](sb: SB[U]) {
-    def toGraph:String = {
-      //implicit val sb:SB[U] = this
+  
+  extension [U](sb: SB[U])
+    def toGraph:String = 
       val inputSigs = sb.dataInputs.map(c => signals.Input(c, sb.hw))
 
       val outputs = sb.implement(inputSigs)
       val toProcess = mutable.HashSet[Sig[?]]()
       val processed = mutable.HashSet[Sig[?]]()
       toProcess.addAll(outputs)
-      //processed.addAll(outputs)
       val res = new StringBuilder
       res ++= "digraph " + sb.name + " {\n"
       res ++= "  rankdir=RL;\n"
       res ++= "  ranksep=1.5;\n"
       res ++= "  outputs[shape=record,label=\"" + outputs.indices.map(i => "<o" + i + "> " + i + " ").mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
       //res ++= "  inputs[shape=record,label=\"" + inputSigs.zipWithIndex.map { case (p, i) => "<i" + p.ref.i + "> " + i + " " }.mkString("|") + "\",height=" + (outputs.size * 1.5) + "];\n"
-      while (toProcess.nonEmpty) {
+      while toProcess.nonEmpty do
         val cur = toProcess.head
         toProcess.remove(cur)
         //val curSig = sb.signal(cur)
         cur.parents.map(_._1).foreach(f =>
-          if (!processed(f)) {
+          if !processed(f) then
             processed.add(f)
-            toProcess.add(f)
-          }
+            toProcess.add(f))
 
-        )
-      }
       val nodes = processed.toSeq
       res ++= nodes.map(s => s.graphDeclaration).mkString("\n")
       res ++= nodes.flatMap(s => s.graphNode).mkString("\n")
       res ++= outputs.zipWithIndex.map { case (s, i) => s.graphName + " -> outputs:o" + i + ";\n" }.mkString("")
       res ++= "}\n"
       res.toString()
-    }
 
-    def showGraph = {
+    def showGraph = 
       val graph = sb.toGraph
-      new PrintWriter("graph.gv") {
-        write(graph)
-        close()
-      }
+      val pw = PrintWriter("graph.gv") 
+      pw.write(graph)
+      pw.close()
       "dot -Tpdf graph.gv -o graph.pdf".!!
       "cmd /c start graph.pdf".!!
-    }
-  }
-}
