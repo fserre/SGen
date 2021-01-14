@@ -38,13 +38,9 @@ abstract sealed class Component(val size: Int, _parents: Component*):
    * Returns a register node of the current node
    */
   def register = new Register(this)
-  
-  override lazy val hashCode = (parents +: this.getClass.getSimpleName).hashCode()  
 
-case class Const(override val size: Int, value: BigInt) extends Component(size):
-  override lazy val hashCode = value.hashCode()
-
-case class Register(input: Component) extends Component(input.size, input)
+abstract sealed class ImmutableComponent(size: Int, _parents: Component*) extends Component(size, _parents:_*):
+  override val hashCode = (parents +: this.getClass.getSimpleName).hashCode()
 
 final class Wire(override val size: Int) extends Component(size):
   var _input: Option[Component] = None
@@ -58,10 +54,10 @@ final class Wire(override val size: Int) extends Component(size):
   def input: Component = _input.get
 
   override def parents = Seq(input)
-  
+
   override lazy val hashCode = Seq("Wire",size).hashCode()
 
-  override def equals(other:Any) = other match 
+  override def equals(other:Any) = other match
     case other: Wire => other.input == input
     case _ => false
 
@@ -72,38 +68,44 @@ object Wire :
   def unapply(arg: Wire): Option[Component] = Some(arg.input)
 
 
-case class Input(override val size: Int, name: String) extends Component(size):
-  override lazy val hashCode = name.hashCode()
 
-case class Output(input: Component, name: String) extends Component(input.size, input)
+case class Const(override val size: Int, value: BigInt) extends ImmutableComponent(size):
+  override val hashCode = value.hashCode()
 
-case class Plus(terms: Seq[Component]) extends Component(terms.head.size, terms: _*)
+case class Register(input: Component) extends Component(input.size, input)
 
-case class Minus(lhs: Component, rhs: Component) extends Component(lhs.size, lhs, rhs)
+case class Input(override val size: Int, name: String) extends ImmutableComponent(size):
+  override val hashCode = name.hashCode()
 
-case class Times(lhs: Component, rhs: Component) extends Component(lhs.size + rhs.size, lhs, rhs)
+case class Output(input: Component, name: String) extends ImmutableComponent(input.size, input)
 
-case class And(terms: Seq[Component]) extends Component(terms.head.size, terms: _*)
+case class Plus(terms: Seq[Component]) extends ImmutableComponent(terms.head.size, terms: _*)
 
-case class Xor(inputs: Seq[Component]) extends Component(inputs.head.size, inputs: _*)
+case class Minus(lhs: Component, rhs: Component) extends ImmutableComponent(lhs.size, lhs, rhs)
 
-case class Or(inputs: Seq[Component]) extends Component(inputs.head.size, inputs: _*)
+case class Times(lhs: Component, rhs: Component) extends ImmutableComponent(lhs.size + rhs.size, lhs, rhs)
 
-case class Not(input: Component) extends Component(input.size, input)
+case class And(terms: Seq[Component]) extends ImmutableComponent(terms.head.size, terms: _*)
 
-case class Equals(lhs: Component, rhs: Component) extends Component(1, lhs, rhs)
+case class Xor(inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, inputs: _*)
 
-case class Mux(address: Component, inputs: Seq[Component]) extends Component(inputs.head.size, address +: inputs: _*)
+case class Or(inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, inputs: _*)
 
-case class Concat(inputs: Seq[Component]) extends Component(inputs.map(_.size).sum, inputs: _*)
+case class Not(input: Component) extends ImmutableComponent(input.size, input)
 
-case class Tap(input: Component, range: Range) extends Component(range.size, input)
+case class Equals(lhs: Component, rhs: Component) extends ImmutableComponent(1, lhs, rhs)
 
-case class RAMWr(wrAddress: Component, input: Component) extends Component(input.size, wrAddress, input)
+case class Mux(address: Component, inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, address +: inputs: _*)
 
-case class RAMRd(mem: RAMWr, rdAddress: Component) extends Component(mem.size, mem, rdAddress)
+case class Concat(inputs: Seq[Component]) extends ImmutableComponent(inputs.map(_.size).sum, inputs: _*)
 
-case class Extern(override val size:Int, filename:String, module:String, outputName:String, inputs:(String,Component)*) extends Component(size,inputs.map(_._2):_*)
+case class Tap(input: Component, range: Range) extends ImmutableComponent(range.size, input)
+
+case class RAMWr(wrAddress: Component, input: Component) extends ImmutableComponent(input.size, wrAddress, input)
+
+case class RAMRd(mem: RAMWr, rdAddress: Component) extends ImmutableComponent(mem.size, mem, rdAddress)
+
+case class Extern(override val size:Int, filename:String, module:String, outputName:String, inputs:(String,Component)*) extends ImmutableComponent(size,inputs.map(_._2):_*)
 
 object ROM:
   def unapply(arg:Mux) =

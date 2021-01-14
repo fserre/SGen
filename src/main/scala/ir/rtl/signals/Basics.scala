@@ -26,39 +26,36 @@ package ir.rtl.signals
 import ir.rtl.{Component, SB}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
-case class Input[T: HW](input: Int) extends Source[T] {
+case class Input[T: HW](input: Int) extends Source[T]:
   override def implement: Component = ???
 
   override val hash = input.hashCode()
-}
 
-case object Next extends Source(using Unsigned(1)) {
+
+case object Next extends Source(using Unsigned(1)):
   override val hash="Next".hashCode()
   
   override def implement: Component = ???
 
-  override def toString="Next"
-}
 
-case object Reset extends Source(using Unsigned(1)) {
+case object Reset extends Source(using Unsigned(1)):
   override def implement: Component = ???
-  override val hash="Reset".hashCode()
-}
 
-case class Const[T: HW](value: T) extends Source[T] {
+  override val hash="Reset".hashCode()
+
+
+case class Const[T: HW](value: T) extends Source[T]:
   val bits = hw.bitsOf(value)
   
-  override def implement = new ir.rtl.Const(hw.size, bits)
+  override def implement = ??? 
 
-  override def equals(obj: Any): Boolean = obj match {
+  override def equals(obj: Any): Boolean = obj match
     case other: Const[?] => other.hw == hw && bits == other.bits
     case _ => false
-  }
-
+  
   override val hash = hw.bitsOf(value).hashCode()
-}
-case object Null {
+
+case object Null:
   def apply(): Sig[Int] = Const(0)(Unsigned(0))
 
   def unapply[T](arg: Sig[T]): Boolean = arg.hw == Unsigned(0)
-}

@@ -43,10 +43,12 @@ import java.io.PrintWriter
  */
 object GenerateWeb extends App:
   //val uut = DFT.CTDFT(4,1).stream(4,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[SB[?]]
-  val uut = DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(8,8))).asInstanceOf[SB[?]]
-  //println(uut.toVerilog)
-  uut.showGraph
+  //val uut = DFT.CTDFT(15,5).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[SB[?]]
+  val uut = DFT.CTDFT(15,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[SB[?]]
+  println(uut.toVerilog)
+  //uut.showGraph
   //println(uut.synthetize())
+  //println(uut.test())
   System.exit(0)
   
   
