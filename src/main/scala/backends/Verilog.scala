@@ -23,12 +23,29 @@
 
 package backends
 import ir.rtl._
-import scala.collection.mutable
+
+import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 
 object Verilog {
   extension (mod:Module){
     final def toVerilog: String = {
+      val indexes = immutable.HashMap.from(mod.components.filter(_ match
+        case _: Input | _: Output | _: Wire | _: Const => false
+        case _ => true
+      ).zipWithIndex)
+
+      @tailrec
+      def getName(comp: Component): String = comp match
+        case Input(_,name) => name
+        case Output(_,name) => name
+        case Wire(input) => getName(input)
+        case Const(size, value) => s"$size'd$value"
+        case _ => s"s${indexes(comp) + 1}"
+      
+      
+      
+      /*
       val names = mutable.AnyRefMap[Component, String]()
       val toImplement = mutable.Queue[Component]()
       toImplement.enqueueAll(mod.outputs)
@@ -46,7 +63,7 @@ object Verilog {
           }
             names(cp)
         }
-      }
+      }*/
       val combinatorial = new mutable.StringBuilder
       val sequential = new mutable.StringBuilder
       val declarations = new mutable.StringBuilder
@@ -58,45 +75,44 @@ object Verilog {
       def addComb(line: String*): Unit = line.foreach(combinatorial ++= "  " ++= _ ++= "\n")
 
       //def addComb(line: Vector[String]) = line.foreach(combinatorial ++= "  " ++= _ ++= "\n")
-      while (toImplement.nonEmpty) {
-        val cur = toImplement.dequeue()
-        cur match {
+      mod.components.foreach(cur => cur match {
           case _: Output | _: Input | _: Const | _: Wire =>
-          case _: Register | _: Mux | _: RAMRd => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${cur.id};")
-          case cur:RAMWr => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${cur.id} [${(1 << cur.wrAddress.size) - 1}:0]; // synthesis attribute ram_style of ${cur.id} is block")
-          case _ => addDec(s"wire ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${cur.id};")
+          case _: Register | _: Mux | _: RAMRd => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
+          case cur:RAMWr => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)} [${(1 << cur.wrAddress.size) - 1}:0]; // synthesis attribute ram_style of ${getName(cur)} is block")
+          case _ => addDec(s"wire ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
         }
+      )
         //if (cur.description != "") addComb(s"// ${cur.description}")
-        cur match {
-          case cur:Output => addComb(s"assign ${cur.id} = ${cur.input.id};")
-          case cur:Plus => addComb(s"assign ${cur.id} = ${cur.terms.map(_.id).mkString(" + ")};")
-          case cur:Minus => addComb(s"assign ${cur.id} = ${cur.lhs.id} - ${cur.rhs.id};")
-          case cur:Times => addComb(s"assign ${cur.id} = $$signed(${cur.lhs.id}) * $$signed(${cur.rhs.id});")
-          case cur:And => addComb(s"assign ${cur.id} = ${cur.terms.map(_.id).mkString(" & ")};")
-          case cur:Xor => addComb(s"assign ${cur.id} = ${cur.inputs.map(_.id).mkString(" ^ ")};")
-          case cur: Or => addComb(s"assign ${cur.id} = ${cur.inputs.map(_.id).mkString(" | ")};")
-          case cur:Equals => addComb(s"assign ${cur.id} = ${cur.lhs.id} == ${cur.rhs.id};")
-          case cur:Not => addComb(s"assign ${cur.id} = ~${cur.input.id};")
+      mod.components.foreach(cur => cur match {
+          case cur:Output => addComb(s"assign ${getName(cur)} = ${getName(cur.input)};")
+          case cur:Plus => addComb(s"assign ${getName(cur)} = ${cur.terms.map(getName).mkString(" + ")};")
+          case cur:Minus => addComb(s"assign ${getName(cur)} = ${getName(cur.lhs)} - ${getName(cur.rhs)};")
+          case cur:Times => addComb(s"assign ${getName(cur)} = $$signed(${getName(cur.lhs)}) * $$signed(${getName(cur.rhs)});")
+          case cur:And => addComb(s"assign ${getName(cur)} = ${cur.terms.map(getName).mkString(" & ")};")
+          case cur:Xor => addComb(s"assign ${getName(cur)} = ${cur.inputs.map(getName).mkString(" ^ ")};")
+          case cur:Or => addComb(s"assign ${getName(cur)} = ${cur.inputs.map(getName).mkString(" | ")};")
+          case cur:Equals => addComb(s"assign ${getName(cur)} = ${getName(cur.lhs)} == ${getName(cur.rhs)};")
+          case cur:Not => addComb(s"assign ${getName(cur)} = ~${getName(cur.input)};")
           case cur:Mux =>
             addComb("always @(*)")
-            addComb(s"  case(${cur.address.id})")
-            cur.inputs.zipWithIndex.foreach { case (in, i) => addComb(s"    ${if (i == cur.inputs.size - 1 && ((1 << cur.address.size) != cur.inputs.size)) "default" else i}: ${cur.id} <= ${in.id};") }
+            addComb(s"  case(${getName(cur.address)})")
+            cur.inputs.zipWithIndex.foreach { case (in, i) => addComb(s"    ${if (i == cur.inputs.size - 1 && ((1 << cur.address.size) != cur.inputs.size)) "default" else i}: ${getName(cur)} <= ${getName(in)};") }
             addComb("  endcase")
-          case cur:Concat => addComb(s"assign ${cur.id} = {${cur.inputs.map(_.id).mkString(", ")}};")
-          case cur:Tap => addComb(s"assign ${cur.id} = ${cur.input.id}[${if (cur.range.size > 1) s"${cur.range.last}:" else ""}${cur.range.start}];")
-          case cur:Register => addSeq(s"${cur.id} <= ${cur.input.id};")
-          case cur:RAMWr => addSeq(s"${cur.id} [${cur.wrAddress.id}] <= ${cur.input.id};")
-          case cur:RAMRd => addSeq(s"${cur.id} <= ${cur.mem.id} [${cur.rdAddress.id}];")
-          case cur:Extern => addComb(s"${cur.module} ext_${cur.id}(${cur.inputs.map{case (name, comp)=>s".$name(${comp.id}), "}.mkString}.${cur.outputName}(${cur.id}));")
+          case cur:Concat => addComb(s"assign ${getName(cur)} = {${cur.inputs.map(getName).mkString(", ")}};")
+          case cur:Tap => addComb(s"assign ${getName(cur)} = ${getName(cur.input)}[${if (cur.range.size > 1) s"${cur.range.last}:" else ""}${cur.range.start}];")
+          case cur:Register => addSeq(s"${getName(cur)} <= ${getName(cur.input)};")
+          case cur:RAMWr => addSeq(s"${getName(cur)} [${getName(cur.wrAddress)}] <= ${getName(cur.input)};")
+          case cur:RAMRd => addSeq(s"${getName(cur)} <= ${getName(cur.mem)} [${getName(cur.rdAddress)}];")
+          case cur:Extern => addComb(s"${cur.module} ext_${getName(cur)}(${cur.inputs.map{case (name, comp)=>s".$name(${getName(comp)}), "}.mkString}.${cur.outputName}(${getName(cur)}));")
             mod.dependencies.add(cur.filename)
           case _ =>
         }
-      }
+      )
 
       var result = new StringBuilder
       result ++= s"module ${mod.name}(input clk,\n"
-      result ++= mod.inputs.map(s => s"  input ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${s.id},\n").mkString("")
-      result ++= mod.outputs.map(s => s"  output ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${s.id}").mkString(",\n")
+      result ++= mod.inputs.map(s => s"  input ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${getName(s)},\n").mkString("")
+      result ++= mod.outputs.map(s => s"  output ${if (s.size != 1) s"[${s.size - 1}:0] " else ""}${getName(s)}").mkString(",\n")
       result ++= ");\n\n"
       result ++= declarations
       result ++= combinatorial
