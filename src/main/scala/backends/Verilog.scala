@@ -77,11 +77,19 @@ object Verilog {
       //def addComb(line: Vector[String]) = line.foreach(combinatorial ++= "  " ++= _ ++= "\n")
       mod.components.foreach(cur => cur match {
           case _: Output | _: Input | _: Const | _: Wire =>
-          case _: Register | _: Mux | _: RAMRd => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
+          case _: Mux | _: RAMRd => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
+          case Register(_, cycles) if cycles == 1   => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
+          case Register(_, cycles) if cycles == 2 => 
+            addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)}i;")
+            addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
+          case Register(_, cycles) =>
+            addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)}i [${cycles-1}:0];")
+            addDec(s"wire ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
           case cur:RAMWr => addDec(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)} [${(1 << cur.wrAddress.size) - 1}:0]; // synthesis attribute ram_style of ${getName(cur)} is block")
           case _ => addDec(s"wire ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
         }
       )
+      addDec("integer i;")
         //if (cur.description != "") addComb(s"// ${cur.description}")
       mod.components.foreach(cur => cur match {
           case cur:Output => addComb(s"assign ${getName(cur)} = ${getName(cur.input)};")
@@ -100,7 +108,15 @@ object Verilog {
             addComb("  endcase")
           case cur:Concat => addComb(s"assign ${getName(cur)} = {${cur.inputs.map(getName).mkString(", ")}};")
           case cur:Tap => addComb(s"assign ${getName(cur)} = ${getName(cur.input)}[${if (cur.range.size > 1) s"${cur.range.last}:" else ""}${cur.range.start}];")
-          case cur:Register => addSeq(s"${getName(cur)} <= ${getName(cur.input)};")
+          case Register(input, cycles) if cycles == 1 => addSeq(s"${getName(cur)} <= ${getName(input)};")
+          case Register(input, cycles) if cycles == 2 => 
+            addSeq(s"${getName(cur)}i <= ${getName(input)};")
+            addSeq(s"${getName(cur)} <= ${getName(cur)}i;")
+          case Register(input, cycles) =>
+            addSeq(s"${getName(cur)}i [0] <= ${getName(input)};")
+            addSeq(s"for (i = 1; i < $cycles; i = i + 1)")
+            addSeq(s"  ${getName(cur)}i [i] <= ${getName(cur)}i [i - 1];")
+            addComb(s"assign ${getName(cur)} = ${getName(cur)}i [${cycles-1}];")
           case cur:RAMWr => addSeq(s"${getName(cur)} [${getName(cur.wrAddress)}] <= ${getName(cur.input)};")
           case cur:RAMRd => addSeq(s"${getName(cur)} <= ${getName(cur.mem)} [${getName(cur.rdAddress)}];")
           case cur:Extern => addComb(s"${cur.module} ext_${getName(cur)}(${cur.inputs.map{case (name, comp)=>s".$name(${getName(comp)}), "}.mkString}.${cur.outputName}(${getName(cur)}));")

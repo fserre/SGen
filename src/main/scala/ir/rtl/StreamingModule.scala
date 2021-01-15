@@ -83,10 +83,19 @@ abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
     val next_out = new Output(getToken(latency), "next_out")
 
     val minTime = tokens.keys.min
-    val maxTime = tokens.keys.max
-    val tokenComps: Vector[Component] = Vector.iterate[Component](next, maxTime - minTime + 1)(_.register)
-    //, tokenComps(time-tokens.keys.min)
-    tokens.foreach { case (time, wire) => wire.input = tokenComps(time - minTime) }
+    
+    if false then
+      val maxTime = tokens.keys.max  
+      val tokenComps: Vector[Component] = Vector.iterate[Component](next, maxTime - minTime + 1)(_.register)
+      tokens.foreach { case (time, wire) => wire.input = tokenComps(time - minTime) }
+    else
+      tokens.toSeq.sortBy(_._1).foldLeft[(Int,Component)]((minTime,next)){case ((prevTime, prevComp),(time, wire)) =>
+        val diff= time-prevTime
+        assert(diff>=0)
+        val res = if diff>0 then Register(prevComp, diff) else prevComp
+        wire.input = res 
+        (time, res)}
+        
     _nextAt = Some(minTime)
 
     next_out +: res

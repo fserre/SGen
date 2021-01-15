@@ -77,7 +77,8 @@ object Wire :
 case class Const(override val size: Int, value: BigInt) extends ImmutableComponent(size):
   override val hashCode = value.hashCode()
 
-case class Register(input: Component) extends Component(input.size, input)
+case class Register(input: Component, cycles: Int = 1) extends Component(input.size, input):
+  require(cycles>0)
 
 case class Input(override val size: Int, name: String) extends ImmutableComponent(size):
   override val hashCode = name.hashCode()

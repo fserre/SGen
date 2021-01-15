@@ -56,7 +56,8 @@ object DOT:
       inline def node(comp:Component, options: String) = Some(s"      ${getName(comp)}[$options];\n")
       val nodes=mod.components.flatMap(cur => cur match
           case _: Output | _: Input | _: RAMWr | _: Wire | _: Const => None
-          case Register(_) => node(cur, """label="Reg",shape=square""")
+          case Register(_, cycles) if cycles == 1 => node(cur, """label="Reg",shape=square""")
+          case Register(_, cycles) => node(cur, s"""label="Buffer($cycles cycles)",shape=record""")
           case Plus(_) => node(cur, """label="+",shape=circle""")
           case Or(_) => node(cur, """label="|",shape=circle""")
           case Xor(_) => node(cur, """label="^",shape=circle""")
