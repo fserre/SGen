@@ -37,7 +37,14 @@ abstract sealed class Component(val size: Int, _parents: Component*):
   /**
    * Returns a register node of the current node
    */
-  def register = new Register(this)
+  def register = Register(this)
+
+  def delay(cycles:Int) =
+    require(cycles>=0)
+    if cycles == 0 then
+      this
+    else
+      Register(this, cycles)
 
 abstract sealed class ImmutableComponent(size: Int, _parents: Component*) extends Component(size, _parents:_*):
   override val hashCode = (parents +: this.getClass.getSimpleName).hashCode()
@@ -78,7 +85,7 @@ case class Const(override val size: Int, value: BigInt) extends ImmutableCompone
   override val hashCode = value.hashCode()
 
 case class Register(input: Component, cycles: Int = 1) extends Component(input.size, input):
-  require(cycles>0)
+  require(cycles>0, s"Wrong delay:$cycles")
 
 case class Input(override val size: Int, name: String) extends ImmutableComponent(size):
   override val hashCode = name.hashCode()
