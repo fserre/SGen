@@ -72,11 +72,12 @@ object DOT:
       ).mkString("")
 
       inline def edge(from: Component, to: String) = s"  ${getName(from)}:e -> $to[penwidth=${1 + BigInt(from.size).bitLength}];\n"
-      val edges=mod.components.flatMap {cur => cur match
+      val edges = mod.components.flatMap {cur => cur match
           case Wire(_) | _: RAMWr => Seq()
-          case RAMRd(RAMWr(wr,input),rd) => Seq(edge(wr,getName(cur)+":wr"),edge(rd,getName(cur)+":rd"),edge(input,getName(cur)+":data"))
-          case cur: Mux if cur.inputs.forall(_.isInstanceOf[Const]) => edge(cur.address,getName(cur))
-          case _ => cur.parents.map(edge(_,getName(cur)))
+          case RAMRd(RAMWr(wr,input),rd) => Seq(edge(wr,getName(cur)+":wr:w"),edge(rd,getName(cur)+":rd:w"),edge(input,getName(cur)+":data:w"))
+          case ROM(address, _) => edge(address,s"${getName(cur)}:title:w")
+          case Mux(address, inputs) => inputs.map(edge(_,s"${getName(cur)}:w")) :+ edge(address,s"${getName(cur)}:s") 
+          case _ => cur.parents.map(edge(_,s"${getName(cur)}:w"))
       }.mkString("")
 
       var res = new StringBuilder

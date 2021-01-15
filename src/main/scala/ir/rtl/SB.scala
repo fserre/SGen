@@ -42,24 +42,42 @@ abstract class SB[U: HW](t: Int, k: Int) extends StreamingModule(t, k):
   final lazy val outputSigs = implement(inputSigs)
   
   final lazy val synch =
-    val res = mutable.HashMap[Sig[?], Int]()
-    outputSigs.foreach(cur => res.put(cur, cur.pipeline))
-    inputSigs.foreach(cur => res.put(cur, 0))
-    var toImplement:Seq[Sig[?]] = outputSigs.distinct
-    while toImplement.nonEmpty do
-      toImplement = toImplement.flatMap(cur=>
-        val curTime=res(cur)
-        cur.parents.flatMap ((s: Sig[?], advance: Int) =>
-          val time = curTime + advance + s.pipeline
-          res.get(s) match
+    // First pass : extract the earliest cycle each signal needs to be available at
+    val earliest = mutable.HashMap[Sig[?], Int]()
+    outputSigs.foreach(cur => earliest.put(cur, cur.pipeline)) // each output needs to be available at time 0, plus the pipeline it requires
+    inputSigs.foreach(cur => earliest.put(cur, 0)) // put the input signals (they need to be implemented, even if not used), initially at time 0
+    // Process the (Sig) graph from outputs to inputs in a BFS manner (to reduce the number of time a given signal must be further "advanced")   
+    @tailrec
+    def firstPass(toProcess:Seq[Sig[?]]):Unit = if toProcess.nonEmpty then
+      firstPass((
+        for
+          cur <- toProcess
+          curTime = earliest(cur)
+          (s, advance) <- cur.parents
+          time = curTime + advance + s.pipeline
+          res <- earliest.get(s) match
             case Some(i) if i > time => None
             case _ =>
-              res.put(s, time)
-              Some(s))).distinct
-    val latency=inputSigs.map(res).max
-    inputSigs.foreach(res(_) = latency)
+              earliest.put(s, time)
+              Some(s)
+        yield
+          res
+      ).distinct)
+    firstPass(outputSigs.distinct)
+
+    val latency=inputSigs.map(earliest).max // get the latency (earliest time a signal must be available)
+    inputSigs.foreach(earliest(_) = latency) // update all input signals
     _latency = Some(latency)
-    res.toMap
+      
+    // second pass: get all the times each signal is used  
+    val res = earliest.map((cur, curTime) => (cur, mutable.BitSet(curTime)))
+    for 
+      (cur, curTime) <- earliest
+      (s, advance) <- cur.parents
+      time = curTime + advance + s.pipeline
+    do
+      res(s) += time
+    res.map((cur,times)=>(cur,times.toSeq.sorted.reverse)).toMap
 
   final override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] =
     val implemented=mutable.HashMap.from[Sig[?],ArrayBuffer[Component]](inputSigs.zip(inputs.map(ArrayBuffer(_))))
@@ -70,7 +88,7 @@ abstract class SB[U: HW](t: Int, k: Int) extends StreamingModule(t, k):
         case Reset => rst
         case sig:Const[?] => implemented.getOrElseUpdate(sig, ArrayBuffer(ir.rtl.Const(sig.hw.size, sig.bits))).head
         case _ =>
-          val originalTime = synch(sig)
+          val originalTime = synch(sig).head
           val components = implemented.getOrElseUpdate(sig, ArrayBuffer(sig.implement(implementComp(originalTime))))
           val diff = originalTime - requestedTime
           assert(diff >= 0)
@@ -80,25 +98,8 @@ abstract class SB[U: HW](t: Int, k: Int) extends StreamingModule(t, k):
           val res=components(diff)
           res.hashCode
           res
-    val tmp=synch.toSeq.sortBy(- _._2)
-    println(tmp.size)
-    tmp.foreach((sig, time) => implementComp(time)(sig,0))  
+    synch.toSeq.sortBy(- _._2.head).foreach((sig, times) => implementComp(times.head)(sig,0))  
     outputSigs.map(implementComp(0)(_, 0))
-    /*val implemented = new mutable.HashMap[(Sig[?], Int), Component]()
-    def implementComp(time: Int)(ref: Sig[?], advance: Int): Component =
-      val advancedTime = time + advance
-      ref match
-        case Next => token(latency - advancedTime)
-        case Reset => rst
-        case Input(i) if advancedTime == latency => inputs(i)
-        case sig:Const[?] => implemented.getOrElseUpdate((ref, 0), ir.rtl.Const(sig.hw.size, sig.bits))
-        case _ =>
-          val diff = synch(ref) - advancedTime
-          assert(diff >= 0)
-          println(diff)
-          implemented.getOrElseUpdate((ref, advancedTime), if diff == 0 then ref.implement(implementComp(advancedTime)) else implementComp(advancedTime)(ref, 1).register)
-    outputSigs.map(implementComp(0)(_, 0))*/
-      
 
   private var _latency: Option[Int] = None
 
