@@ -55,10 +55,15 @@ final class Wire(override val size: Int) extends Component(size):
 
   override def parents = Seq(input)
 
-  override lazy val hashCode = Seq("Wire",size).hashCode()
+  override val hashCode = Seq("Wire", size).hashCode()
 
-  override def equals(other:Any) = other match
-    case other: Wire => other.input == input
+  /**
+   * Checks for equality. We only check for reference equality of the input to prevent endless loop in case of cycles within the graph.  
+   */
+  override def equals(that: Any) = that match
+    case that:AnyRef => (this eq that) || (that match
+      case that: Wire => that.input eq input
+      case _ => false)
     case _ => false
 
 
