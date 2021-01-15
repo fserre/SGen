@@ -24,7 +24,7 @@
 package ir.rtl.signals
 
 import ir.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
-import ir.rtl.{Component, SB}
+import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 import ir.AssociativeNodeCompanion
 import linalg.Fields.{Complex, F2}

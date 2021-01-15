@@ -23,7 +23,7 @@
 
 package transforms.perm
 
-import ir.rtl.{SB, StreamingModule}
+import ir.rtl.{AcyclicStreamingModule, StreamingModule}
 import ir.rtl.hardwaretype.HW
 import ir.spl.SPL
 import ir.rtl.signals.Sig
@@ -31,7 +31,7 @@ import linalg.Fields.F2
 import linalg.Matrix
 import transforms.perm.LinearPerm
 
-abstract class SLP[U: HW](t: Int, k: Int, val size: Int) extends SB(t, k) {
+abstract class SLP[U: HW](t: Int, k: Int, val size: Int) extends AcyclicStreamingModule(t, k) {
   def P4: Seq[Matrix[F2]] = Vector.fill(size)(Matrix.identity[F2](t))
 
   def P3: Seq[Matrix[F2]] = Vector.fill(size)(Matrix.zeros[F2](t, k))

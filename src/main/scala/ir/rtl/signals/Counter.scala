@@ -23,7 +23,7 @@
 
 package ir.rtl.signals
 
-import ir.rtl.{SB, _}
+import ir.rtl.{AcyclicStreamingModule, _}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
 case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig(using Unsigned(BigInt(limit - 1).bitLength)) {

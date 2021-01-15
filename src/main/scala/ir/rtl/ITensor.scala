@@ -35,7 +35,7 @@ import ir.spl.SPL
  * @param k Log of the streaming width.
  * @tparam T Software datatype of the inputs/outputs
  */
-case class ITensor[T](r: Int, factor: SB[T], override val k: Int) extends SB[T](r + factor.n - k, k)(factor.hw) {
+case class ITensor[T](r: Int, factor: AcyclicStreamingModule[T], override val k: Int) extends AcyclicStreamingModule[T](r + factor.n - k, k)(factor.hw) {
 //println("r:"+r+" k:"+k+" factor:"+factor)
   require((k>factor.n && factor.n==factor.k) || factor.k==k)
   override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = if(k>factor.n)

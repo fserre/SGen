@@ -23,7 +23,7 @@
 
 package ir.rtl.signals
 
-import ir.rtl.{Component, SB}
+import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype.{HW,Unsigned}
 
 

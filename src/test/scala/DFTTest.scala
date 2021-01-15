@@ -22,7 +22,7 @@
  */
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint}
-import ir.rtl.{SB, StreamingModule,RAMControl}
+import ir.rtl.{AcyclicStreamingModule, StreamingModule,RAMControl}
 import transforms.fft.{DFT, StreamDiagC}
 import linalg.Fields.Complex
 import linalg.{Matrix, Vec}
@@ -82,7 +82,7 @@ object DFTTest extends Properties("DFT") {
       }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
 
-  val genDiagC: Gen[SB[Complex[Double]]] = for {
+  val genDiagC: Gen[AcyclicStreamingModule[Complex[Double]]] = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
     n = t + k

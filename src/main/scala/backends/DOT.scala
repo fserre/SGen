@@ -100,7 +100,7 @@ object DOT:
       "Graphviz/dot -Tpdf rtl.gv -o rtl.pdf".!!
       "cmd /c start rtl.pdf".!!
   
-  extension [U](sb: SB[U])
+  extension [U](sb: AcyclicStreamingModule[U])
     def toGraph:String =
       val sigs=sb.synch.keys
       val indexes = immutable.HashMap.from(sigs.filter(_ match

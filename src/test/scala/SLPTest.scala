@@ -27,7 +27,7 @@ import linalg.{Matrix, Vec}
 import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
 import TestTools._
-import ir.rtl.{RAMControl, SB, StreamingModule}
+import ir.rtl.{RAMControl, AcyclicStreamingModule, StreamingModule}
 import ir.rtl.hardwaretype.Unsigned
 import transforms.perm.LinearPerm
 import backends.xilinx.Xsim._
@@ -39,7 +39,7 @@ object SLPTest extends Properties("SLP") {
 
 
 
-  val genTemporal: Gen[SB[Int]] = for {
+  val genTemporal: Gen[AcyclicStreamingModule[Int]] = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
     r <- Gen.choose(0, 2)
@@ -49,12 +49,12 @@ object SLPTest extends Properties("SLP") {
     p3=Matrix.zeros[F2](r,k)/innerP3
     dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
   } yield Temporal(Vector(p3), Vector(p4),dp)(Unsigned(16))
-  property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
+  property("Temporal") = forAll(genTemporal, Gen.choose(0, 10)) { (sb:AcyclicStreamingModule[Int], gap) =>
     val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
     sb.test(2, gap2).contains(0)
   }
 
-  val genTemporal2: Gen[SB[Int]] = for {
+  val genTemporal2: Gen[AcyclicStreamingModule[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     r <- Gen.choose(0, 2)
@@ -64,7 +64,7 @@ object SLPTest extends Properties("SLP") {
     p3=innerP3.map(Matrix.zeros[F2](r,k)/_)
     dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
   } yield Temporal(p3, p4,dp)(Unsigned(16))
-  property("Temporal2") =  forAll(genTemporal2, Gen.choose(0, 10)) { (sb:SB[Int], gap) =>
+  property("Temporal2") =  forAll(genTemporal2, Gen.choose(0, 10)) { (sb:AcyclicStreamingModule[Int], gap) =>
     val gap2=if(sb.hasSinglePortedMem && gap>0) gap+sb.T else gap
     sb.test(5,gap2).contains(0)
   }
@@ -83,14 +83,14 @@ object SLPTest extends Properties("SLP") {
 
 
 
-  val genSteady: Gen[SB[Int]] = for {
+  val genSteady: Gen[AcyclicStreamingModule[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- genInvertible(k)
   } yield Steady(Vector(p1), t)(Unsigned(16))
-  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:SB[Int], gap:Int) =>  sb.test(2, gap).contains(0)    }
+  property("Steady") = forAll(genSteady, Gen.choose(0, 10)) { (sb:AcyclicStreamingModule[Int], gap:Int) =>  sb.test(2, gap).contains(0)    }
 
-  val genSteady2: Gen[SB[Int]] = for {
+  val genSteady2: Gen[AcyclicStreamingModule[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     p1 <- Gen.containerOfN[Vector, Matrix[F2]](2, genInvertible(k))
@@ -102,7 +102,7 @@ object SLPTest extends Properties("SLP") {
       sb.test(2, gap).contains(0)
     }
 
-  val genSwitch2: Gen[SB[Int]] = for {
+  val genSwitch2: Gen[AcyclicStreamingModule[Int]] = for {
     t <- Gen.choose(1, 5)
     k <- Gen.choose(1, 5)
     v <- Gen.containerOfN[Vector, Vec[F2]](2, genVec(t))

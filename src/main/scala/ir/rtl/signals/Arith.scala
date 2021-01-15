@@ -24,7 +24,7 @@
 package ir.rtl.signals
 
 import ir.rtl.hardwaretype.HW
-import ir.rtl.SB
+import ir.rtl.AcyclicStreamingModule
 import Utils._
 
 import scala.annotation.tailrec

@@ -24,7 +24,7 @@ package ir
 package spl
 
 import ir.rtl.hardwaretype.HW
-import ir.rtl.{RAMControl, SB, StreamingModule}
+import ir.rtl.{RAMControl, AcyclicStreamingModule, StreamingModule}
 import linalg.Fields.F2
 import linalg.Matrix
 import transforms.perm.LinearPerm
@@ -52,5 +52,5 @@ object ITensor{
 }
 
 trait Repeatable[T] extends SPL[T]{
-  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): SB[T]
+  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): AcyclicStreamingModule[T]
 }

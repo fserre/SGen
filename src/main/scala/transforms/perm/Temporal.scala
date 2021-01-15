@@ -23,7 +23,7 @@
 
 package transforms.perm
 
-import ir.rtl.{Identity, SB, RAMControl}
+import ir.rtl.{Identity, AcyclicStreamingModule, RAMControl}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 import ir.rtl.signals._
 import linalg.Fields.F2
@@ -126,10 +126,10 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
 }
 
 object Temporal {
-  def apply[U: HW](P3: Seq[Matrix[F2]], P4: Seq[Matrix[F2]], control:RAMControl): SB[U] = if (P3.forall(_.isZero) && P4.forall(_.isIdentity))
+  def apply[U: HW](P3: Seq[Matrix[F2]], P4: Seq[Matrix[F2]], control:RAMControl): AcyclicStreamingModule[U] = if (P3.forall(_.isZero) && P4.forall(_.isIdentity))
     Identity(P3.head.m, P3.head.n)
   else
     new Temporal(P3, P4,control)
-  def apply[U: HW](P3: Matrix[F2], P4: Matrix[F2], control:RAMControl): SB[U] = Temporal(Seq(P3), Seq(P4),control)
+  def apply[U: HW](P3: Matrix[F2], P4: Matrix[F2], control:RAMControl): AcyclicStreamingModule[U] = Temporal(Seq(P3), Seq(P4),control)
 }
 //if(dualPorted)RAMControl.Dual else RAMControl.SinglePorted

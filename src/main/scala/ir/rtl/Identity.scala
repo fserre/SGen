@@ -25,10 +25,10 @@ package ir.rtl
 
 import ir.rtl.signals.Sig
 import ir.rtl.hardwaretype.HW
-import ir.rtl.{SB, StreamingModule}
+import ir.rtl.{AcyclicStreamingModule, StreamingModule}
 import ir.spl.SPL
 
-case class Identity[T:HW](override val t:Int,override val k:Int) extends SB[T](t,k) {
+case class Identity[T:HW](override val t:Int,override val k:Int) extends AcyclicStreamingModule[T](t,k) {
   override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = inputs
   override def spl: SPL[T] = ir.spl.Identity[T](t+k)
 }

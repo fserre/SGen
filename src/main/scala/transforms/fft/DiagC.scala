@@ -24,7 +24,7 @@
 package transforms.fft
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, HW, Unsigned}
-import ir.rtl.{SB,RAMControl}
+import ir.rtl.{AcyclicStreamingModule,RAMControl}
 import ir.spl.{Repeatable, SPL}
 import ir.rtl.signals.{Const, Counter, ROM, Sig, Timer}
 import linalg.Fields.Complex
@@ -41,7 +41,7 @@ case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
 
-  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = new SB(n - k, k) {
+  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k) {
     override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = {
       (0 until K).map(p => {
         val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
@@ -70,9 +70,9 @@ case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]]
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n), set % (n / r)) }
 
-  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = {
+  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = {
     //require(k>=r)
-    new SB(n - k, k) {
+    new AcyclicStreamingModule(n - k, k) {
       override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = {
         (0 until K).map(p => {
           val j = p % (1 << r)

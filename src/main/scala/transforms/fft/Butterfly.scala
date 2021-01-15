@@ -25,11 +25,11 @@ package transforms.fft
 
 import ir.rtl.hardwaretype.HW
 import ir.rtl.signals.Sig
-import ir.rtl.{SB, StreamingModule}
+import ir.rtl.{AcyclicStreamingModule, StreamingModule}
 import ir.spl.SPL
 import transforms.fft.DFT2
 
-class Butterfly[T:HW] extends SB[T](0,1){
+class Butterfly[T:HW] extends AcyclicStreamingModule[T](0,1){
 
   override def toString: String = "F2"
 

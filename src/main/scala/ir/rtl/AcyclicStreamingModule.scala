@@ -34,7 +34,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
 
 
-abstract class SB[U: HW](t: Int, k: Int) extends StreamingModule(t, k):
+abstract class AcyclicStreamingModule[U: HW](t: Int, k: Int) extends StreamingModule(t, k):
   def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]]
 
   final lazy val inputSigs = (0 until K).map(c => Input(c))
@@ -95,14 +95,6 @@ abstract class SB[U: HW](t: Int, k: Int) extends StreamingModule(t, k):
               case _ => sig.implement(implementComp(times.head + sig.pipeline))
             immutable.HashMap.from(times.scanLeft(times.head + sig.pipeline -> originalComponent)((prev, time) => time -> prev._2.delay(prev._1 - time)))
           })(requestedTime)
-          /*val originalTime = synch(sig).head
-          val components = implemented.getOrElseUpdate(sig, ArrayBuffer(sig.implement(implementComp(originalTime))))
-          val diff = originalTime - requestedTime
-          assert(diff >= 0)
-          while components.size <= diff do
-            components+=components.last.register
-            components.last.hashCode
-          components(diff)*/
           
     synch.toSeq.sortBy(- _._2.head).foreach((sig, times) => implementComp(times.head)(sig,0))  
     outputSigs.map(implementComp(0)(_, 0))
