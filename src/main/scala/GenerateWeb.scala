@@ -23,7 +23,7 @@
 
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Flopoco, HW, IEEE754, Unsigned}
-import transforms.perm.{Spatial, Steady, SwitchArray, Temporal}
+import transforms.perm.{Spatial, Steady, SwitchArray, Temporal, SmallTemporal}
 import ir.rtl._
 import transforms.fft.DFT
 import linalg.Fields.{Complex, F2}
@@ -42,18 +42,21 @@ import java.io.PrintWriter
  * Script to generate all the elements used in the different websites.
  */
 object GenerateWeb extends App:
-  val uut=transforms.fft.StreamDiagC(2,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16, 16)))
+  val uut = SmallTemporal(Seq(Vec.fromInt(1, 1)), Seq(Vec.fromInt(0, 0)))(Unsigned(16))
+  
+  
+  //val uut=transforms.fft.StreamDiagC(2,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16, 16)))
   //val uut = Identity(2,2)(Unsigned(16))
   //val uut = Spatial(Matrix(1,1,"1"),Matrix(1,1,"1"))(Unsigned(16))
   //val uut = Temporal(Matrix(2,2,"1011"),Matrix(2,2,"0110"),RAMControl.Dual)(Unsigned(16))
   //val uut = DFT.CTDFT(4,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(16,16))).asInstanceOf[SB[?]]
   //val uut = DFT.CTDFT(4,1).stream(4,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[SB[?]]
   //val uut = DFT.CTDFT(15,5).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[SB[?]]
-  //val uut = DFT.CTDFT(15,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[SB[?]]
-  //println(uut.toVerilog)
+  //val uut = DFT.CTDFT(15,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[AcyclicStreamingModule[?]]
+  println(uut.toVerilog)
   uut.showRTLGraph
   //println(uut.synthetize())
-  //println(uut.test())
+  println(uut.test())
   System.exit(0)
   
   

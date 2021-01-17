@@ -30,10 +30,20 @@ import ir.rtl.StreamingModule
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
 
-
+/**
+ * Adds a Vivado XSim test to streaming modules 
+ */
 object Xsim:
-  extension[U] (sm: StreamingModule[U]) def test(repeat: Int = 2, addedGap: Int = 0): Option[U] = 
+  /**
+   * Run XSim on the design
+    * @param repeat Number of datasets that will be tested
+    * @param addedGap Number of cycles to add between datasets, in addition to the gap required by the design
+    * @return None if test threw an error, and Some(e) where e is the sum of the square of the errors
+  */
+  extension[U] (sm: StreamingModule[U]) final def test(repeat: Int = 2, addedGap: Int = 0): Option[U] = 
+      // computes the expected output
       val outputs = sm.testBenchInput(repeat).grouped(sm.N).toSeq.zipWithIndex.flatMap { case (input, set) => sm.eval(input, set) }.map(sm.hw.valueOf)
+      // Write the design with testbench  
       val pw = new PrintWriter("test.v")
       pw.write("/*\n")
       io.Source.fromResource("testlogo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
@@ -41,22 +51,23 @@ object Xsim:
       pw.write(sm.toVerilog)
       pw.write(sm.getTestBench(repeat, addedGap))
       pw.close()
+      // Run the simulator  
       val xvlog=Xilinx.run("xvlog","test.v")
       sm.dependencies.foreach(filename => Xilinx.run("xvhdl",filename))
       val xelag = Xilinx.run("xelab","test")
       val xsim = Xilinx.run("xsim", "work.test -R")
-      if !xsim.contains("Success.") then
+      if !xsim.contains("Success.") then // there was a problem during the test => show output
         println(xvlog)
         println(xelag)
         println(xsim)
         None
       else
-        Some(sm.outputs.indices.map(i => 
+        Some(sm.outputs.indices.map(i => // Test was run without error => parse the results   
           val pos1 = xsim.indexOf("output" + i + ": ")
           val pos2 = xsim.indexOf(" ", pos1) + 1
           val pos3 = xsim.indexOf(" ", pos2)
           val res = sm.hw.valueOf(BigInt(xsim.slice(pos2, pos3)))
-          val diff = sm.hw.num.minus(res, outputs(i))
+          val diff = sm.hw.num.minus(res, outputs(i)) // compare with expected results
           sm.hw.num.times(diff, diff)
         ).sum(sm.hw.num))
 

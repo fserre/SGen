@@ -32,17 +32,25 @@ import ir.rtl.signals.Sig
 import scala.sys.process._
 import java.io.PrintWriter
 
-
+/**
+ * Adds graph outputs to Modules (RTL graph) and Streaming Modules (Sig Graph)
+ */
 object DOT:
   extension (mod: Module) 
+    /**
+     * @return Graph of the RTL design in GraphViz DOT format.
+     */
     final def toRTLGraph: String = 
+      // Get a unique ID for non special nodes
       val indexes = immutable.HashMap.from(mod.components.filter(_ match 
         case _: Input | _: Output | _: Wire | _: Const | _: RAMWr => false
         case _ => true
       ).zipWithIndex)
-
+      
+      // Consts are handle separatly (we create a new node every time we see one)  
       val consts = mutable.ArrayBuffer[BigInt]()  
         
+      // Get an identifier for each node  
       @tailrec
       def getName(comp: Component): String = comp match
         case Input(_,name) => s"inputs:$name"
@@ -53,6 +61,7 @@ object DOT:
           s"c${consts.size}"
         case _ => s"s${indexes(comp) + 1}"
 
+      // Representation of each node in the graph  
       inline def node(comp:Component, options: String) = Some(s"      ${getName(comp)}[$options];\n")
       val nodes=mod.components.flatMap(cur => cur match
           case _: Output | _: Input | _: RAMWr | _: Wire | _: Const => None
@@ -71,6 +80,7 @@ object DOT:
           case _ => node(cur, s"""label="${cur.getClass.getSimpleName}"""")
       ).mkString("")
 
+      // Edges of the graph  
       inline def edge(from: Component, to: String) = s"  ${getName(from)}:e -> $to[penwidth=${1 + BigInt(from.size).bitLength}];\n"
       val edges = mod.components.flatMap {cur => cur match
           case Wire(_) | _: RAMWr => Seq()
@@ -80,6 +90,7 @@ object DOT:
           case _ => cur.parents.map(edge(_,s"${getName(cur)}:w"))
       }.mkString("")
 
+      // outputs the graph  
       var res = new StringBuilder
       res ++= s"digraph ${mod.name} {\n"
       res ++= "  rankdir=LR;\n"
@@ -92,6 +103,9 @@ object DOT:
       res ++= "}\n"
       res.toString()
 
+    /**
+     * Generate the RTL graph, run graphviz and shows the graph. Works only in Windows, and with GraphViz in the path. 
+     */
     final def showRTLGraph: String = 
       val graph = toRTLGraph
       val pw = PrintWriter("rtl.gv")
@@ -101,15 +115,22 @@ object DOT:
       "cmd /c start rtl.pdf".!!
   
   extension [U](sb: AcyclicStreamingModule[U])
+    /**
+     * @return Graph of the Sig design (where hardware types and timing is abstracted) in GraphViz DOT format.
+     */
     def toGraph:String =
-      val sigs=sb.synch.keys
+      val sigs=sb.synch.keys // Sig nodes in the graph
+        
+      // Get a unique ID for non special nodes in the graph  
       val indexes = immutable.HashMap.from(sigs.filter(_ match
         case _: signals.Input[?] | signals.Next | signals.Reset => false
         case _ => true
       ).zipWithIndex)
 
+      // Consts are handled independently (creating a new instance each time)   
       val consts = mutable.ArrayBuffer[String]()
 
+      // Returns the DOT identifier of the node  
       def getName(sig: Sig[?]): String = sig match
         case signals.Input(i) => s"inputs:i$i"
         case signals.Const(value) =>
@@ -123,6 +144,7 @@ object DOT:
           s"c${consts.size}"
         case _ => s"s${indexes(sig) + 1}"
 
+      // Node declaration in the graph  
       inline def node(sig:Sig[?], options: String) = Some(s"      ${getName(sig)}[$options];\n")
       val nodes=sigs.flatMap(cur => cur match
         case _: signals.Input[?] | _: signals.Const[?] | signals.Next | signals.Reset => None
@@ -136,6 +158,7 @@ object DOT:
         case _ => node(cur, s"""label="${cur.getClass.getSimpleName}"""")
       ).mkString("")
 
+      //Edges  
       inline def edge(from: Sig[?], to: String) = s"  ${getName(from)}:e -> $to[penwidth=${1 + BigInt(from.hw.size).bitLength}];\n"
       val edges=sigs.flatMap {cur => cur match
         case signals.ROM(_,address) => Seq(edge(address,s"${getName(cur)}:title:w"))
@@ -144,7 +167,7 @@ object DOT:
         case _ => cur.parents.map(parent=>edge(parent._1,getName(cur)))
       }.mkString("")
         
-        
+      // Final output  
       val res = new StringBuilder
       res ++= "digraph " + sb.name + " {\n"
       res ++= "  rankdir=LR;\n"
@@ -158,6 +181,9 @@ object DOT:
       res ++= "}\n"
       res.toString()
 
+    /**
+     * Generate the Sig graph, run graphviz and shows the graph. Works only in Windows, and with GraphViz in the path. 
+     */
     def showGraph = 
       val graph = sb.toGraph
       val pw = PrintWriter("graph.gv") 

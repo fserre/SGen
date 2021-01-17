@@ -69,7 +69,7 @@ abstract class AcyclicStreamingModule[U: HW](t: Int, k: Int) extends StreamingMo
     _latency = Some(latency)
       
     // second pass: get all the times each signal is used  
-    val res = earliest.map((cur, curTime) => (cur, mutable.BitSet(curTime)))
+    val res = earliest.map((cur, curTime) => (cur, mutable.HashSet(curTime)))
     outputSigs.foreach(res(_) += 0) // Outputs need to be available at time 0, even if they might be available earlier.
     for 
       (cur, curTime) <- earliest

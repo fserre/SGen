@@ -34,6 +34,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import sys.process._
 
+/**
+ * SVG animations output (currently under construction)
+ */
 object SVG {
   val unit=50
   class Element(x:Int, y:Int, color:String){

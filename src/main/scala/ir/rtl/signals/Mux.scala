@@ -27,11 +27,13 @@ import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype.{ComplexHW, HW, Unsigned}
 import linalg.Fields.Complex
 
-case class Mux[U] private(address: Sig[Int], inputs: Seq[Sig[U]]) extends Operator[U](address +: inputs: _*)(using inputs.head.hw) {
+case class Mux[U] private(address: Sig[Int], inputs: Seq[Sig[U]]) extends Operator[U](address +: inputs: _*)(using inputs.head.hw):
   def isRom: Boolean = inputs.forall(_.isInstanceOf[Const[?]])
+
   override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Mux(cp(address), inputs.map(cp))
+
   override val pipeline = 1
-}
+
 
 object Mux {
   def apply[U](address: Sig[Int], inputs: Seq[Sig[U]]): Sig[U] = {

@@ -27,75 +27,50 @@ import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype.{HW,Unsigned}
 
 
-case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U](using input.hw) {
+case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U](using input.hw):
   override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
 
   override val pipeline = 1
 
-  override def implement(cp: (Sig[?], Int) => Component): Component = {
-    val mem = new ir.rtl.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
-    new ir.rtl.RAMRd(mem, cp(addrRd, 1))
-  }
+  override def implement(cp: (Sig[?], Int) => Component): Component = ir.rtl.RAM(cp(input, latency + 2), cp(addrWr, latency + 2), cp(addrRd, 1))
+  
   override val hash = Seq(input,addrWr,latency).hashCode()
-}
 
-case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U](using input.hw) {
+
+case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U](using input.hw):
   val timeRd: Int = T + 1
 
   override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrWr, timeRd))
 
   override val pipeline = 1
 
-  override def implement(cp: (Sig[?], Int) => Component): Component = {
-    val mem = new ir.rtl.RAMWr(cp(addrWr, latency + 2), cp(input, latency + 2))
-    new ir.rtl.RAMRd(mem, cp(addrWr, timeRd))
-  }
+  override def implement(cp: (Sig[?], Int) => Component): Component = ir.rtl.RAM(cp(input, latency + 2), cp(addrWr, latency + 2), cp(addrWr, timeRd))
+  
   override val hash = Seq(input,addrWr,latency).hashCode()
-}
 
-/*
-case class DoubleShiftReg[U](input:Sig[U], control:Sig[Int]) extends Sig[U]{
-  require(control.hw==Unsigned(1))
-  override val hw: HW[U] = input.hw
+
+case class DoubleShiftReg[U] private (input: Sig[U], switch: Sig[Int], timer: Sig[Int]) extends Sig[U](using input.hw):
+
+  override val hash = Seq(input, switch, timer).hashCode()
+  
   override val pipeline = 1
-  override def parents: Seq[(Sig[?], Int)] = Seq((input, 2), (input, 0), (control, 0))
-  def implement(cp: (Sig[?], Int) => Component): Component =new ir.rtl.Mux(cp(control,0), Seq(cp(input,0),cp(input,2)))
-}
-*/
-/*
-object RAM {
 
-  case class RAMWr[U](wrAddress: Sig[Int], input: Sig[U], _latency: Int) extends Operator[U](wrAddress, input)(input.hw) {
-    override def implement(implicit cp: Sig[_] => Component): Component = new ir.rtl.RAMWr(wrAddress, input)
+  override def parents: Seq[(Sig[?], Int)] =  
+    switch match
+      case Const(value) if value == 1 => Seq((timer, 0), (switch,0), (input,1), (input,-1))
+      case _ => Seq((timer, 0), (switch,0), (input,0), (input,1), (input,-1))
 
-    override val latency = _latency + 1
+  override def implement(cp: (Sig[?], Int) => Component): Component =  
+    switch match
+      case Const(value) if value == 1 => ir.rtl.Mux(cp(timer,0),Seq(cp(input, 1), cp(input, -1)))
+      case _ => ir.rtl.Mux(cp(switch, 0), Seq(cp(input, 0), ir.rtl.Mux(cp(timer,0),Seq(cp(input, 1), cp(input, -1)))))
+  
 
-    override def graphDeclaration = ""
-
-    override def graphNode = List()
-  }
-
-  case class RAMRd[U](mem: RAMWr[U], rdAddress: Sig[Int]) extends Operator[U](mem, rdAddress)(mem.hw) {
-    override def implement(implicit cp: Sig[_] => Component): Component = cp(mem) match {
-      case mem: ir.rtl.RAMWr => new ir.rtl.RAMRd(mem, rdAddress)
-      case _ => throw new Exception("Expecting a RAM component")
-    }
-
-    override val pipeline = 1
-    override val latency = 1
-
-    override def graphDeclaration = graphName + "[label=\"RAM bank (" + (1 << rdAddress.hw.size) + " × " + hw.size + " bits, latency=" + mem.latency + ") |<data> Data|<wr> Write address |<rd> Read address \",shape=record];"
-
-    override def graphNode = {
-      List(mem.wrAddress.graphName + " -> " + graphName + ":wr;",
-        //m.we.sigDef.graphName + " -> " + graphName + ":we;",
-        mem.input.graphName + " -> " + graphName + ":data;",
-        rdAddress.graphName + " -> " + graphName + ":rd;"
-      )
-    }
-
-  }
-
-  def apply[U: HW](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) = new RAMRd(new RAMWr(addrWr, input, latency), addrRd)
-}
-*/
+object DoubleShiftReg:
+  def apply[U](input: Sig[U], switch: Sig[Int], timer: Sig[Int]) =
+    require(switch.hw == Unsigned(1))
+    require(timer.hw == Unsigned(1))
+    switch match
+      case Zero() => input
+      case _ => new DoubleShiftReg(input, switch, timer)
+    
