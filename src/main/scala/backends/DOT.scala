@@ -43,7 +43,7 @@ object DOT:
     final def toRTLGraph: String = 
       // Get a unique ID for non special nodes
       val indexes = immutable.HashMap.from(mod.components.filter(_ match 
-        case _: Input | _: Output | _: Wire | _: Const | _: RAMWr => false
+        case _: Input | _: Output | _: Wire | _: Const => false
         case _ => true
       ).zipWithIndex)
       
@@ -64,10 +64,11 @@ object DOT:
       // Representation of each node in the graph  
       inline def node(comp:Component, options: String) = Some(s"      ${getName(comp)}[$options];\n")
       val nodes=mod.components.flatMap(cur => cur match
-          case _: Output | _: Input | _: RAMWr | _: Wire | _: Const => None
+          case _: Output | _: Input | _: Wire | _: Const => None
           case Register(_, cycles) if cycles == 1 => node(cur, """label="Reg",shape=square""")
           case Register(_, cycles) => node(cur, s"""label="Buffer($cycles cycles)",shape=record""")
           case Plus(_) => node(cur, """label="+",shape=circle""")
+          case Times(_, _) => node(cur, """label="*",shape=circle""")
           case Or(_) => node(cur, """label="|",shape=circle""")
           case Xor(_) => node(cur, """label="^",shape=circle""")
           case And(_) => node(cur, """label="&",shape=circle""")
@@ -75,20 +76,20 @@ object DOT:
           case Tap(_,range) => node(cur, s"""label="[${if (range.size > 1) s"${range.last}:" else ""}${range.start}]",shape=triangle,orientation=270""")
           case ROM(address, values) => node(cur, s"""label="<title>ROM (${values.size} × ${cur.size} bits) |${values.map(_.toString).mkString("|")}",shape=record""")
           case Mux(_, _) => node(cur, s"""label="",shape=invhouse,orientation=90""")
-          case RAMRd(_,rd) => node(cur, s"""label="RAM bank (${1 << rd.size} × ${cur.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record""")
+          case RAM(_,_,rd) => node(cur, s"""label="RAM bank (${1 << rd.size} × ${cur.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record""")
           case Extern(_,_,module,_,_) => node(cur, s"""label="$module"""")
           case _ => node(cur, s"""label="${cur.getClass.getSimpleName}"""")
       ).mkString("")
 
       // Edges of the graph  
       inline def edge(from: Component, to: String) = s"  ${getName(from)}:e -> $to[penwidth=${1 + BigInt(from.size).bitLength}];\n"
-      val edges = mod.components.flatMap {cur => cur match
-          case Wire(_) | _: RAMWr => Seq()
-          case RAMRd(RAMWr(wr,input),rd) => Seq(edge(wr,getName(cur)+":wr:w"),edge(rd,getName(cur)+":rd:w"),edge(input,getName(cur)+":data:w"))
+      val edges = mod.components.flatMap (cur => cur match
+          case Wire(_) => Seq()
+          case RAM(input,wr,rd) => Seq(edge(wr,getName(cur)+":wr:w"),edge(rd,getName(cur)+":rd:w"),edge(input,getName(cur)+":data:w"))
           case ROM(address, _) => edge(address,s"${getName(cur)}:title:w")
           case Mux(address, inputs) => inputs.map(edge(_,s"${getName(cur)}:w")) :+ edge(address,s"${getName(cur)}:s") 
           case _ => cur.parents.map(edge(_,s"${getName(cur)}:w"))
-      }.mkString("")
+      ).mkString("")
 
       // outputs the graph  
       var res = new StringBuilder
@@ -142,17 +143,23 @@ object DOT:
         case signals.Reset =>
           consts.addOne("Reset")
           s"c${consts.size}"
+        case signals.Timer(limit) if limit == sb.T =>
+          consts.addOne("Timer")
+          s"c${consts.size}"
         case _ => s"s${indexes(sig) + 1}"
 
       // Node declaration in the graph  
       inline def node(sig:Sig[?], options: String) = Some(s"      ${getName(sig)}[$options];\n")
       val nodes=sigs.flatMap(cur => cur match
         case _: signals.Input[?] | _: signals.Const[?] | signals.Next | signals.Reset => None
-        case cur:signals.AssociativeSig[?] => node(cur, s"""label="${cur.op}"""")
-        case cur:signals.Plus[?] => node(cur, s"""label="+"""")
-        case cur:signals.Minus[?] => node(cur, s"""label="-"""")
-        case cur:signals.Times[?] => node(cur, s"""label="*"""")
+        case signals.Timer(limit) if limit == sb.T => None
+        case cur:signals.AssociativeSig[?] => node(cur, s"""label="${cur.op}",shape=circle""")
+        case cur:signals.Plus[?] => node(cur, s"""label="+",shape=circle""")
+        case cur:signals.Minus[?] => node(cur, s"""label="-",shape=circle""")
+        case cur:signals.Times[?] => node(cur, s"""label="*",shape=circle""")
+        case signals.Tap(_,range) => node(cur, s"""label="[${if (range.size > 1) s"${range.last}:" else ""}${range.start}]",shape=triangle,orientation=270""")
         case signals.ROM(values,address) => node(cur, s"""label="<title>ROM (${values.size} × ${cur.hw.size} bits) |${values.map(_.toString).mkString("|")}",shape=record""")
+        case signals.Mux(_, _) => node(cur, s"""label="",shape=invhouse,orientation=90""")
         case signals.DualControlRAM(input,wr,rd,_) => node(cur, s"""label="RAM bank (${1 << rd.hw.size} × ${cur.hw.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record""")
         case signals.SingleControlRAM(input,wr,_,_) => node(cur, s"""label="RAM bank (${1 << wr.hw.size} × ${cur.hw.size} bits) |<data> Data|<wr> Write address |<rd> Read address ",shape=record""")
         case _ => node(cur, s"""label="${cur.getClass.getSimpleName}"""")
@@ -160,12 +167,14 @@ object DOT:
 
       //Edges  
       inline def edge(from: Sig[?], to: String) = s"  ${getName(from)}:e -> $to[penwidth=${1 + BigInt(from.hw.size).bitLength}];\n"
-      val edges=sigs.flatMap {cur => cur match
+      val edges=sigs.flatMap (cur => cur match
+        case signals.Timer(limit) if limit == sb.T => Seq()
         case signals.ROM(_,address) => Seq(edge(address,s"${getName(cur)}:title:w"))
+        case signals.Mux(address, inputs) => inputs.map(edge(_,s"${getName(cur)}:w")) :+ edge(address,s"${getName(cur)}:s")
         case signals.DualControlRAM(input,wr,rd,_) => Seq(edge(input,s"${getName(cur)}:data:w"),edge(wr,s"${getName(cur)}:wr:w"),edge(rd,s"${getName(cur)}:rd:w"))
         case signals.SingleControlRAM(input,wr,_,_) => Seq(edge(input,s"${getName(cur)}:data:w"),edge(wr,s"${getName(cur)}:wr:w"),edge(wr,s"${getName(cur)}:rd:w"))
         case _ => cur.parents.map(parent=>edge(parent._1,getName(cur)))
-      }.mkString("")
+      ).mkString("")
         
       // Final output  
       val res = new StringBuilder

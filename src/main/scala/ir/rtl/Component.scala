@@ -114,12 +114,6 @@ case class Concat(inputs: Seq[Component]) extends ImmutableComponent(inputs.map(
 
 case class Tap(input: Component, range: Range) extends ImmutableComponent(range.size, input)
 
-@deprecated
-case class RAMWr(wrAddress: Component, input: Component) extends ImmutableComponent(input.size, wrAddress, input)
-
-@deprecated
-case class RAMRd(mem: RAMWr, rdAddress: Component) extends ImmutableComponent(mem.size, mem, rdAddress)
-
 case class RAM(data: Component, wr: Component, rd: Component) extends ImmutableComponent(data.size, data, wr, rd)
 
 case class Extern(override val size:Int, filename:String, module:String, outputName:String, inputs:(String,Component)*) extends ImmutableComponent(size,inputs.map(_._2):_*)

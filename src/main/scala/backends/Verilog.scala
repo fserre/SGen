@@ -56,7 +56,6 @@ object Verilog {
 
       val declarations = (mod.components.flatMap(cur => cur match
           case _: Output | _: Input | _: Const | _: Wire => Seq()
-          case _: RAMRd => Seq(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
           case Mux(address, inputs) if address.size > 1 => Seq(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
           case Register(_, cycles) if cycles == 1   => Seq(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
           case Register(_, cycles) if cycles == 2 => Seq(
@@ -65,7 +64,6 @@ object Verilog {
           case Register(_, cycles) => Seq(
             s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur,1)} [${cycles-1}:0];",
             s"wire ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
-          case cur:RAMWr => Seq(s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)} [${(1 << cur.wrAddress.size) - 1}:0]; // synthesis attribute ram_style of ${getName(cur)} is block")
           case RAM(data, wr, rd) => Seq(
             s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur, 1)} [${(1 << wr.size) - 1}:0]; // synthesis attribute ram_style of ${getName(cur, 1)} is block",
             s"reg ${if (cur.size != 1) s"[${cur.size - 1}:0] " else ""}${getName(cur)};")
@@ -98,8 +96,6 @@ object Verilog {
           s"${getName(cur,1)} [0] <= ${getName(input)};",
           s"for (i = 1; i < $cycles; i = i + 1)",
           s"  ${getName(cur,1)} [i] <= ${getName(cur,1)} [i - 1];")
-        case cur: RAMWr => Seq(s"${getName(cur)} [${getName(cur.wrAddress)}] <= ${getName(cur.input)};")
-        case cur: RAMRd => Seq(s"${getName(cur)} <= ${getName(cur.mem)} [${getName(cur.rdAddress)}];")
         case RAM(data, wr, rd) => Seq(
           s"${getName(cur,1)} [${getName(wr)}] <= ${getName(data)};",
           s"${getName(cur)} <= ${getName(cur,1)} [${getName(rd)}];")

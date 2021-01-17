@@ -80,4 +80,7 @@ object LateCounter {
 
 object Timer {
   def apply(limit: Int): Sig[Int] = if (limit == 1) signals.Const(0)(Unsigned(0)) else new Counter(limit, One(using Unsigned(1)), Next, 0)
+  def unapply(arg: Sig[Int]) = arg match
+    case Counter(limit, signals.One(), signals.Next, resetValue, delayTrigger) if resetValue==0 && delayTrigger==0 => Some(limit)
+    case _ => None
 }

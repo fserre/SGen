@@ -118,20 +118,20 @@ object Minus {
   def unapply[T](arg: Minus[T]): Option[(Sig[T], Sig[T])] = Some(arg.lhs, arg.rhs)
 }
 
-object Times {
+object Times:
   @tailrec
-  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
+  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = 
     implicit val hw: HW[T] = lhs.hw
     import hw.num._
-    (lhs, rhs) match {
+    (lhs, rhs) match
       case (Const(vl), Const(vr)) => Const(vl * vr)
       case (_, Zero()) => Zero[T]()
       case (_, One()) => lhs
       case (_, Opposite(One())) => Opposite(lhs)
-      case (_, Mux(address, inputs)) if inputs.forall(_ match {
+      case (_, Mux(address, inputs)) if inputs.forall(_ match 
         case Zero() | One() | Opposite(One()) => true
         case _ => false
-      }) => Mux(address, inputs.map {
+      ) => Mux(address, inputs.map {
         case Zero() => Zero()
         case One() => lhs
         case Opposite(One()) => Opposite(lhs)
@@ -139,9 +139,9 @@ object Times {
       })
       case (lhs: Const[T], _) if rhs.hw == lhs.hw => Times(rhs, lhs)
       case _ => hw.times(lhs, rhs)
-    }
-  }
-}
+    
+  
+
 
 object Zero{
   def unapply[T](arg:Sig[T]): Boolean ={
