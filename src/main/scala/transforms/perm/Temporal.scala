@@ -34,12 +34,12 @@ import scala.annotation.tailrec
 
 case class SmallTemporal[U: HW] (v3: Seq[Vec[F2]], v4: Seq[Vec[F2]]) extends SLP(v4.head.m + 1, v3.head.m, v4.size):
   require(v3.size == size)
-  
+
   override val P3=v3.map(v => Matrix.zeros(t-1, k) / v.transpose)
-  
+
   override val P4=v4.map(v => (Matrix.identity[F2](t - 1)::Matrix.zeros(t-1, 1)) / (v.transpose::Vec.fromInt(1, 1)))
-  
-  override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] = 
+
+  override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] =
     require(inputs.size == K)
     val counter = Counter(size)
     val timer = Timer(T)
@@ -50,7 +50,7 @@ case class SmallTemporal[U: HW] (v3: Seq[Vec[F2]], v4: Seq[Vec[F2]]) extends SLP
       val switch = basis ^ offset // if set, we switch current pair
       DoubleShiftReg(input, switch, timer(0))
     )
-  
+
 
 case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]], control:RAMControl) extends SLP(P3.head.m, P3.head.n, P3.size) {
   // look if we have a bit matrix in the form of I_r oplus P, which could reduce the memory size (as it happens on Cooley Tukey FFT)
@@ -144,11 +144,17 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
   override def hasSinglePortedMem: Boolean = control!=RAMControl.Dual
 }
 
-object Temporal {
-  def apply[U: HW](P3: Seq[Matrix[F2]], P4: Seq[Matrix[F2]], control:RAMControl): AcyclicStreamingModule[U] = if (P3.forall(_.isZero) && P4.forall(_.isIdentity))
-    Identity(P3.head.m, P3.head.n)
-  else
-    new Temporal(P3, P4,control)
+object Temporal:
+  def apply[U: HW](P3: Seq[Matrix[F2]], P4: Seq[Matrix[F2]], control:RAMControl): AcyclicStreamingModule[U] = 
+    if P3.forall(_.isZero) && P4.forall(_.isIdentity) then
+      Identity(P3.head.m, P3.head.n)
+    else if P3.forall(mat => mat.values.take((mat.m-1)*mat.n).forall(!_.value)) && P4.forall(mat => (0 until (mat.m-1)).forall(j => (0 until mat.n).forall(i => mat.values(j*mat.m+i).value== (i == j) ))) then 
+      val v3 = P3.map(mat => mat.row(mat.m-1))
+      val v4 = P4.map(mat => mat.row(mat.m-1)(0 until (mat.n-1)))
+      new SmallTemporal(v3, v4)
+    else
+      new Temporal(P3, P4,control)
+      
   def apply[U: HW](P3: Matrix[F2], P4: Matrix[F2], control:RAMControl): AcyclicStreamingModule[U] = Temporal(Seq(P3), Seq(P4),control)
-}
+
 //if(dualPorted)RAMControl.Dual else RAMControl.SinglePorted
