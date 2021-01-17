@@ -34,24 +34,23 @@ import scala.annotation.tailrec
 
 case class SmallTemporal[U: HW] (v3: Seq[Vec[F2]], v4: Seq[Vec[F2]]) extends SLP(v4.head.m + 1, v3.head.m, v4.size):
   require(v3.size == size)
-  require(size == 1) // Todo: Multiple perms
   
   override val P3=v3.map(v => Matrix.zeros(t-1, k) / v.transpose)
   
   override val P4=v4.map(v => (Matrix.identity[F2](t - 1)::Matrix.zeros(t-1, 1)) / (v.transpose::Vec.fromInt(1, 1)))
   
-  override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] = {
+  override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] = 
     require(inputs.size == K)
+    val counter = Counter(size)
     val timer = Timer(T)
     val timerH = timer(1 until t)
-    val basis = timerH scalar v4.head
+    val basis = Mux(counter, v4.map(timerH scalar _))
     inputs.zipWithIndex.map((input, p) =>
-      val offset = Const(p)(using Unsigned(k)) scalar v3.head
+      val offset = Mux(counter, v3.map(Const(p)(using Unsigned(k)) scalar _))
       val switch = basis ^ offset // if set, we switch current pair
-      //val control = switch ? ((~timer(0)) :: Const(0)(using Unsigned(1)), Const(1)(using Unsigned(2)))
       DoubleShiftReg(input, switch, timer(0))
     )
-  }
+  
 
 case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override val P4: Seq[Matrix[F2]], control:RAMControl) extends SLP(P3.head.m, P3.head.n, P3.size) {
   // look if we have a bit matrix in the form of I_r oplus P, which could reduce the memory size (as it happens on Cooley Tukey FFT)

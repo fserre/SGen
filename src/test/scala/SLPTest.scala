@@ -42,7 +42,18 @@ object SLPTest extends Properties("SLP") {
       SmallTemporal(Seq(v3), Seq(v4))(Unsigned(16))
       
   property("ShiftReg") = forAll(genShiftReg, Gen.choose(0, 10))((sb, gap) => sb.test(2, gap).contains(0))
-  
+
+  val genShiftRegMulti: Gen[AcyclicStreamingModule[Int]] =
+    for
+      t <- Gen.choose(2, 5)
+      k <- Gen.choose(1, 5)
+      n <- Gen.choose(2, 5)
+      v3 <- Gen.containerOfN[Seq,Vec[F2]](n, genVec(k))
+      v4 <- Gen.containerOfN[Seq,Vec[F2]](n, genVec(t-1))
+    yield
+      SmallTemporal(v3, v4)(Unsigned(16))
+
+  property("ShiftReg Multi") = forAll(genShiftRegMulti, Gen.choose(0, 10))((sb, gap) => sb.test(5, gap).contains(0))
   
   /*
   
