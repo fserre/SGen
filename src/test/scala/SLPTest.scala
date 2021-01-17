@@ -55,7 +55,7 @@ object SLPTest extends Properties("SLP") {
 
   property("ShiftReg Multi") = forAll(genShiftRegMulti, Gen.choose(0, 10))((sb, gap) => sb.test(5, gap).contains(0))
   
-  /*
+  
   
   val genTemporal: Gen[AcyclicStreamingModule[Int]] = 
     for 
@@ -153,5 +153,5 @@ object SLPTest extends Properties("SLP") {
 
   property("LinearPerm") = forAll(genLinPerm) (sb => sb.test(3).contains(0))
 
-  */
+  
 }
