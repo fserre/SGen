@@ -49,7 +49,7 @@ object GenerateWeb extends App:
   //val uut = Identity(2,2)(Unsigned(16))
   //val uut = Spatial(Matrix(1,1,"1"),Matrix(1,1,"1"))(Unsigned(16))
   //val uut = Temporal(Matrix(2,2,"1011"),Matrix(2,2,"0110"),RAMControl.Dual)(Unsigned(16))
-  val uut = DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(8,8))).asInstanceOf[AcyclicStreamingModule[?]]
+  val uut = DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(8,8))).asInstanceOf[AcyclicStreamingModule[?]]
   //val uut = DFT.CTDFT(4,1).stream(2,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[AcyclicStreamingModule[?]]
   //val uut = DFT.CTDFT(15,5).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[SB[?]]
   //val uut = DFT.CTDFT(17,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[AcyclicStreamingModule[?]]

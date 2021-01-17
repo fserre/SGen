@@ -52,28 +52,6 @@ object Plus extends AssociativeSigCompanionT[Plus] {
     }
   }
 }*/
-abstract class Plus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
-
-object Plus{
-  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
-    require(lhs.hw == rhs.hw)
-    implicit val hw: HW[T] = lhs.hw
-    import hw.num._
-    (lhs, rhs) match {
-      case (Const(vl), Const(vr)) => Const(vl + vr)
-      case (_, Zero()) => lhs
-      case (lhs: Const[T], _) => Times(rhs, lhs)
-      case (_, Opposite(rhs)) => lhs - rhs
-      case (Opposite(lhs), _) => rhs - lhs
-      case _ => hw.plus(lhs, rhs)
-    }
-  }
-
-}
-
-abstract class Minus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
-
-abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
 
 /*object Plus {
   def apply[T: HW](lhs: Sig[T], rhs: Sig[T]):Sig[T] = {
@@ -102,84 +80,97 @@ abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lh
   }
 }*/
 
-object Minus {
-  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = {
+abstract class Plus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
+
+object Plus:
+  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = 
     require(lhs.hw == rhs.hw)
-    implicit val hw: HW[T] = lhs.hw
-    import hw.num._
-    (lhs, rhs) match {
+    given HW[T] = lhs.hw
+    import lhs.hw.num._
+    (lhs, rhs) match 
+      case (Const(vl), Const(vr)) => Const(vl + vr)
+      case (_, Zero()) => lhs
+      case (lhs: Const[T], _) => Times(rhs, lhs)
+      case (_, Opposite(rhs)) => lhs - rhs
+      case (Opposite(lhs), _) => rhs - lhs
+      case _ => lhs.hw.plus(lhs, rhs)
+
+abstract class Minus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
+
+object Minus:
+  def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = 
+    require(lhs.hw == rhs.hw)
+    given HW[T] = lhs.hw
+    import lhs.hw.num._
+    (lhs, rhs) match 
       case (Const(vl), Const(vr)) => Const(vl - vr)
       case (_, Zero()) => lhs
       case (_, Opposite(rhs)) => Plus(lhs, rhs)
-      case _ => hw.minus(lhs, rhs)
-    }
-  }
+      case (Opposite(lhs), _) => Opposite(Plus(lhs, rhs))
+      case _ => lhs.hw.minus(lhs, rhs)
 
   def unapply[T](arg: Minus[T]): Option[(Sig[T], Sig[T])] = Some(arg.lhs, arg.rhs)
-}
+
+
+abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
 
 object Times:
-  @tailrec
+  //@tailrec
   def apply[T](lhs: Sig[T], rhs: Sig[T]): Sig[T] = 
-    implicit val hw: HW[T] = lhs.hw
-    import hw.num._
+    given HW[T] = lhs.hw
+    import lhs.hw.num._
     (lhs, rhs) match
       case (Const(vl), Const(vr)) => Const(vl * vr)
-      case (_, Zero()) => Zero[T]()
+      case (_, Zero()) => Zero[T]
+      case (Zero(), _) => Zero[T]
       case (_, One()) => lhs
-      case (_, Opposite(One())) => Opposite(lhs)
-      case (_, Mux(address, inputs)) if inputs.forall(_ match 
-        case Zero() | One() | Opposite(One()) => true
-        case _ => false
-      ) => Mux(address, inputs.map {
-        case Zero() => Zero()
-        case One() => lhs
-        case Opposite(One()) => Opposite(lhs)
-        case _ => throw new Exception("Error")
-      })
-      case (lhs: Const[T], _) if rhs.hw == lhs.hw => Times(rhs, lhs)
-      case _ => hw.times(lhs, rhs)
+      case (One(), _) if lhs.hw == rhs.hw => rhs
+      case (_, Mux(address, inputs)) if inputs.filter{
+          case Zero() | One() | Opposite(One()) => false
+          case _ => true
+        }.distinct.size <= 1 => Mux(address,inputs.map(lhs * _))
+
+      // Following cases may induce supplementary hardware in front of the node to implement the negation. 
+      // In case of FFTs, these reduce the number of multipliers used (triggers common subexpression elimination), and as butterflies come next, negation will be handled with no cost. 
+      case (_, Opposite(x)) => Opposite(lhs * x)
+      case (Opposite(x),_) => Opposite(x * lhs)
+      case (_, ROM(values, address)) if values.flatMap{
+          case x if rhs.hw.bitsOf(x) == rhs.hw.bitsOf(rhs.hw.num.zero) => None
+          case x if rhs.hw.bitsOf(x) == rhs.hw.bitsOf(rhs.hw.num.one) => None
+          case x if rhs.hw.num.lt(x, rhs.hw.num.zero) => Some(rhs.hw.bitsOf(-x))
+          case x => Some(rhs.hw.bitsOf(x))
+        }.distinct.size == 1 => Mux(address, values.map(lhs * Const(_)(using rhs.hw))) 
+      case _ => lhs.hw.times(lhs, rhs)
     
   
 
 
-object Zero{
-  def unapply[T](arg:Sig[T]): Boolean ={
+object Zero:
+  inline def unapply[T](arg:Sig[T]): Boolean =
     val hw=arg.hw
-    arg match{
-      case Const(value) if hw.bitsOf(value) == hw.bitsOf(hw.num.zero) => true
+    arg match
+      case Const(v) if hw.bitsOf(v) == hw.bitsOf(hw.num.zero) => true
       case _ => false
-    }
-  }
-  def apply[T]()(implicit hw:HW[T]): Sig[T] =Const(implicitly[HW[T]].num.zero)
-}
+  inline def apply[T:HW]: Sig[T] = Const(HW[T].num.zero)
 
-object One{
-  def unapply[T](arg:Sig[T]): Boolean ={
+
+object One:
+  inline def unapply[T](arg:Sig[T]): Boolean =
     val hw=arg.hw
-    arg match{
-      case Const(value) if hw.valueOf(hw.bitsOf(value))==hw.num.one => true
+    arg match
+      case Const(value) if hw.bitsOf(value) == hw.bitsOf(hw.num.one) => true
       case _ => false
-    }
-  }
-  def apply[T: HW]: Sig[T] = Const(HW[T].num.one)
-}
+  inline def apply[T: HW]: Sig[T] = Const(HW[T].num.one)
 
-object Opposite {
-  def unapply[T](arg: Sig[T]): Option[Sig[T]] = {
+object Opposite:
+  def unapply[T](arg: Sig[T]): Option[Sig[T]] = 
     val hw = arg.hw
-    arg match {
+    arg match 
       case Const(value) if hw.num.lt(value, hw.num.zero) => Some(Const(hw.num.negate(value))(using hw))
       case Minus(Zero(), arg) => Some(arg)
       case _ => None
-    }
-  }
-
-  def apply[T](arg: Sig[T]): Sig[T] = {
+  def apply[T](arg: Sig[T]): Sig[T] = 
     implicit val hw: HW[T] = arg.hw
-    arg match {
-      case Opposite(arg) => arg
-      case _ => Zero[T]() - arg
-    }
-  }
-}
+    arg match 
+      case Opposite(v) => v
+      case _ => Zero[T] - arg
