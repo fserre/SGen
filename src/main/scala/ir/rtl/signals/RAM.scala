@@ -24,9 +24,9 @@
 package ir.rtl.signals
 
 import ir.rtl.{Component, AcyclicStreamingModule}
-import ir.rtl.hardwaretype.{HW,Unsigned}
+import ir.rtl.hardwaretype.{HW, Unsigned}
 
-
+/** Signal that represents a RAM which read and write addresses are controled by two independent signals */
 case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], latency: Int) extends Sig[U](using input.hw):
   override def parents: Seq[(Sig[?], Int)] = Seq((input, latency + 2), (addrWr, latency + 2), (addrRd, 1))
 
@@ -36,7 +36,7 @@ case class DualControlRAM[U](input: Sig[U], addrWr: Sig[Int], addrRd: Sig[Int], 
   
   override val hash = Seq(input,addrWr,latency).hashCode()
 
-
+/** Signal that represents a RAM which read and write addresses are controled by the same signal */
 case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T: Int) extends Sig[U](using input.hw):
   val timeRd: Int = T + 1
 
@@ -48,7 +48,7 @@ case class SingleControlRAM[U](input: Sig[U], addrWr: Sig[Int], latency: Int, T:
   
   override val hash = Seq(input,addrWr,latency).hashCode()
 
-
+/** Signal that computes temporal permutations using a double shift register*/
 case class DoubleShiftReg[U] private (input: Sig[U], switch: Sig[Int], timer: Sig[Int]) extends Sig[U](using input.hw):
 
   override val hash = Seq(input, switch, timer).hashCode()
@@ -65,7 +65,7 @@ case class DoubleShiftReg[U] private (input: Sig[U], switch: Sig[Int], timer: Si
       case Const(value) if value == 1 => ir.rtl.Mux(cp(timer,0),Seq(cp(input, 1), cp(input, -1)))
       case _ => ir.rtl.Mux(cp(switch, 0), Seq(cp(input, 0), ir.rtl.Mux(cp(timer,0),Seq(cp(input, 1), cp(input, -1)))))
   
-
+/** Companion object of class DoubleShiftReg */
 object DoubleShiftReg:
   def apply[U](input: Sig[U], switch: Sig[Int], timer: Sig[Int]) =
     require(switch.hw == Unsigned(1))

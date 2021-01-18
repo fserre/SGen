@@ -26,28 +26,44 @@ package ir.rtl.signals
 import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
+/** Input signal.
+ * @param input Input identifier (from 0 to AcyclicStreamingModule.K)
+ * @param HW$T$0 Hardware datatype of the signal
+ * @tparam T Software datatype of the signal
+ */
 case class Input[T: HW](input: Int) extends Source[T]:
-  override def implement: Component = ???
+  override def implement: Component = ??? // node is handled by AcyclicStreamingModule directly
 
   override val hash = input.hashCode()
 
 
+/**
+  * Next signal (it is set when a new signal is entering, 0 otherwise)
+  */
 case object Next extends Source(using Unsigned(1)):
   override val hash="Next".hashCode()
   
-  override def implement: Component = ???
+  override def implement: Component = ??? // node is handled by AcyclicStreamingModule directly
 
 
+/**
+ * Reset signal (set at the beginning, 0 otherwise)
+ */
 case object Reset extends Source(using Unsigned(1)):
-  override def implement: Component = ???
+  override def implement: Component = ??? // node is handled by AcyclicStreamingModule directly
 
   override val hash="Reset".hashCode()
 
-
+/**
+ * A constant (immediate) value
+ * @param value Value of the constant
+ * @param HW$T$0 Hardware datatype of the signal
+ * @tparam T Software datatype of the signal
+ */
 case class Const[T: HW](value: T) extends Source[T]:
   val bits = hw.bitsOf(value)
   
-  override def implement = ??? 
+  override def implement = ??? // node is handled by AcyclicStreamingModule directly
 
   override def equals(obj: Any): Boolean = obj match
     case other: Const[?] => other.hw == hw && bits == other.bits
@@ -55,7 +71,16 @@ case class Const[T: HW](value: T) extends Source[T]:
   
   override val hash = hw.bitsOf(value).hashCode()
 
-case object Null:
+/**
+  * Null signals are represented by signals of size 0 
+  */
+object Null:
+  /**
+    * Creates a null signal
+    */
   def apply(): Sig[Int] = Const(0)(Unsigned(0))
 
+  /**
+   * Checks if a signal is null
+   */
   def unapply[T](arg: Sig[T]): Boolean = arg.hw == Unsigned(0)

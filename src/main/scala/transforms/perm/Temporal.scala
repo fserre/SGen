@@ -35,9 +35,9 @@ import scala.annotation.tailrec
 case class SmallTemporal[U: HW] (v3: Seq[Vec[F2]], v4: Seq[Vec[F2]]) extends SLP(v4.head.m + 1, v3.head.m, v4.size):
   require(v3.size == size)
 
-  override val P3=v3.map(v => Matrix.zeros(t-1, k) / v.transpose)
+  override val P3 = v3.map(v => Matrix.zeros(t-1, k) / v.transpose)
 
-  override val P4=v4.map(v => (Matrix.identity[F2](t - 1)::Matrix.zeros(t-1, 1)) / (v.transpose::Vec.fromInt(1, 1)))
+  override val P4 = v4.map(v => (Matrix.identity[F2](t - 1) :: Matrix.zeros(t-1, 1)) / (v.transpose :: Vec.fromInt(1, 1)))
 
   override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] =
     require(inputs.size == K)

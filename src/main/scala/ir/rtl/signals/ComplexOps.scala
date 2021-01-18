@@ -27,54 +27,64 @@ import ir.rtl.Component
 import ir.rtl.hardwaretype.{ComplexHW, HW}
 import linalg.Fields.Complex
 
-case class Re[T] private(input: Sig[Complex[T]]) extends Operator[T](input)(using input.hw.innerHW) {
-  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Tap(cp(input),0 until hw.size)
-  }
-object Re{
-  def apply[T](input:Sig[Complex[T]]): Sig[T] =input match{
+/**
+ * Real part of a complex signal
+ * 
+ * @param input A complex signal
+ * @tparam T Software datatype
+ */
+case class Re[T] private (input: Sig[Complex[T]]) extends Operator[T](input)(using input.hw.innerHW):
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Tap(cp(input),0 until hw.size)
+
+/** Companion object of Re*/
+object Re:
+  /**
+   * Get the real part of a complex signal 
+   */
+  def apply[T](input:Sig[Complex[T]]): Sig[T] =input match
     case Const(value) => Const(value.re)(input.hw.innerHW)
-    case Cpx(real,_)=>real
-    case _ => new Re(input)
-  }
+    case Cpx(real,_) => real
+    case _ => Re(input)
 
-  def unapply[T](arg: Sig[T]): Option[Sig[Complex[T]]] = arg match{
-    case arg:Re[T]=>Some(arg.input)
-    case _ => None
-  }
-}
+/**
+ * Immaginary part of a complex signal
+ *
+ * @param input A complex signal
+ * @tparam T Software datatype
+ */
+case class Im[T] private (input: Sig[Complex[T]]) extends Operator[T](input)(using input.hw.innerHW):
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Tap(cp(input),hw.size until (hw.size * 2))
 
-case class Im[T] private(input: Sig[Complex[T]]) extends Operator[T](input)(using input.hw.innerHW) {
-  override def implement(implicit cp: Sig[?] => Component): Component =new ir.rtl.Tap(cp(input),hw.size until (hw.size*2))
-
-}
-
-object Im{
-  def apply[T](input:Sig[Complex[T]]): Sig[T] =input match{
+/** Companion object of Im*/
+object Im:
+  /**
+   * Get the immaginary part of a complex signal 
+   */
+  def apply[T](input:Sig[Complex[T]]): Sig[T] =input match
     case Const(value) => Const(value.im)(input.hw.innerHW)
-    case Cpx(_,im)=>im
-    case _ => new Im(input)
-  }
+    case Cpx(_,im) => im
+    case _ => Im(input)
 
-  def unapply[T](arg: Sig[T]): Option[Sig[Complex[T]]] = arg match{
-    case arg:Im[T]=>Some(arg.input)
-    case _ => None
-  }
-}
+/**
+ * Complex signal formed by two signal components
+ *
+ * @param real Real part
+ * @param im Immaginary part
+ * @tparam T Software datatype of the components
+ */
+case class Cpx[T] private (real: Sig[T], im: Sig[T]) extends Operator[Complex[T]](real, im)(using ComplexHW(real.hw)):
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Concat(Vector(cp(im),cp(real)))
 
-
-case class Cpx[T] private(real: Sig[T], im: Sig[T]) extends Operator[Complex[T]](real, im)(using ComplexHW(real.hw)) {
-  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Concat(Vector(cp(im),cp(real)))
-
-}
-object Cpx{
-  def apply[T](real: Sig[T], im: Sig[T]): Sig[Complex[T]] = (real, im) match {
+/** Companion object of Cpx */
+object Cpx:
+  /**
+   * Get a complex signal out of two signal components 
+   *
+   * @param real Real part
+   * @param im Immaginary part
+   * @tparam T Software datatype of the components
+   */
+  def apply[T](real: Sig[T], im: Sig[T]): Sig[Complex[T]] = (real, im) match
     case (Const(re), Const(im)) => Const(Complex(re, im)(using real.hw.num))(using ComplexHW(real.hw))
     case (Re(cpxReal),Im(cpxIm)) if cpxReal==cpxIm => cpxReal
-    case _ => new Cpx(real,im)
-  }
-
-  def unapply[T](arg: Sig[Complex[T]]): Option[(Sig[T], Sig[T])] = arg match{
-    case arg:Cpx[T] => Some((arg.real,arg.im))
-    case _ => None
-  }
-}
+    case _ => Cpx(real,im)

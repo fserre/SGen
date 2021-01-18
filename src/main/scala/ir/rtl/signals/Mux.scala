@@ -27,14 +27,16 @@ import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype.{ComplexHW, HW, Unsigned}
 import linalg.Fields.Complex
 
+/** Class representing a multiplexer signal */
 case class Mux[U] private(address: Sig[Int], inputs: Seq[Sig[U]]) extends Operator[U](address +: inputs: _*)(using inputs.head.hw):
+  /** Returns whether the multiplexer is a ROM */
   def isRom: Boolean = inputs.forall(_.isInstanceOf[Const[?]])
 
   override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Mux(cp(address), inputs.map(cp))
 
   override val pipeline = 1
 
-
+/** Companion object of the class Mux */
 object Mux:
   def apply[U](address: Sig[Int], inputs: Seq[Sig[U]]): Sig[U] = 
     require(inputs.nonEmpty)
@@ -83,6 +85,7 @@ object Mux:
                 new Mux(address, inputs)
           case _ => new Mux(address, inputs)
 
+/** Object that allows to create a ROM */
 object ROM:
   def apply[U: HW](values: Seq[U], addr: Sig[Int]): Sig[U] =  Mux(addr, values.map(v => Const(v)))
   def unapply[U](arg:Sig[U]):Option[(Seq[U],Sig[Int])]=arg match 

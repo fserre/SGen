@@ -42,60 +42,40 @@ import java.io.PrintWriter
  * Script to generate all the elements used in the different websites.
  */
 object GenerateWeb extends App:
-  //val uut = SmallTemporal(Seq(Vec.fromInt(1, 1)), Seq(Vec.fromInt(0, 0)))(Unsigned(16))
-
-
-  //val uut=transforms.fft.StreamDiagC(2,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16, 16)))
-  //val uut = Identity(2,2)(Unsigned(16))
-  //val uut = Spatial(Matrix(1,1,"1"),Matrix(1,1,"1"))(Unsigned(16))
-  //val uut = Temporal(Matrix(2,2,"1011"),Matrix(2,2,"0110"),RAMControl.Dual)(Unsigned(16))
-  val uut = DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(8,8))).asInstanceOf[AcyclicStreamingModule[?]]
-  //val uut = DFT.CTDFT(4,1).stream(2,RAMControl.Single)(ComplexHW(IEEE754(8,23))).asInstanceOf[AcyclicStreamingModule[?]]
-  //val uut = DFT.CTDFT(15,5).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[SB[?]]
-  //val uut = DFT.CTDFT(17,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(64,64))).asInstanceOf[AcyclicStreamingModule[?]]
-  //println(uut.toVerilog)
-  uut.showGraph
-  //println(uut.synthetize())
-  //println(uut.test())
-  System.exit(0)
-
   transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
-    transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
-    transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")
-    for
-      transform <- Vector("dft","dftcompact")
-      n <- 1 to 15
-      k <- 1 to Math.min(n,8)
-      r <- 1 to k
-      if n % r == 0
-      hw <- Vector("char","short","int","long","half","float","double","bfloat16")
-    do
-      val name = s"$transform-$n-$k-$r-$hw"
-      val rhw:HW[Double] = 
-        if hw == "char" then
-          FixedPoint(4, 4)
-        else if hw == "short" then
-          FixedPoint(8, 8)
-        else if hw == "int" then
-          FixedPoint(16, 16)
-        else if hw == "long" then
-          FixedPoint(32, 32)
-        else if hw == "half" then
-          IEEE754(5, 10)
-        else if hw == "float" then
-          IEEE754(8, 23)
-        else if hw == "double" then
-          IEEE754(11, 52)
-        else 
-          IEEE754(8, 7)
-
-      print(name + " - ")
-      val uut=
-        if transform=="dft" then
-          DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(rhw))
-        else
-          DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(rhw))
-      println(uut.test())
-
-
-      Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw complex $hw $transform".split(" "))
+  transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
+  transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")
+  for
+    transform <- Vector("dft","dftcompact")
+    n <- 1 to 15
+    k <- 1 to Math.min(n,8)
+    r <- 1 to k
+    if n % r == 0
+    hw <- Vector("char","short","int","long","half","float","double","bfloat16")
+  do
+    val name = s"$transform-$n-$k-$r-$hw"
+    val rhw:HW[Double] = 
+      if hw == "char" then
+        FixedPoint(4, 4)
+      else if hw == "short" then
+        FixedPoint(8, 8)
+      else if hw == "int" then
+        FixedPoint(16, 16)
+      else if hw == "long" then
+        FixedPoint(32, 32)
+      else if hw == "half" then
+        IEEE754(5, 10)
+      else if hw == "float" then
+        IEEE754(8, 23)
+      else if hw == "double" then
+        IEEE754(11, 52)
+      else 
+        IEEE754(8, 7)
+    print(name + " - ")
+    val uut=
+      if transform=="dft" then
+        DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(rhw))
+      else
+        DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(rhw))
+    println(uut.test())
+    Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw complex $hw $transform".split(" "))
