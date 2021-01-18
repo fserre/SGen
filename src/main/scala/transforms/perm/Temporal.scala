@@ -30,7 +30,7 @@ import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
 import scala.annotation.tailrec
-
+import scala.language.implicitConversions
 
 case class SmallTemporal[U: HW] (v3: Seq[Vec[F2]], v4: Seq[Vec[F2]]) extends SLP(v4.head.m + 1, v3.head.m, v4.size):
   require(v3.size == size)

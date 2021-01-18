@@ -37,7 +37,7 @@ import linalg._
  */
 abstract class Sig[T: HW]:
   val hash: Int
-  /** Parent signals of the node (each given as a pair: Sig and number of cycles of advance this parent must have compared to this signal).*/  
+  /** Parent signals of the node (each given as a pair: Sig and number of cycles of advance this parent must have compared to this signal).*/
   def parents: Seq[(Sig[?], Int)]
   /** Number of registers that should be put after this signal.*/
   def pipeline = 0
@@ -77,9 +77,9 @@ object Sig:
     def apply(i: Int): Sig[Int] = apply(i to i)
     /** Access a range of the bits of the signal (tap) */
     def apply(r: Range): Sig[Int] = Tap(lhs, r)
-  
+
   /** Additionnal operations for complex signals */
-  extension [T](lhs: Sig[Complex[T]]) 
+  extension [T](lhs: Sig[Complex[T]])
     /** Real part */
     def re:Sig[T] = Re(lhs)
     /** Imaginary part */

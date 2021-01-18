@@ -22,7 +22,7 @@
  */
 
 package transforms.perm
-
+import scala.language.implicitConversions
 import ir.rtl.hardwaretype.HW
 import ir.rtl.{Identity, AcyclicStreamingModule}
 import ir.rtl.signals._
