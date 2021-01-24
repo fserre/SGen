@@ -31,6 +31,8 @@ import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
 case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
+  val num = Numeric[Complex[Double]]
+  import num._
   def pow(x: Int): Int = {
     val j = x % (1 << r)
     val i = (x >> r) % (1 << (n - r * (l + 1)))

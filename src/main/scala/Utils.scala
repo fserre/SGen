@@ -24,11 +24,17 @@
 import scala.annotation.tailrec
 
 /** Helper functions and classes. */
-package object Utils {
+package object Utils:
   @tailrec
   def gcd(a: Int, b: Int): Int = if (b == 0) a.abs else gcd(b, a % b)
 
   def lcm(a: Int, b: Int): Int = (a * b).abs / gcd(a, b)
-
+  
   def lcm(x: Vector[Int]): Int = x.reduce(lcm)
-}
+
+  def sqrt[T: Numeric](x: T): T = x match 
+    case x: Double => Math.sqrt(x).asInstanceOf[T] // todo: see what to do for something that inherits from Double
+    case x: Float => Math.sqrt(x).toFloat.asInstanceOf[T]
+    case _ =>
+      val num = Numeric[T]
+      num.fromInt(Math.sqrt(num.toDouble(x)).toInt)

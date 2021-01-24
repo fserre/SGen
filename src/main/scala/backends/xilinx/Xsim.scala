@@ -26,6 +26,7 @@ package backends.xilinx
 import backends.xilinx.Xilinx
 import backends.Verilog._
 import ir.rtl.StreamingModule
+import linalg.Fields.Complex
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
@@ -39,10 +40,10 @@ object Xsim:
    * @param repeat Number of datasets that will be tested
    * @param addedGap Number of cycles to add between datasets, in addition to the gap required by the design
    * @return None if test threw an error, and Some(e) where e is:
-   *         - if U is Fractional (e.g. Double), the sum of the square of the relative errors,
-   *         - the sum of the absolute value of the difference  (e.g. Int).
+   *         - if U is Double or Complex[Double], the mean of the relative errors,
+   *         - the sum of the absolute value of the difference otherwise.
   */
-  extension[U] (sm: StreamingModule[U]) final def test(repeat: Int = 2, addedGap: Int = 0): Option[U] = 
+  extension[U] (sm: StreamingModule[U]) final def test(repeat: Int = 2, addedGap: Int = 0): Option[Double] = 
       // computes the expected output
       val outputs = sm.testBenchInput(repeat).grouped(sm.N).toSeq.zipWithIndex.flatMap { case (input, set) => sm.eval(input, set) }.map(sm.hw.valueOf)
       // Write the design with testbench  
@@ -69,13 +70,14 @@ object Xsim:
           val pos2 = xsim.indexOf(" ", pos1) + 1
           val pos3 = xsim.indexOf(" ", pos2)
           val res = sm.hw.valueOf(BigInt(xsim.slice(pos2, pos3)))
-          sm.hw.num match
-            case num: Fractional[U] =>
+          (res, outputs(i)) match
+            case (x: Complex[Double], y: Complex[Double]) =>
+              val num = Numeric[Complex[Double]]
               import num._
-              val diff = if res == outputs(i) then num.zero else (res - outputs(i)) / num.max(res, outputs(i))
-              diff * diff
-            case num =>
-              import num._
-              num.abs(res - outputs(i)) 
-        ).sum(sm.hw.num))
+              Math.sqrt((x-y).norm2 / Math.max(x.norm2, y.norm2)) / outputs.size  
+            case (x: Double, y: Double) => (x-y).abs / Math.max(x.abs, y.abs) / outputs.size
+            case (x, y) =>
+              import sm.hw.num._
+              (x - y).abs.toDouble
+        ).sum)
 
