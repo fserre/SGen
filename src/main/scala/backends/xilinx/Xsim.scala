@@ -36,9 +36,11 @@ import java.nio.file.{Files, Paths}
 object Xsim:
   /**
    * Run XSim on the design
-    * @param repeat Number of datasets that will be tested
-    * @param addedGap Number of cycles to add between datasets, in addition to the gap required by the design
-    * @return None if test threw an error, and Some(e) where e is the sum of the square of the errors
+   * @param repeat Number of datasets that will be tested
+   * @param addedGap Number of cycles to add between datasets, in addition to the gap required by the design
+   * @return None if test threw an error, and Some(e) where e is:
+   *         - if U is Fractional (e.g. Double), the sum of the square of the relative errors,
+   *         - the sum of the absolute value of the difference  (e.g. Int).
   */
   extension[U] (sm: StreamingModule[U]) final def test(repeat: Int = 2, addedGap: Int = 0): Option[U] = 
       // computes the expected output
@@ -67,7 +69,13 @@ object Xsim:
           val pos2 = xsim.indexOf(" ", pos1) + 1
           val pos3 = xsim.indexOf(" ", pos2)
           val res = sm.hw.valueOf(BigInt(xsim.slice(pos2, pos3)))
-          val diff = sm.hw.num.minus(res, outputs(i)) // compare with expected results
-          sm.hw.num.times(diff, diff)
+          sm.hw.num match
+            case num: Fractional[U] =>
+              import num._
+              val diff = if res == outputs(i) then num.zero else (res - outputs(i)) / num.max(res, outputs(i))
+              diff * diff
+            case num =>
+              import num._
+              num.abs(res - outputs(i)) 
         ).sum(sm.hw.num))
 
