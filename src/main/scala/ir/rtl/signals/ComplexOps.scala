@@ -44,7 +44,7 @@ object Re:
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match
     case Const(value) => Const(value.re)(input.hw.innerHW)
     case Cpx(real,_) => real
-    case _ => Re(input)
+    case _ => new Re(input)
 
 /**
  * Immaginary part of a complex signal
@@ -63,7 +63,7 @@ object Im:
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match
     case Const(value) => Const(value.im)(input.hw.innerHW)
     case Cpx(_,im) => im
-    case _ => Im(input)
+    case _ => new Im(input)
 
 /**
  * Complex signal formed by two signal components
@@ -87,4 +87,4 @@ object Cpx:
   def apply[T](real: Sig[T], im: Sig[T]): Sig[Complex[T]] = (real, im) match
     case (Const(re), Const(im)) => Const(Complex(re, im)(using real.hw.num))(using ComplexHW(real.hw))
     case (Re(cpxReal),Im(cpxIm)) if cpxReal==cpxIm => cpxReal
-    case _ => Cpx(real,im)
+    case _ => new Cpx(real,im)
