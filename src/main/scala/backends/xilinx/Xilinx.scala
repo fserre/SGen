@@ -25,6 +25,9 @@ package backends.xilinx
 import java.nio.file.{Files, Paths}
 import scala.sys.process._
 
+/**
+ * Helper functions to use Xilinx suite
+ */
 object Xilinx:
   private lazy val xDir = 
     if !Files.exists(Paths.get("xilinx.txt")) then
@@ -39,6 +42,12 @@ object Xilinx:
   
   private val ext = if (System.getProperty("os.name") contains "Windows") ".bat" else ""
   
+  /**
+   * Run a Xilinx command 
+   * @param command Xilinx executable
+   * @param param Parameters
+   * @returns the output of the command 
+   */
   def run(command: String, param: String = "") =
     val commandLine = xDir + (if(xDir.last == '/' || xDir.last == '\\') "" else "/") + command + ext + " " + param
     commandLine.!!

@@ -24,28 +24,28 @@
 package ir.rtl.hardwaretype
 
 import ir.rtl.Component
-import ir.rtl.signals.{Minus, Plus, Sig, SigRef, Times}
+import ir.rtl.signals.{Minus, Plus, Sig, Times}
 
 //todo:Check for negative numbers
-case class FixPlus(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Plus(lhs, rhs) {
+case class FixPlus(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Plus(lhs, rhs) {
   //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
   override def pipeline = 1
 
-  override def implement(implicit cp: SigRef[?] => Component) = new ir.rtl.Plus(Seq(cp(lhs),cp(rhs)))
+  override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Plus(Seq(cp(lhs),cp(rhs)))
 }
 
-case class FixMinus(override val lhs: SigRef[Double],override val rhs: SigRef[Double]) extends Minus(lhs,rhs) {
+case class FixMinus(override val lhs: Sig[Double],override val rhs: Sig[Double]) extends Minus(lhs,rhs) {
   //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
   override def pipeline = 1
 
-  override def implement(implicit cp: SigRef[?] => Component) = new ir.rtl.Minus(cp(lhs),cp(rhs))
+  override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Minus(cp(lhs),cp(rhs))
 }
 
-case class FixTimes(override val lhs: SigRef[Double], override val rhs: SigRef[Double]) extends Times(lhs, rhs) {
+case class FixTimes(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Times(lhs, rhs) {
   //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
   override def pipeline = 3
 
-  override def implement(implicit cp: SigRef[?] => Component): Component = {
+  override def implement(implicit cp: Sig[?] => Component): Component = {
     val shift = rhs.hw.asInstanceOf[FixedPoint].fractional
     new ir.rtl.Tap(new ir.rtl.Times(cp(lhs), cp(rhs)), shift until (shift + lhs.hw.size))
   }

@@ -31,17 +31,15 @@ import java.io.PrintWriter
 import scala.collection.mutable
 import scala.sys.process._
 
-abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]) extends Module {
-  val n: Int = t + k
-  val N: Int = 1 << n
-  val K: Int = 1 << k
-  val T: Int = 1 << t
-
+abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
+  final val n: Int = t + k
+  final val N: Int = 1 << n
+  final val K: Int = 1 << k
+  final val T: Int = 1 << t
+  final val hw = HW[U]
+  
   def spl: SPL[U]
-
-  val busSize: Int = implicitly[HW[U]].size
-
-
+  
   override lazy val name: String = spl.getClass.getSimpleName.toLowerCase
 
   override def description: Iterator[String] = io.Source.fromResource("streaming.txt").getLines().
@@ -60,8 +58,6 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
       replace("START",if(nextAt==0) "at the same time as" else if(nextAt>0) s"$nextAt cycles after" else s"${-nextAt} cycles before").
       replace("HW",hw.description)
   )
-    /*filterNot(s=>(s contains "Computer Generation") && params("arch")!="full" && params("arch")!="iter").
-    filterNot(s=>(s contains "Memory-Efficient") && params("arch")!="fused")*/
 
   def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component]
 
@@ -71,14 +67,14 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
 
   def hasSinglePortedMem:Boolean=false
 
-  lazy val dataInputs: Vector[Input] = Vector.tabulate(K)(i => new Input(busSize, "i" + i))
-  val reset = new Input(1, "reset")
-  val next = new Input(1, "next")
+  final lazy val dataInputs: Vector[Input] = Vector.tabulate(K)(i => new Input(hw.size, "i" + i))
+  final val reset = new Input(1, "reset")
+  final val next = new Input(1, "next")
 
   def *(rhs: StreamingModule[U]): StreamingModule[U] = Product(this, rhs)
 
-  override lazy val inputs: Seq[Input] = reset +: next +: dataInputs
-  override lazy val outputs: Seq[Output] = {
+  final override lazy val inputs: Seq[Input] = reset +: next +: dataInputs
+  final override lazy val outputs: Seq[Output] = 
     val tokens = mutable.Map[Int, Wire]()
 
     def getToken(time: Int) = tokens.getOrElseUpdate(time, Wire(1))
@@ -87,28 +83,36 @@ abstract class StreamingModule[U](val t: Int, val k: Int)(implicit val hw: HW[U]
     val next_out = new Output(getToken(latency), "next_out")
 
     val minTime = tokens.keys.min
-    val maxTime = tokens.keys.max
-    val tokenComps: Vector[Component] = Vector.iterate[Component](next, maxTime - minTime + 1)(_.register)
-    //, tokenComps(time-tokens.keys.min)
-    tokens.foreach { case (time, wire) => wire.input = tokenComps(time - minTime) }
+    
+    if false then
+      val maxTime = tokens.keys.max  
+      val tokenComps: Vector[Component] = Vector.iterate[Component](next, maxTime - minTime + 1)(_.register)
+      tokens.foreach { case (time, wire) => wire.input = tokenComps(time - minTime) }
+    else
+      tokens.toSeq.sortBy(_._1).foldLeft[(Int,Component)]((minTime,next)){case ((prevTime, prevComp),(time, wire)) =>
+        val diff= time-prevTime
+        assert(diff>=0)
+        val res = if diff>0 then Register(prevComp, diff) else prevComp
+        wire.input = res 
+        (time, res)}
+        
     _nextAt = Some(minTime)
 
     next_out +: res
-  }
-  lazy val dataOutputs: Seq[Output] = outputs.drop(1)
-  lazy val next_out: Output = outputs.head
+  
+  
+  final lazy val dataOutputs: Seq[Output] = outputs.drop(1)
+  
+  final lazy val next_out: Output = outputs.head
+  
   private var _nextAt: Option[Int] = None
 
-  def nextAt: Int = {
+  final def nextAt: Int = 
     if (_nextAt.isEmpty) outputs
     _nextAt.get
-  }
 
-  def eval(inputs: Seq[BigInt], set: Int): Seq[BigInt] = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
+  final def eval(inputs: Seq[BigInt], set: Int): Seq[BigInt] = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
 
   def testBenchInput(repeat:Int): Seq[BigInt]=(0 until repeat*N).map(i=>hw.bitsOf(hw.num.fromInt(i)))
-
-
-}
 
 

@@ -24,7 +24,7 @@
 import java.io.{BufferedInputStream, FileInputStream, FileOutputStream, PrintWriter}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 import transforms._
-import ir.rtl.{RAMControl, SB, StreamingModule}
+import ir.rtl.{RAMControl, AcyclicStreamingModule, StreamingModule}
 import ir.rtl.hardwaretype._
 import transforms.fft.DFT
 import transforms.perm.LinearPerm
@@ -182,7 +182,7 @@ object Main {
 
     if (graph)
       design match {
-        case imp: SB[?] =>
+        case imp: AcyclicStreamingModule[?] =>
           val file = filename("graph.gv")
           val pw = new PrintWriter(file)
           pw.write(imp.toGraph)

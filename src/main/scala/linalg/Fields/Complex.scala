@@ -27,6 +27,8 @@ package linalg.Fields
 
 import scala.language.implicitConversions
 import scala.math.Numeric.Implicits._
+import math.Ordering.Implicits.infixOrderingOps
+import scala.reflect.ClassTag
 
 /**
  * Class that represents a complex number
@@ -34,7 +36,7 @@ import scala.math.Numeric.Implicits._
  * @param re real part
  * @param im imaginary part
  */
-case class Complex[T: Numeric](re: T, im: T) {
+case class Complex[T: Numeric](re: T, im: T):
   /**
    * Returns a printable string representing the number
    *
@@ -43,12 +45,14 @@ case class Complex[T: Numeric](re: T, im: T) {
   override def toString: String = re.toString + (if (im != implicitly[Numeric[T]].zero) "+" + im.toString + "i" else "")
 
   def conjugate: Complex[T] = Complex(re, -im)
-}
+
+  def norm2: T = re * re + im * im
+
 
 /**
  * Companion object of the class Complex
  */
-object Complex {
+object Complex :
   /**
    * Creates a new real complex
    *
@@ -60,20 +64,20 @@ object Complex {
   /**
    * Defines the operations oncomplex numbers
    */
-  given complexIsFractional[T](using num: Numeric[T]): Fractional[Complex[T]] with {
-  //val num: Numeric[T] =implicitly[Numeric[T]]
+  given complexIsFractional[T](using num: Numeric[T]): Fractional[Complex[T]] with
+    import num._
 
-    override def plus(x: Complex[T], y: Complex[T]): Complex[T] = Complex(num.plus(x.re, y.re), num.plus(x.im, y.im))
+    override def plus(x: Complex[T], y: Complex[T]): Complex[T] = Complex(x.re + y.re, x.im + y.im)
 
-    override def minus(x: Complex[T], y: Complex[T]): Complex[T] = Complex(num.minus(x.re, y.re), num.minus(x.im, y.im))
+    override def minus(x: Complex[T], y: Complex[T]): Complex[T] = Complex(x.re - y.re, x.im - y.im)
 
-    override def times(x: Complex[T], y: Complex[T]): Complex[T] = Complex(num.minus(num.times(x.re, y.re), num.times(x.im, y.im)), num.plus(num.times(x.re, y.im), num.times(x.im, y.re)))
+    override def times(x: Complex[T], y: Complex[T]): Complex[T] = Complex(x.re * y.re - x.im * y.im, x.re * y.im + x.im * y.re)
 
-    override def negate(x: Complex[T]): Complex[T] = Complex(num.negate(x.re), num.negate(x.im))
+    override def negate(x: Complex[T]): Complex[T] = Complex(-x.re, -x.im)
 
     override def fromInt(x: Int): Complex[T] = Complex(num.fromInt(x))
 
-    override def abs(x: Complex[T]): Complex[T] = times(x,x.conjugate)
+    override def abs(x: Complex[T]): Complex[T] = Complex(Utils.sqrt((x * x.conjugate).re)) 
 
     override def parseString(str: String): Option[Complex[T]] = ???
 
@@ -85,12 +89,13 @@ object Complex {
 
     override def toDouble(x: Complex[T]): Double = num.toDouble(x.re)
 
-    override def lt(lhs: Complex[T], rhs: Complex[T]) = false
+    override def lt(lhs: Complex[T], rhs: Complex[T]) = false 
+
     override def compare(x: Complex[T], y: Complex[T]): Int = ???
 
-    //override def div(x: Complex[T], y: Complex[T]): Complex[T] = ???
     override def div(x: Complex[T], y: Complex[T]): Complex[T] = ???
-  }
+      /*val denom = y.re * y.re + y.im * y.im
+      Complex((x.re * y.re + x.im * y.im) / denom, (x.im * y.re - x.re * y.im)/denom)*/
 
-  implicit def NumericOps[T: Numeric](lhs: Complex[T]): Fractional[Complex[T]]#FractionalOps = complexIsFractional.mkNumericOps(lhs)
-}
+  //implicit def NumericOps[T: Numeric: ClassTag](lhs: Complex[T]): Fractional[Complex[T]]#FractionalOps = complexIsFractional.mkNumericOps(lhs)
+

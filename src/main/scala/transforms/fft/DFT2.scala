@@ -24,7 +24,7 @@
 package transforms.fft
 
 import ir.rtl.hardwaretype.HW
-import ir.rtl.{SB, StreamingModule,RAMControl}
+import ir.rtl.{AcyclicStreamingModule, StreamingModule,RAMControl}
 import ir.rtl.signals.Sig
 import ir.spl.{Repeatable, SPL}
 import linalg.Fields.Complex
@@ -32,7 +32,7 @@ import linalg.Fields.Complex
 class DFT2[T](implicit val num:Numeric[T]) extends SPL[T](1) with Repeatable[T]{
   override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs.grouped(2).toSeq.flatMap(i => Seq(num.plus(i.head, i.last), num.minus(i.head, i.last)))
 
-  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): SB[T] = {
+  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): AcyclicStreamingModule[T] = {
     require(k==1)
     /*new SB(0,1){
       override def toString: String = "F2"

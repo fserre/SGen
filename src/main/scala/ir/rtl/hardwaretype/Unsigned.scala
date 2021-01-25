@@ -27,15 +27,15 @@ import ir.rtl.Component
 import ir.rtl.signals._
 
 case class Unsigned(_size: Int) extends HW[Int](_size):
-  class UnsignedPlus(override val lhs: SigRef[Int],override val rhs: SigRef[Int]) extends Plus(lhs,rhs):
+  class UnsignedPlus(override val lhs: Sig[Int],override val rhs: Sig[Int]) extends Plus(lhs,rhs):
     override def pipeline = 1
 
-    override def implement(implicit cp: SigRef[?] => Component) =new ir.rtl.Plus(Seq(cp(lhs),cp(rhs)))
+    override def implement(implicit cp: Sig[?] => Component) =new ir.rtl.Plus(Seq(cp(lhs),cp(rhs)))
 
-  case class UnsignedMinus(override val lhs: SigRef[Int],override val rhs: SigRef[Int]) extends Minus(lhs,rhs):
+  case class UnsignedMinus(override val lhs: Sig[Int],override val rhs: Sig[Int]) extends Minus(lhs,rhs):
     override def pipeline = 1
 
-    override def implement(implicit cp: SigRef[?] => Component) =new ir.rtl.Minus(cp(lhs),cp(rhs))
+    override def implement(implicit cp: Sig[?] => Component) =new ir.rtl.Minus(cp(lhs),cp(rhs))
 
   override def plus(lhs: Sig[Int], rhs: Sig[Int]): Sig[Int] = new UnsignedPlus(lhs,rhs)
 

@@ -24,7 +24,7 @@
 package ir.rtl.signals
 
 import ir.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
-import ir.rtl.{Component, SB}
+import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 import ir.AssociativeNodeCompanion
 import linalg.Fields.{Complex, F2}
@@ -32,132 +32,80 @@ import linalg._
 
 
 /**
- * Class that represent a node in a streaming block internal graph. These nodes are comparable to RTL components, but abstract the hardware representation, and timing.
+ * Class that represent a node in an acyclic streaming module internal graph. These nodes are comparable to RTL components, but abstract the hardware numeric representation, and timing.
  * @tparam T Equivalent software datatype of the node
  */
-abstract class Sig[T] { that =>
-  /// Parent signals of the node (each given as a pair: SigRef and number of cycles of advance this parent must have compared to this signal).  
-  def parents: Seq[(SigRef[?], Int)]
-
-  /// Hardware datatype (given as an instance of HW[T])
-  val hw: HW[T]
-
-  /// Main streaming block (the one that called the "implement" method). It is the one that stores references of signals.
-  val sb: SB[?]
-
-  /// Number of registers that should be put after this signal.
+abstract class Sig[T: HW]:
+  val hash: Int
+  /** Parent signals of the node (each given as a pair: Sig and number of cycles of advance this parent must have compared to this signal).*/
+  def parents: Seq[(Sig[?], Int)]
+  /** Number of registers that should be put after this signal.*/
   def pipeline = 0
-
-  // def precedence =0
-
-  /// Implementation of this signal (using RTL components)
-  def implement(cp: (SigRef[?], Int) => Component): Component
-
-  /*def toString(s: SigRef[_] => String):String = that.getClass.getSimpleName + parents.map(_._1).map(s).mkString("(", ", ", ")")
-
-  final def toString(depth:Int):String=if(depth==0)
-    this.ref.toString
-  else
-    toString((s:SigRef[_])=>s.ref.toString(depth-1))
-
-  override def toString: String = toString(4)*/
-
-  /// Adds two signals
+  /** Implementation of this signal (using RTL components)*/
+  def implement(cp: (Sig[?], Int) => Component): Component
+  /** Adds two signals*/
   final def +(lhs: Sig[T]):Sig[T] = Plus(this, lhs)
-
-  /// Multiplies two signals
+  /** Multiplies two signals*/
   final def *(lhs: Sig[T]):Sig[T] = Times(this, lhs)
-
-  /// Substract two signals
+  /** Substract two signals*/
   final def -(lhs: Sig[T]):Sig[T] = Minus(this, lhs)
+  /** Hardware datatype (given as an instance of HW[T])*/
+  final val hw = HW[T]
+  final override inline def hashCode() = hash
 
-  /// Get the reference of this signal (indirection to speedup method equals) 
-  final lazy val ref=SigRef[T](sb.ref(this),sb)
-
-  // TODO: Move these to DOT backend
-  def graphNode:Seq[String] = parents.map(p => p._1.graphName + " -> " + graphName + ";")
-
-  // TODO: Move these to DOT backend
-  def graphDeclaration:String = graphName + "[label=\"" + this.getClass.getSimpleName + "\"];"
-
-  // TODO: Move these to DOT backend
-  def graphName:String = "s" + ref.i
-}
-
-object Sig {
-  import scala.language.implicitConversions
-
-  implicit def vecToConst(v: Vec[F2])(implicit sb:SB[?]): Sig[Int] = Const(v.toInt)(Unsigned(v.m),sb)
-
-  extension [T](lhs: Sig[Int]) {
-    def ::(rhs: Sig[Int]):Sig[Int] = Concat(lhs, rhs)
-
-    def &(rhs: Sig[Int]):Sig[Int] = And(lhs, rhs)
-
-    def ^(rhs: Sig[Int]):Sig[Int] = Xor(Vector(lhs, rhs))
-
+/** Companion object of Sig */
+object Sig:
+  /** Conversion from vectors of bits to unsigned constants */
+  given Conversion[Vec[F2], Const[Int]] = (v: Vec[F2]) => Const(v.toInt)(Unsigned(v.m))
+  /** Additionnal operations for unsigned signals */
+  extension [T](lhs: Sig[Int])
+    /** Concatenation  */
+    def ::(rhs: Sig[Int]): Sig[Int] = Concat(lhs, rhs)
+    /** Binary and */
+    def &(rhs: Sig[Int]): Sig[Int] = And(lhs, rhs)
+    /** Binary xor */
+    def ^(rhs: Sig[Int]): Sig[Int] = Xor(Vector(lhs, rhs))
+    /** Reduction xor */
     def unary_^ : Sig[Int] = RedXor(lhs)
-
+    /** Binary not */
     def unary_~ : Sig[Int] = Not(lhs)
-
-    infix def scalar(rhs: Sig[Int]):Sig[Int] = (lhs & rhs).unary_^
-
-    def ?(inputs: (Sig[T],Sig[T])):Sig[T] = Mux(lhs, Vector(inputs._2, inputs._1))
-
+    /** Scalar product (in F2) */
+    infix def scalar(rhs: Sig[Int]): Sig[Int] = (lhs & rhs).unary_^
+    /** Ternary operator */
+    def ?(inputs: (Sig[T],Sig[T])): Sig[T] = Mux(lhs, Vector(inputs._2, inputs._1))
+    /** Access a bit of the signal (tap) */
     def apply(i: Int): Sig[Int] = apply(i to i)
-
+    /** Access a range of the bits of the signal (tap) */
     def apply(r: Range): Sig[Int] = Tap(lhs, r)
-  }
 
-  extension [T](lhs: Sig[Complex[T]]) {
+  /** Additionnal operations for complex signals */
+  extension [T](lhs: Sig[Complex[T]])
+    /** Real part */
     def re:Sig[T] = Re(lhs)
+    /** Imaginary part */
     def im:Sig[T] = Im(lhs)
-  }
 
-  implicit def sigToRef[T](sig:Sig[T]):SigRef[T]=sig.ref
-}
+/** Signals without parent node */
+abstract class Source[T: HW] extends Sig[T]:
+  /** RTL component that corresponds to this node. */
+  def implement: Component
+  final override val parents = Seq()
+  final override def implement(cp: (Sig[?], Int) => Component): Component = implement
 
-case class SigRef[T](i:Int, sb:SB[?]){
-  val sig:Sig[T]=sb.signal(i).asInstanceOf[Sig[T]]
+/** Signals that, when implemented in RTL, expect parents that arrive at the same time*/
+abstract class Operator[T: HW](operands: Sig[?]*) extends Sig[T]:
+  /** Latency of the signal in cycles */
+  def latency = 0
+  /** Implementation of this signal (using RTL components)*/
+  def implement(implicit cp: Sig[?] => Component): Component
+  final override def parents:Seq[(Sig[?],Int)] = operands.map((_, latency))
+  final override def implement(cp: (Sig[?], Int) => Component): Component = implement(sr => cp(sr, latency))
+  final override val hash = Seq(this.getClass().getSimpleName, parents).hashCode()
 
-  override def toString: String = "S"+i
-}
-object SigRef{
-  import scala.language.implicitConversions
-
-  implicit def refToSig[T](ref:SigRef[T]):Sig[T]=ref.sig
-}
-
-abstract class AssociativeSig[T](val terms: Seq[SigRef[T]], op: String/*, override val precedence: Int*/)(implicit hw: HW[T] = terms.head.hw) extends Operator(terms: _*)(hw) with AssociativeNode[Sig[T]] { that =>
-  override val list:Seq[Sig[T]]=terms.map(_.sig)
-
-  override def graphDeclaration:String = graphName + "[label=\"" + op + "\"];"
-
-  //override def toString(s: SigRef[_] => String): String = terms.map(t=>if(t.precedence>=precedence)"("+s(t)+")" else s(t)).mkString(op)
-
-
-}
-
+/** Signal that represent an associative operator */
+abstract class AssociativeSig[T](override val list: Seq[Sig[T]], val op: String)(using hw: HW[T] = list.head.hw) extends Operator(list: _*) with AssociativeNode[Sig[T]]
+/** Companion objects of associative (higher kinded) signals should inherit from this object. */
 abstract class AssociativeSigCompanionT[U[T]<:Sig[T] & AssociativeSig[T]] extends AssociativeNodeCompanionT[Sig,U]
-
+/** Companion objects of associative signals should inherit from this object. */
 abstract class AssociativeSigCompanion[T,U<:Sig[T]  & AssociativeSig[T]](create:Seq[Sig[T]]=>Sig[T], simplify:(Sig[T],Sig[T])=>Either[Sig[T],(Sig[T],Sig[T])]= (lhs:Sig[T], rhs:Sig[T])=>Right(lhs,rhs)) extends AssociativeNodeCompanion[Sig[T],U](create,simplify)
 
-abstract class Source[T](override val hw: HW[T], override val sb: SB[?]) extends Sig[T] {
-  def implement: Component
-
-  final override val parents = Seq()
-
-  final override def implement(cp: (SigRef[?], Int) => Component): Component = implement
-}
-
-abstract class Operator[T](operands: SigRef[?]*)(implicit override val hw: HW[T]) extends Sig[T] {
-  def latency = 0
-
-  def implement(implicit cp: SigRef[?] => Component): Component
-
-  final override def parents:Seq[(SigRef[?],Int)] = operands.map((_, latency))
-
-  final override val sb: SB[?] = operands.head.sb
-
-  final override def implement(cp: (SigRef[?], Int) => Component): Component = implement(sr => cp(sr, latency))
-}

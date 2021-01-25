@@ -23,147 +23,119 @@
 
 package ir.rtl.signals
 
-import ir.rtl.{Component, SB}
+import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype
 import ir.rtl.hardwaretype.{HW, Unsigned}
 import ir.AssociativeNodeCompanion
 
 import scala.annotation.tailrec
 
-final class And private (override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," & "){
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.And(terms.map(cp))
-  override val hashCode: Int = Seq("And",terms).hashCode()
-  override def equals(other:Any)=other match{
-    case other:And => other.terms==terms
+/** Signal that represents binary and of several signals */
+final class And private (terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms," & "):
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.And(terms.map(cp))
+  override def equals(other:Any) = other match
+    case other:And => other.list == list
     case _ => false
-  }
   override val pipeline = 1
-}
 
-object And extends AssociativeSigCompanion[Int, And](arg => new And(arg.map(_.ref)), (lhs: Sig[Int], rhs: Sig[Int]) => {
+/** Companion object of class And */
+object And extends AssociativeSigCompanion[Int, And](arg => new And(arg), (lhs: Sig[Int], rhs: Sig[Int]) => 
   require(lhs.hw == rhs.hw)
-  implicit val hw: HW[Int] = lhs.hw
-  implicit val sb: SB[?] =lhs.sb
-  def withConst(const:Int,input:Sig[Int])={
-    val bits = hw.bitsOf(const)
-    Concat((0 until hw.size).reverse.map(i=>if(bits.testBit(i)) input(i) else Const(0)(Unsigned(1),sb)))
-  }
-  (lhs,rhs) match{
+  given HW[Int] = lhs.hw
+  def withConst(const:Int, input:Sig[Int]) =
+    val bits = lhs.hw.bitsOf(const)
+    Concat((0 until lhs.hw.size).reverse.map(i => if bits.testBit(i) then input(i) else Const(0)(Unsigned(1))))
+  (lhs, rhs) match
     case (Const(lhs), Const(rhs)) => Left(Const(lhs & rhs))
-    case (_,Const(value)) => Left(withConst(value,lhs))
-    case (Const(value),_) => Left(withConst(value,rhs))
-    case (lhs,rhs) => Right(lhs,rhs)
-  }
-})
+    case (_, Const(value)) => Left(withConst(value, lhs))
+    case (Const(value), _) => Left(withConst(value, rhs))
+    case (lhs, rhs) => Right(lhs, rhs)
+)
 
+/** Binary not of a signal */
+case class Not private (input: Sig[Int]) extends Operator[Int](input)(input.hw):
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Not(cp(input))
 
-case class Not private(input: SigRef[Int]) extends Operator[Int](input)(input.hw) {
-  override def implement(implicit cp: SigRef[?] => Component): Component =new ir.rtl.Not(cp(input))
-}
-
-object Not{
-  def apply(input: Sig[Int]): Sig[Int] = {
-    implicit val hw: HW[Int] = input.hw
-    implicit val sb: SB[?] = input.sb
-    input match {
-      case Const(value) => Const(((1 << hw.size) - 1) ^ value)
+/** Companion object of class Not */
+object Not:
+  def apply(input: Sig[Int]): Sig[Int] =
+    given HW[Int] = input.hw
+    input match
+      case Const(value) => Const(((1 << input.hw.size) - 1) ^ value)
       case Not(input) => input
       case _ => new Not(input)
-    }
-  }
 
-  def unapply(arg: Sig[Int]): Option[Sig[Int]] = arg match{
-    case arg:Not => Some(arg.input)
-    case _=>None
-  }
-}
-
-final class Xor private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms, " ^ ") {
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Xor(terms.map(cp))
+/** Binary xor of several signals */
+final class Xor private (terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms, " ^ "):
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Xor(terms.map(cp))
   override val pipeline = 1
-  override val hashCode: Int = Seq("Xor",terms).hashCode()
-  override def equals(other:Any)=other match{
-    case other:Xor => other.terms==terms
+  override def equals(other: Any) = other match
+    case other:Xor => other.list == list
     case _ => false
-  }
-}
 
-object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg.map(_.ref)), (lhs: Sig[Int], rhs: Sig[Int]) => {
-//println(lhs+" "+rhs)
-
+/** Companion object of class Xor */
+object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg), (lhs: Sig[Int], rhs: Sig[Int]) => 
   require(lhs.hw == rhs.hw)
-  implicit val hw: HW[Int] = lhs.hw
-  implicit val sb: SB[?] =lhs.sb
-  def withConst(const:Int,input:Sig[Int])={
-    val bits = hw.bitsOf(const)
-    Concat((0 until hw.size).reverse.map(i=>if(bits.testBit(i)) Not(input(i)) else input(i)))
-  }
-  (lhs,rhs) match{
+  given HW[Int] = lhs.hw
+  def withConst(const:Int,input:Sig[Int]) =
+    val bits = lhs.hw.bitsOf(const)
+    Concat((0 until lhs.hw.size).reverse.map(i => if bits.testBit(i) then Not(input(i)) else input(i)))
+  (lhs, rhs) match
     case (Const(lhs), Const(rhs)) => Left(Const(lhs ^ rhs))
-    case (_, Const(value)) => Left(withConst(value,lhs))
-    case (Const(value),_)=>Left(withConst(value,rhs))
-    case (lhs,rhs) => Right(lhs,rhs)
-  }
-})
-object RedXor {
-  def apply(input: Sig[Int]): Sig[Int] = Xor((0 until input.hw.size).map(input(_)))
-}
-final class Concat private(override val terms: Seq[SigRef[Int]]) extends AssociativeSig[Int](terms," :: ")(Unsigned(terms.map(_.hw.size).sum)) {
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Concat(terms.map(cp))
-  override val hashCode: Int = Seq("Concat",terms).hashCode()
-  override def equals(other:Any)=other match{
-    case other:Concat => other.terms==terms
-    case _ => false
-  }
-}
+    case (_, Const(value)) => Left(withConst(value, lhs))
+    case (Const(value), _)=>Left(withConst(value, rhs))
+    case (lhs, rhs) => Right(lhs, rhs)
+)
 
-object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]]) => new Concat(list.map(_.ref)) }, (lhs: Sig[Int], rhs: Sig[Int]) => {
-  implicit val sb: SB[?] =lhs.sb
-  (lhs,rhs) match{
-    case (lhs:Const[Int], rhs:Const[Int]) => Left(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size),sb))
+/** Computes a xor reduction of a signal */
+object RedXor:
+  def apply(input: Sig[Int]): Sig[Int] = 
+    if input.hw.size == 0 then
+      Const(0)(using Unsigned(1))
+    else
+      Xor((0 until input.hw.size).map(input(_)))
+
+/** Concatenation of several unsigned signals */
+final class Concat private(terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms," :: ")(using Unsigned(terms.map(_.hw.size).sum)):
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Concat(terms.map(cp))
+  override def equals(other:Any) = other match
+    case other:Concat => other.list == list
+    case _ => false
+  
+/** Companion object of class Concat */
+object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]]) => new Concat(list) }, (lhs: Sig[Int], rhs: Sig[Int]) => 
+  (lhs,rhs) match
+    case (lhs:Const[Int], rhs:Const[Int]) => Left(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size)))
     case (_, Null()) => Left(lhs)
     case (Null(),_) => Left(rhs)
     case (Tap(lhs, lr), Tap(rhs, rr)) if lhs == rhs && rr.last + 1 == lr.start => Left(lhs(rr.start to lr.last))
     case (lhs,rhs) => Right(lhs,rhs)
-  }
-})
+)
 
-case class Tap private(input: SigRef[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)) {
-  override def implement(implicit cp: SigRef[?] => Component): Component = new ir.rtl.Tap(cp(input), range)
-}
+/** Selection of a range of bits in an unsigned signal */
+case class Tap private (input: Sig[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)):
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Tap(cp(input), range)
 
-object Tap {
-  def apply(input: Sig[Int], range: Range): Sig[Int] = {
-    implicit val sb: SB[?] =input.sb
-    input match {
+/** Companion object of class Tap */
+object Tap:
+  def apply(input: Sig[Int], range: Range): Sig[Int] = 
+    input match 
       case _ if range.isEmpty => Null()
       case _ if range.length == input.hw.size => input
-      case Const(value) => Const(((((1 << range.length) - 1) << range.start) & value) >> range.start)(Unsigned(range.length),sb)
+      case Const(value) => Const(((((1 << range.length) - 1) << range.start) & value) >> range.start)(Unsigned(range.length))
       case Tap(input2, r2) => Tap(input2, (r2.start + range.start) to (r2.start + range.last))
       case Concat(signals: Seq[Sig[Int]]) =>
         @tailrec
-        def trimLeft(in: Seq[Sig[Int]], start: Int): Seq[Sig[Int]] = {
+        def trimLeft(in: Seq[Sig[Int]], start: Int): Seq[Sig[Int]] = 
           if (in.head.hw.size <= start)
             trimLeft(in.tail, start - in.head.hw.size)
           else
             Tap(in.head, 0 until (in.head.hw.size - start)) +: in.tail
-        }
-
         @tailrec
-        def trimRight(in: Seq[Sig[Int]], end: Int): Seq[Sig[Int]] = {
+        def trimRight(in: Seq[Sig[Int]], end: Int): Seq[Sig[Int]] =
           if (in.last.hw.size <= end)
             trimRight(in.take(in.size - 1), end - in.last.hw.size)
           else
             in.take(in.size - 1) :+ Tap(in.last, end until in.last.hw.size)
-        }
-
         Concat(trimRight(trimLeft(signals, input.hw.size - range.last - 1), range.start))
       case _ => new Tap(input, range)
-    }
-  }
-
-  def unapply(arg: Sig[Int]): Option[(Sig[Int], Range)] = arg match{
-    case arg:Tap => Some(arg.input,arg.range)
-    case _=> None
-  }
-}

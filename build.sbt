@@ -26,15 +26,16 @@ lazy val root = (project in file("."))
   .settings(
     name := "SGen",
     organization := "fserre",
-    version := "0.1",
-    scalaVersion := "3.0.0-RC1-bin-20210108-2cf4dc4-NIGHTLY",
-    //scalaVersion := "3.0.0-RC1-bin-20210106-e39b79e-NIGHTLY",
-    libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.1" % "test").withDottyCompat(scalaVersion.value),
+    version := "0.2",
+    scalaVersion := "3.0.0-RC1-bin-20210122-6947b0f-NIGHTLY",
+    //scalaVersion := "3.0.0-RC1-bin-20210117-65b17af-NIGHTLY",
+    libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.2" % "test").withDottyCompat(scalaVersion.value),
     scalacOptions ++= Seq("-deprecation","-feature"),
     //scalacOptions ++= Seq("-source","3.1"),
     mainClass in (Compile, run) := Some("Main"),
     parallelExecution in Test := false,
-    testOptions in Test +=Tests.Argument("-s","100")
+    testOptions in Test +=Tests.Argument("-s","100"),
     //scalacOptions ++= Seq("-indent","-rewrite")
+    javaOptions in run ++= Seq("-Xms256M", "-Xmx2G", "-XX:MaxPermSize=1024M", "-XX:+UseConcMarkSweepGC")
   )
 

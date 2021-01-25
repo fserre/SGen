@@ -23,7 +23,7 @@
 
 package transforms.perm
 
-import ir.rtl.{SB, StreamingModule}
+import ir.rtl.{AcyclicStreamingModule, StreamingModule}
 import ir.rtl.hardwaretype.HW
 import ir.spl.SPL
 import ir.rtl.signals.Sig
@@ -31,7 +31,7 @@ import linalg.Fields.F2
 import linalg.Matrix
 import transforms.perm.LinearPerm
 
-abstract class SLP[U: HW](t: Int, k: Int, val size: Int) extends SB(t, k) {
+abstract class SLP[U: HW](t: Int, k: Int, val size: Int) extends AcyclicStreamingModule(t, k) {
   def P4: Seq[Matrix[F2]] = Vector.fill(size)(Matrix.identity[F2](t))
 
   def P3: Seq[Matrix[F2]] = Vector.fill(size)(Matrix.zeros[F2](t, k))
@@ -40,8 +40,9 @@ abstract class SLP[U: HW](t: Int, k: Int, val size: Int) extends SB(t, k) {
 
   def P1: Seq[Matrix[F2]] = Vector.fill(size)(Matrix.identity[F2](k))
 
-  lazy val P: Seq[Matrix[F2]] = Vector.tabulate(size)(j => (P4(j) :: P3(j)) / (P2(j) :: P1(j)))
-  override lazy val spl: SPL[U] = LinearPerm(P)
+  final lazy val P: Seq[Matrix[F2]] = Vector.tabulate(size)(j => (P4(j) :: P3(j)) / (P2(j) :: P1(j)))
+  
+  final override lazy val spl: SPL[U] = LinearPerm(P)
   /*def isTemporal=P2.forall(_.isZero()) && P1.forall(_.isIdentity())
   def isSpatial=P3.forall(_.isZero()) && P4.forall(_.isIdentity())
   def isSimple=isTemporal || isSpatial*/

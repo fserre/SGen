@@ -24,13 +24,15 @@
 package transforms.fft
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, HW}
-import ir.rtl.{SB, StreamingModule,RAMControl}
+import ir.rtl.{AcyclicStreamingModule, StreamingModule,RAMControl}
 import ir.rtl.signals.{ROM, Sig, Timer}
 import ir.spl.{Identity, Repeatable, SPL}
 import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
 case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
+  val num = Numeric[Complex[Double]]
+  import num._
   def pow(x: Int): Int = {
     val j = x % (1 << r)
     val i = (x >> r) % (1 << (n - r * (l + 1)))
@@ -41,8 +43,8 @@ case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Compl
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
 
-  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): SB[Complex[Double]] = new SB(n - k, k) {
-    override def implement(inputs: Seq[Sig[Complex[Double]]])(implicit sb: SB[?]): Seq[Sig[Complex[Double]]] = {
+  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k) {
+    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = {
       (0 until K).map(p => {
         val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
         val twiddleHW = hw match {
@@ -52,7 +54,7 @@ case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Compl
         val control = Timer(T)
         /*println(twiddles)
         println(twiddles.map(twiddleHW.bitsOf).map(twiddleHW.valueOf))*/
-        val twiddle = ROM(twiddles, control)(twiddleHW, sb)
+        val twiddle = ROM(twiddles, control)(twiddleHW)
         inputs(p) * twiddle
       })
     }

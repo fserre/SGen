@@ -23,74 +23,64 @@
 
 package ir.rtl.signals
 
-import ir.rtl.{Component, SB}
+import ir.rtl.{Component, AcyclicStreamingModule}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 
-case class Input[T](input: Component, override val hw: HW[T], override val sb: SB[T]) extends Source[T](hw, sb) {
-  override def implement: Component = input
+/** Input signal.
+ * @param input Input identifier (from 0 to AcyclicStreamingModule.K)
+ * @param HW$T$0 Hardware datatype of the signal
+ * @tparam T Software datatype of the signal
+ */
+case class Input[T: HW](input: Int) extends Source[T]:
+  override def implement: Component = ??? // node is handled by AcyclicStreamingModule directly
 
-  //override def toString: String = input.name
+  override val hash = input.hashCode()
 
-  override def graphName: String = "inputs:i" + ref.i
 
-  override def graphDeclaration: String = ""
-}
+/**
+  * Next signal (it is set when a new signal is entering, 0 otherwise)
+  */
+case object Next extends Source(using Unsigned(1)):
+  override val hash="Next".hashCode()
+  
+  override def implement: Component = ??? // node is handled by AcyclicStreamingModule directly
 
-case class Next(override val sb: SB[?]) extends Source(Unsigned(1), sb) {
-  override def implement: Component = ???
-  override def toString="Next"
-}
-object Next{
-  //def apply()(implicit sb:SB[_])=new Next(sb)
 
-  def unapply[T](arg: Sig[T]): Boolean = arg match{
-    case _:Next => true
+/**
+ * Reset signal (set at the beginning, 0 otherwise)
+ */
+case object Reset extends Source(using Unsigned(1)):
+  override def implement: Component = ??? // node is handled by AcyclicStreamingModule directly
+
+  override val hash="Reset".hashCode()
+
+/**
+ * A constant (immediate) value
+ * @param value Value of the constant
+ * @param HW$T$0 Hardware datatype of the signal
+ * @tparam T Software datatype of the signal
+ */
+case class Const[T: HW](value: T) extends Source[T]:
+  val bits = hw.bitsOf(value)
+  
+  override def implement = ??? // node is handled by AcyclicStreamingModule directly
+
+  override def equals(obj: Any): Boolean = obj match
+    case other: Const[?] => other.hw == hw && bits == other.bits
     case _ => false
-  }
-}
+  
+  override val hash = hw.bitsOf(value).hashCode()
 
-case class Reset(override val sb: SB[?]) extends Source(Unsigned(1), sb) {
-  override def implement: Component = ???
+/**
+  * Null signals are represented by signals of size 0 
+  */
+object Null:
+  /**
+    * Creates a null signal
+    */
+  def apply(): Sig[Int] = Const(0)(Unsigned(0))
 
-
-}
-object Reset{
-  //def apply()(implicit sb:SB[_])=new Reset(sb)
-
-  def unapply[T](arg: Sig[T]): Boolean = arg match{
-    case _:Reset => true
-    case _ => false
-  }
-}
-
-case class Const[T](value: T, override val hw: HW[T], override val sb: SB[?]) extends Source(hw, sb) {
-  //override def toString(s: SigRef[_] => String): String = value.toString
-
-  override def implement = new ir.rtl.Const(hw.size, hw.bitsOf(value))
-
-  override def graphDeclaration = "" //graphName + "[label=\""+value.toString+"\"];"
-
-  override def graphName: String = value.toString
-
-  override def equals(obj: Any): Boolean = obj match {
-    case other: Const[?] => other.hw == hw && other.sb == sb && hw.bitsOf(value) == other.hw.bitsOf(other.value)
-    case _ => false
-  }
-
-  override val hashCode: Int = hw.bitsOf(value).hashCode()
-}
-object Const{
-  def apply[T](value:T)(implicit hw:HW[T],sb:SB[?]):Sig[T]=Const(value,hw,sb)
-
-  def unapply[T](arg: Sig[T]): Option[T] = arg match{
-    case arg:Const[T]=>Some(arg.value)
-    case _ =>None
-  }
-
-
-}
-case object Null {
-  def apply()(implicit sb:SB[?]): Sig[Int] = Const(0)(Unsigned(0),sb)
-
+  /**
+   * Checks if a signal is null
+   */
   def unapply[T](arg: Sig[T]): Boolean = arg.hw == Unsigned(0)
-}

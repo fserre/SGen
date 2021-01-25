@@ -64,26 +64,28 @@ object Product extends AssociativeNodeCompanionT[StreamingModule,Product] {
     (lhs,rhs) match {
       case (_,Identity())=>Left(lhs)
       case (Identity(),_)=>Left(rhs)
-      case(lhs:SB[T],rhs:SB[T])=>Left(AcyclicProduct(lhs,rhs))
+      case(lhs:AcyclicStreamingModule[T],rhs:AcyclicStreamingModule[T])=>Left(AcyclicProduct(lhs,rhs))
 
       case _ =>Right((lhs,rhs))
     }
   }
 }
 
-class AcyclicProduct[U] private(override val list: Seq[SB[U]]) extends SB[U](list.head.t, list.head.k)(list.head.hw) with AssociativeNode[SB[U]] {
+class AcyclicProduct[U] private(override val list: Seq[AcyclicStreamingModule[U]]) extends AcyclicStreamingModule[U](list.head.t, list.head.k)(list.head.hw) with AssociativeNode[AcyclicStreamingModule[U]] {
   assert(list.forall(_.t == t))
   assert(list.forall(_.k == k))
 
-  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = list.foldRight(inputs)(_.implement(_))
+  override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] =
+    require (inputs.size==K)
+    list.foldRight(inputs)(_.implement(_))
 
   override def spl: SPL[U] = ir.spl.Product(list.map(_.spl))
 
   override def hasSinglePortedMem: Boolean = list.exists(_.hasSinglePortedMem)
 }
 
-object AcyclicProduct extends AssociativeNodeCompanionT[SB,AcyclicProduct] {
-  override def simplify[T](lhs: SB[T], rhs: SB[T]): Either[SB[T], (SB[T], SB[T])] = {
+object AcyclicProduct extends AssociativeNodeCompanionT[AcyclicStreamingModule,AcyclicProduct] {
+  override def simplify[T](lhs: AcyclicStreamingModule[T], rhs: AcyclicStreamingModule[T]): Either[AcyclicStreamingModule[T], (AcyclicStreamingModule[T], AcyclicStreamingModule[T])] = {
     require(lhs.t == rhs.t)
     require(lhs.k == rhs.k)
     require(lhs.hw == rhs.hw)
@@ -125,5 +127,5 @@ object AcyclicProduct extends AssociativeNodeCompanionT[SB,AcyclicProduct] {
   }*/
 
   //def apply[U: HW](factors: Seq[SB[U]]): SB[U] = factors.reduceLeft((lhs, rhs) => ProductSB(lhs, rhs))
-  override def create[T](inputs: Seq[SB[T]]): SB[T] = new AcyclicProduct[T](inputs)
+  override def create[T](inputs: Seq[AcyclicStreamingModule[T]]): AcyclicStreamingModule[T] = new AcyclicProduct[T](inputs)
 }

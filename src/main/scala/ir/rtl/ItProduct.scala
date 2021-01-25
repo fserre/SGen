@@ -28,8 +28,8 @@ import ir.spl.SPL
 
 case class ItProduct[U](r: Int, factor: StreamingModule[U], endLoopOpt: Option[StreamingModule[U]] = None) extends StreamingModule[U](factor.t, factor.k)(factor.hw) {
   val endLoop: StreamingModule[U] = {
-    val res = endLoopOpt.getOrElse(Identity(t, k))
-    res * Delay(t, k, Math.max(1 + factor.latency + res.latency, T) - (1 + factor.latency + res.latency))
+    val res = endLoopOpt.getOrElse(Identity(t, k)(using factor.hw))
+    res * Delay(t, k, Math.max(1 + factor.latency + res.latency, T) - (1 + factor.latency + res.latency))(using factor.hw)
   }
   val innerLatency: Int = 1 + factor.latency + endLoop.latency
   override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = {

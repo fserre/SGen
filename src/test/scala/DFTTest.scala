@@ -22,7 +22,7 @@
  */
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint}
-import ir.rtl.{SB, StreamingModule,RAMControl}
+import ir.rtl.{AcyclicStreamingModule, StreamingModule,RAMControl}
 import transforms.fft.{DFT, StreamDiagC}
 import linalg.Fields.Complex
 import linalg.{Matrix, Vec}
@@ -59,7 +59,7 @@ object DFTTest extends Properties("DFT") {
   } yield DFT.CTDFT(n, r).stream(k,dp)(ComplexHW(FixedPoint(8, 8)))
   property("CTDFT") = forAll(genSteady) { (sb: StreamingModule[Complex[Double]]) =>
       sb.test() match {
-        case Some(value) if value.re < 0.01 => true
+        case Some(value) if value < 0.01 => true
         case _ => false
       }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
@@ -77,12 +77,12 @@ object DFTTest extends Properties("DFT") {
 
     forAll(genPease) { (sb: StreamingModule[Complex[Double]]) =>
       sb.test() match {
-        case Some(value) if value.re < 0.01 => true
+        case Some(value) if value < 0.01 => true
         case _ => false
       }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
 
-  val genDiagC: Gen[SB[Complex[Double]]] = for {
+  val genDiagC: Gen[AcyclicStreamingModule[Complex[Double]]] = for {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
     n = t + k
@@ -91,7 +91,7 @@ object DFTTest extends Properties("DFT") {
   } yield StreamDiagC(n, r).stream(k,RAMControl.Single)(ComplexHW(FixedPoint(16, 16)))
   property("DiagC") = forAll(genDiagC) { (sb: StreamingModule[Complex[Double]]) =>
     sb.test() match {
-        case Some(value) if value.re < 0.01 => true
+        case Some(value) if value < 0.01 => true
         case _ => false
       }
   } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
@@ -122,7 +122,7 @@ object DFTTest extends Properties("DFT") {
   } yield DFT.ItPease(n, r).stream(k,RAMControl.Dual)(ComplexHW(FixedPoint(8, 8)))
   property("ItPease")= forAll(genItPease) { (sb: StreamingModule[Complex[Double]]) =>
     sb.test() match {
-        case Some(value) if value.re < 0.01 => true
+        case Some(value) if value < 0.01 => true
         case _ => false
       }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)
@@ -152,7 +152,7 @@ object DFTTest extends Properties("DFT") {
   } yield DFT.ItPeaseFused(n, r).stream(k,RAMControl.Dual)(ComplexHW(FixedPoint(8, 8)))
   property("ItPeaseFused") = forAll(genItPeaseFused) { (sb: StreamingModule[Complex[Double]]) =>
     sb.test() match {
-        case Some(value) if value.re < 0.01 => true
+        case Some(value) if value < 0.01 => true
         case _ => false
       }
     } //(implicitly,shrinkSB,implicitly,implicitly,implicitly)

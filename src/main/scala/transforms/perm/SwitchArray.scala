@@ -22,15 +22,15 @@
  */
 
 package transforms.perm
-
+import scala.language.implicitConversions
 import ir.rtl.hardwaretype.HW
-import ir.rtl.{Identity, SB}
+import ir.rtl.{Identity, AcyclicStreamingModule}
 import ir.rtl.signals._
 import linalg.Fields.F2
 import linalg.{Matrix, Vec}
 
 case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) extends SLP(v.head.m, k, v.size) {
-  override def implement(inputs: Seq[Sig[U]])(implicit sb:SB[?]): Seq[Sig[U]] = {
+  override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] = {
     val timer = Timer(T)
     val vec = Vector.tabulate(v.size)(j => timer scalar v(j))
     val set = Counter(size)
@@ -44,10 +44,10 @@ case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) exte
 }
 
 object SwitchArray {
-  def apply[U: HW](v: Seq[Vec[F2]], k: Int): SB[U] = if (v.forall(_.isZero))
+  def apply[U: HW](v: Seq[Vec[F2]], k: Int): AcyclicStreamingModule[U] = if (v.forall(_.isZero))
     Identity(v.head.m, k)
   else
     new SwitchArray(v, k)
 
-  def apply[U: HW](v: Vec[F2], k: Int): SB[U] = apply(Seq(v), k)
+  def apply[U: HW](v: Vec[F2], k: Int): AcyclicStreamingModule[U] = apply(Seq(v), k)
 }
