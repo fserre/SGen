@@ -43,41 +43,40 @@ object Xsim:
    *         - if U is Double or Complex[Double], the mean of the relative errors,
    *         - the sum of the absolute value of the difference otherwise.
   */
-  extension[U] (sm: StreamingModule[U]) final def test(repeat: Int = 2, addedGap: Int = 0): Option[Double] = 
-      // computes the expected output
-      val outputs = sm.testBenchInput(repeat).grouped(sm.N).toSeq.zipWithIndex.flatMap { case (input, set) => sm.eval(input, set) }.map(sm.hw.valueOf)
-      // Write the design with testbench  
-      val pw = new PrintWriter("test.v")
-      pw.write("/*\n")
-      io.Source.fromResource("testlogo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
-      pw.write(" */\n\n")
-      pw.write(sm.toVerilog)
-      pw.write(sm.getTestBench(repeat, addedGap))
-      pw.close()
-      // Run the simulator  
-      val xvlog=Xilinx.run("xvlog","test.v")
-      sm.dependencies.foreach(filename => Xilinx.run("xvhdl",filename))
-      val xelag = Xilinx.run("xelab","test")
-      val xsim = Xilinx.run("xsim", "work.test -R")
-      if !xsim.contains("Success.") then // there was a problem during the test => show output
-        println(xvlog)
-        println(xelag)
-        println(xsim)
-        None
-      else
-        Some(sm.outputs.indices.map(i => // Test was run without error => parse the results   
-          val pos1 = xsim.indexOf("output" + i + ": ")
-          val pos2 = xsim.indexOf(" ", pos1) + 1
-          val pos3 = xsim.indexOf(" ", pos2)
-          val res = sm.hw.valueOf(BigInt(xsim.slice(pos2, pos3)))
-          (res, outputs(i)) match
-            case (x: Complex[Double], y: Complex[Double]) =>
-              val num = Numeric[Complex[Double]]
-              import num._
-              Math.sqrt((x-y).norm2 / Math.max(x.norm2, y.norm2)) / outputs.size  
-            case (x: Double, y: Double) => (x-y).abs / Math.max(x.abs, y.abs) / outputs.size
-            case (x, y) =>
-              import sm.hw.num._
-              (x - y).abs.toDouble
-        ).sum)
+  extension[U] (sm: StreamingModule[U]) final def test(repeat: Int = 2, addedGap: Int = 0): Option[Double] =
+    // computes the expected output
+    val outputs = sm.testBenchInput(repeat).grouped(sm.N).toSeq.zipWithIndex.flatMap { case (input, set) => sm.eval(input, set) }.map(sm.hw.valueOf)
+    // Write the design with testbench  
+    val pw = new PrintWriter("test.v")
+    pw.write("/*\n")
+    io.Source.fromResource("testlogo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
+    pw.write(" */\n\n")
+    pw.write(sm.toVerilog)
+    pw.write(sm.getTestBench(repeat, addedGap))
+    pw.close()
+    // Run the simulator  
+    val xvlog=Xilinx.run("xvlog","test.v")
+    sm.dependencies.foreach(filename => Xilinx.run("xvhdl",filename))
+    val xelag = Xilinx.run("xelab","test")
+    val xsim = Xilinx.run("xsim", "work.test -R")
+    if !xsim.contains("Success.") then // there was a problem during the test => show output
+      println(xvlog)
+      println(xelag)
+      println(xsim)
+      None
+    else
+      Some(sm.outputs.indices.map(i => // Test was run without error => parse the results   
+        val pos1 = xsim.indexOf("output" + i + ": ")
+        val pos2 = xsim.indexOf(" ", pos1) + 1
+        val pos3 = xsim.indexOf(" ", pos2)
+        val res = sm.hw.valueOf(BigInt(xsim.slice(pos2, pos3)))
+        (res, outputs(i)) match
+          case (Complex(xRe: Double, xIm: Double), Complex(yRe: Double, yIm: Double)) => 
+            val (x, y) = (Complex(xRe, xIm), Complex(yRe, yIm)) // avoid using asInstanceOf
+            Math.sqrt(Numeric[Complex[Double]].minus(x, y).norm2 / Math.max(x.norm2, y.norm2)) / outputs.size  
+          case (x: Double, y: Double) => (x-y).abs / Math.max(x.abs, y.abs) / outputs.size
+          case (x, y) =>
+            import sm.hw.num._
+            (x - y).abs.toDouble
+      ).sum)
 

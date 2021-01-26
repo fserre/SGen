@@ -36,7 +36,7 @@ import scala.reflect.ClassTag
  * @param re real part
  * @param im imaginary part
  */
-case class Complex[T: Numeric](re: T, im: T):
+case class Complex[+T: Numeric](re: T, im: T):
   /**
    * Returns a printable string representing the number
    *
