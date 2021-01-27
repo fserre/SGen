@@ -66,7 +66,7 @@ object DOT:
       val nodes=mod.components.flatMap(cur => cur match
           case _: Output | _: Input | _: Wire | _: Const => None
           case Register(_, cycles) if cycles == 1 => node(cur, """label="Reg",shape=square""")
-          case Register(_, cycles) => node(cur, s"""label="Buffer($cycles cycles)",shape=record""")
+          case Register(_, cycles) => node(cur, s"""label="FIFO($cycles cycles)",shape=record""")
           case Plus(_) => node(cur, """label="+",shape=circle""")
           case Times(_, _) => node(cur, """label="*",shape=circle""")
           case Or(_) => node(cur, """label="|",shape=circle""")
@@ -112,8 +112,8 @@ object DOT:
       val pw = PrintWriter("rtl.gv")
       pw.write(graph)
       pw.close()
-      "dot -Tpdf rtl.gv -o rtl.pdf".!!
-      "cmd /c start rtl.pdf".!!
+      "dot -Tsvg rtl.gv -o rtl.svg".!!
+      "cmd /c start rtl.svg".!!
   
   extension [U](sb: AcyclicStreamingModule[U])
     /**
@@ -198,5 +198,5 @@ object DOT:
       val pw = PrintWriter("graph.gv") 
       pw.write(graph)
       pw.close()
-      "dot -Tpdf graph.gv -o graph.pdf".!!
-      "cmd /c start graph.pdf".!!
+      "dot -Tsvg graph.gv -o graph.svg".!!
+      "cmd /c start graph.svg".!!

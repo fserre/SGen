@@ -30,6 +30,7 @@ lazy val root = (project in file("."))
     scalaVersion := "3.0.0-RC1-bin-20210122-6947b0f-NIGHTLY",
     //scalaVersion := "3.0.0-RC1-bin-20210123-b731573-NIGHTLY",
     libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.2" % "test").withDottyCompat(scalaVersion.value),
+    libraryDependencies += ("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0").withDottyCompat(scalaVersion.value),
     scalacOptions ++= Seq("-deprecation","-feature"),
     //scalacOptions ++= Seq("-source","3.1"),
     mainClass in (Compile, run) := Some("Main"),
