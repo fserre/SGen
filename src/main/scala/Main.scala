@@ -38,102 +38,80 @@ import backends.DOT._
 import backends.Verilog._
 
 object Main {
-  var testbench: Boolean = false
-  var graph: Boolean = false
-  var rtlgraph: Boolean = false
-  var dualRAMControl: Boolean = false
-  var singlePortedRAM: Boolean = false
-  var zip = false
-
-
-  var _n: Option[Int] = None
-
-  def n_=(arg: Option[Int]): Unit = _n = arg
-
-  def n: Int = _n match {
-    case Some(n) => n
-    case _ => throw new IllegalArgumentException("Parameter required: -n")
-  }
-
-  var _k: Option[Int] = None
-
-  def k_=(arg: Option[Int]): Unit = _k = arg
-
-  def k: Int = _k match {
-    case Some(k) => k
-    case _ => n
-  }
-
-  var _r: Option[Int] = None
-
-  def r_=(arg: Option[Int]): Unit = _r = arg
-
-  def r: Int = _r match {
-    case Some(r) => r
-    case _ => (1 to k).reverse.filter(n % _ == 0).head
-  }
-
-  var _hw: Option[HW[?]] = None
-
-  def hw_=(arg: Option[HW[?]]): Unit = _hw = arg
-
-  def hw: HW[?] = _hw match {
-    case Some(k) => k
-    case _ => Unsigned(16)
-  }
-
-  var _design: Option[StreamingModule[?]] = None
-
-  def design_=(arg: StreamingModule[?]): Unit = _design = Some(arg)
-
-  def design = _design match {
-    case Some(d) => d
-    case None => throw new IllegalArgumentException("No design has been specified")
-  }
-
-  var _filename: Option[String] = None
-
-  def filename_=(arg: String): Unit = _filename = Some(arg)
-
-  def filename(default: String) = _filename.getOrElse(default)
-
-  def control = if (singlePortedRAM) RAMControl.SinglePorted else if (dualRAMControl) RAMControl.Dual else RAMControl.Single
-  
-  var logoDisplayed = false
-
-  def parseHW(argsQ:mutable.Queue[String]): Option[HW[?]] = argsQ.dequeue().toLowerCase() match {
-    case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned.apply)
-    case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
-    case "char" => Some(FixedPoint(8, 0))
-    case "short" => Some(FixedPoint(16, 0))
-    case "int" => Some(FixedPoint(32, 0))
-    case "long" => Some(FixedPoint(64, 0))
-    case "uchar" => Some(Unsigned(8))
-    case "ushort" => Some(Unsigned(16))
-    case "uint" => Some(Unsigned(32))
-    case "ulong" => Some(Unsigned(64))
-    case "fixedpoint" => for {
-      magnitude <- Numeric[Int].parseString(argsQ.dequeue())
-      fractional <- Numeric[Int].parseString(argsQ.dequeue())
-    } yield FixedPoint(magnitude, fractional)
-    case "flopoco" => for {
-      wE <- Numeric[Int].parseString(argsQ.dequeue())
-      wF <- Numeric[Int].parseString(argsQ.dequeue())
-    } yield Flopoco(wE, wF)
-    case "ieee754" => for {
-      wE <- Numeric[Int].parseString(argsQ.dequeue())
-      wF <- Numeric[Int].parseString(argsQ.dequeue())
-    } yield IEEE754(wE, wF)
-    case "half" => Some(IEEE754(5, 10))
-    case "float" => Some(IEEE754(8, 23))
-    case "double" => Some(IEEE754(11, 52))
-    case "minifloat" => Some(IEEE754(4, 3))
-    case "bfloat16" => Some(IEEE754(8, 7))
-    case "complex" => parseHW(argsQ).map(ComplexHW(_))
-    case _ => None
-  }
-  
   def main(args: Array[String]) = {
+    var testbench: Boolean = false
+    var graph: Boolean = false
+    var rtlgraph: Boolean = false
+    var dualRAMControl: Boolean = false
+    var singlePortedRAM: Boolean = false
+    var zip = false
+  
+    var _n: Option[Int] = None
+    def n: Int = _n match {
+      case Some(n) => n
+      case _ => throw new IllegalArgumentException("Parameter required: -n")
+    }
+  
+    var _k: Option[Int] = None
+    def k: Int = _k match {
+      case Some(k) => k
+      case _ => n
+    }
+  
+    var _r: Option[Int] = None
+    def r: Int = _r match {
+      case Some(r) => r
+      case _ => (1 to k).reverse.filter(n % _ == 0).head
+    }
+  
+    var _hw: Option[HW[?]] = None
+    def hw: HW[?] = _hw match {
+      case Some(k) => k
+      case _ => Unsigned(16)
+    }
+  
+    var _design: Option[StreamingModule[?]] = None
+    def design = _design match {
+      case Some(d) => d
+      case None => throw new IllegalArgumentException("No design has been specified")
+    }
+  
+    var _filename: Option[String] = None
+    def filename(default: String) = _filename.getOrElse(default)
+  
+    def control = if (singlePortedRAM) RAMControl.SinglePorted else if (dualRAMControl) RAMControl.Dual else RAMControl.Single
+    
+    def parseHW(argsQ:mutable.Queue[String]): Option[HW[?]] = argsQ.dequeue().toLowerCase() match {
+      case "unsigned" => Numeric[Int].parseString(argsQ.dequeue()).map(Unsigned.apply)
+      case "signed" => Numeric[Int].parseString(argsQ.dequeue()).map(FixedPoint(_, 0))
+      case "char" => Some(FixedPoint(8, 0))
+      case "short" => Some(FixedPoint(16, 0))
+      case "int" => Some(FixedPoint(32, 0))
+      case "long" => Some(FixedPoint(64, 0))
+      case "uchar" => Some(Unsigned(8))
+      case "ushort" => Some(Unsigned(16))
+      case "uint" => Some(Unsigned(32))
+      case "ulong" => Some(Unsigned(64))
+      case "fixedpoint" => for {
+        magnitude <- Numeric[Int].parseString(argsQ.dequeue())
+        fractional <- Numeric[Int].parseString(argsQ.dequeue())
+      } yield FixedPoint(magnitude, fractional)
+      case "flopoco" => for {
+        wE <- Numeric[Int].parseString(argsQ.dequeue())
+        wF <- Numeric[Int].parseString(argsQ.dequeue())
+      } yield Flopoco(wE, wF)
+      case "ieee754" => for {
+        wE <- Numeric[Int].parseString(argsQ.dequeue())
+        wF <- Numeric[Int].parseString(argsQ.dequeue())
+      } yield IEEE754(wE, wF)
+      case "half" => Some(IEEE754(5, 10))
+      case "float" => Some(IEEE754(8, 23))
+      case "double" => Some(IEEE754(11, 52))
+      case "minifloat" => Some(IEEE754(4, 3))
+      case "bfloat16" => Some(IEEE754(8, 7))
+      case "complex" => parseHW(argsQ).map(ComplexHW(_))
+      case _ => None
+    }
     val argsQ = mutable.Queue.from(args)
     
     if(!logoDisplayed) {
@@ -143,11 +121,11 @@ object Main {
     }
 
     while (argsQ.nonEmpty) argsQ.dequeue().toLowerCase match {
-      case "-n" => n = Numeric[Int].parseString(argsQ.dequeue())
-      case "-k" => k = Numeric[Int].parseString(argsQ.dequeue())
-      case "-r" => r = Numeric[Int].parseString(argsQ.dequeue())
-      case "-hw" => hw = parseHW(argsQ)
-      case "-o" => filename = argsQ.dequeue()
+      case "-n" => _n = Numeric[Int].parseString(argsQ.dequeue())
+      case "-k" => _k = Numeric[Int].parseString(argsQ.dequeue())
+      case "-r" => _r = Numeric[Int].parseString(argsQ.dequeue())
+      case "-hw" => _hw = parseHW(argsQ)
+      case "-o" => _filename = argsQ.removeHeadOption()
       case "-testbench" => testbench = true
       case "-dualramcontrol" => dualRAMControl = true
       case "-signleportedram" => singlePortedRAM = true
@@ -167,14 +145,14 @@ object Main {
               throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
           case mat: String => throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
         }
-        design = LinearPerm.stream(matrices.toSeq, k, hw, control)
-      case "wht" => design = WHT.stream(n, r, k, hw, control)
+        _design = Some(LinearPerm.stream(matrices.toSeq, k, hw, control))
+      case "wht" => _design = Some(WHT.stream(n, r, k, hw, control))
       case "dft" => hw match {
-        case hw: ComplexHW[Double@unchecked] => design = DFT.CTDFT(n, r).stream(k, control)(hw/*.asInstanceOf[ComplexHW[Double]]*/)
+        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.CTDFT(n, r).stream(k, control)(hw/*.asInstanceOf[ComplexHW[Double]]*/))
         case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")
       }
       case "dftcompact" => hw match {
-        case hw: ComplexHW[Double@unchecked] => design = DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(hw/*.asInstanceOf[ComplexHW[Double]]*/)
+        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(hw/*.asInstanceOf[ComplexHW[Double]]*/))
         case _ => throw new IllegalArgumentException("Compact DFT requires a complex of fractional hardware datatype.")
       }
       case arg => throw new IllegalArgumentException("Unknown argument: " + arg)
@@ -250,6 +228,7 @@ object Main {
       println(s"Written design in $file.")
     }
   }
+  var logoDisplayed = false
 }
 
 
