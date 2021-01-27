@@ -41,10 +41,10 @@ case class Matrix[T: Fractional](m: Int, n: Int, values: Vector[T]) {
    * Transposed matrix
    */
   lazy val transpose:Matrix[T] = Matrix.tabulate(n, m)((i, j) => this (j, i))
-  lazy val norm:Double = math.sqrt(num.toDouble(values.map(x => {
-    num.abs(x)
-//    num.times(abs, abs)
-  }).sum))
+  lazy val norm:Double = Math.sqrt(values.map(x => {
+    val abs = num.toDouble(num.abs(x))
+    abs * abs
+  }).sum)
   lazy val diag :Vec[T]= {
     assert(m == n)
     Vec(Vector.tabulate(n)(i => this (i, i)))

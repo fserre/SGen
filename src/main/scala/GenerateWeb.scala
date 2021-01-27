@@ -25,7 +25,7 @@
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Flopoco, HW, IEEE754, Unsigned}
 import transforms.perm.{Spatial, Steady, SwitchArray, Temporal, SmallTemporal}
 import ir.rtl._
-import transforms.fft.DFT
+import transforms.fft.{DFT, Butterfly, DiagE}
 import linalg.Fields.{Complex, F2}
 import linalg.{Matrix, Vec}
 import backends.DOT._

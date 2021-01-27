@@ -54,7 +54,7 @@ object Mux:
       case Zero() => true
       case _ => false
     } then
-      Mux(address, inputs.map(i => Opposite(i)))
+      Opposite(Mux(address, inputs.map(i => Opposite(i))))
     else
       (0 until address.hw.size).find(pos => inputs.indices.forall(i =>  // search for a useless bit in address
         val j = i | (1 << pos)

@@ -47,7 +47,7 @@ object Plus:
     (lhs, rhs) match
       case (Const(vl), Const(vr)) => Const(vl + vr)
       case (_, Zero()) => lhs
-      case (lhs: Const[T], _) => Times(rhs, lhs)
+      case (Zero(), _) => rhs
       case (_, Opposite(rhs)) => lhs - rhs
       case (Opposite(lhs), _) => rhs - lhs
       case _ => lhs.hw.plus(lhs, rhs)
@@ -152,13 +152,13 @@ object Opposite:
   def unapply[T](arg: Sig[T]): Option[Sig[T]] =
     val hw = arg.hw
     arg match
-      //case Const(value) if hw.num.lt(value, hw.num.zero) => Some(Const(hw.num.negate(value))(using hw))
+      case Const(value) if hw.num.lt(value, hw.num.zero) => Some(Const(hw.num.negate(value))(using hw))
       case Minus(Zero(), arg) => Some(arg)
       case _ => None
   /**
     * Get the opposite of arg. This new node may require additional hardware to be used.
     */
-  inline def apply[T](arg: Sig[T]): Sig[T] =
+  def apply[T](arg: Sig[T]): Sig[T] =
     given HW[T] = arg.hw
     arg match
       case Opposite(v) => v

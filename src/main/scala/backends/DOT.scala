@@ -112,7 +112,7 @@ object DOT:
       val pw = PrintWriter("rtl.gv")
       pw.write(graph)
       pw.close()
-      "Graphviz/dot -Tpdf rtl.gv -o rtl.pdf".!!
+      "dot -Tpdf rtl.gv -o rtl.pdf".!!
       "cmd /c start rtl.pdf".!!
   
   extension [U](sb: AcyclicStreamingModule[U])

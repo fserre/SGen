@@ -71,6 +71,7 @@ object Xsim:
         val pos3 = xsim.indexOf(" ", pos2)
         val res = sm.hw.valueOf(BigInt(xsim.slice(pos2, pos3)))
         (res, outputs(i)) match
+          case (x,y) if x == y => 0   
           case (Complex(xRe: Double, xIm: Double), Complex(yRe: Double, yIm: Double)) => 
             val (x, y) = (Complex(xRe, xIm), Complex(yRe, yIm)) // avoid using asInstanceOf
             Math.sqrt(Numeric[Complex[Double]].minus(x, y).norm2 / Math.max(x.norm2, y.norm2)) / outputs.size  
