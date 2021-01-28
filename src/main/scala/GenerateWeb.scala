@@ -62,10 +62,14 @@ object GenerateWeb extends App:
       yield
         (transform, n, k, r, hw)
 
-    designSpace.par.foreach((transform, n, k, r, hw) =>
-      val name = s"$transform-$n-$k-$r-$hw"
-      Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw complex $hw $transform".split(" "))
-    )
+    for n <- 1 to 15 do 
+      println(s"Generating for n=$n")
+      println(s"-------------------")
+      println
+      designSpace.filter((_,_n,_,_,_) => n == _n).par.foreach((transform, n, k, r, hw) =>
+        val name = s"$transform-$n-$k-$r-$hw"
+        Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw complex $hw $transform".split(" "))
+      )
 
     designSpace.filter((_,n,_,_,_) => n<8).foreach((transform, n, k, r, hw) =>  
       val name = s"$transform-$n-$k-$r-$hw"
