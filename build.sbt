@@ -27,8 +27,8 @@ lazy val root = (project in file("."))
     name := "SGen",
     organization := "fserre",
     version := "0.2",
-    scalaVersion := "3.0.0-RC1-bin-20210122-6947b0f-NIGHTLY",
-    //scalaVersion := "3.0.0-RC1-bin-20210123-b731573-NIGHTLY",
+    //scalaVersion := "3.0.0-RC1-bin-20210122-6947b0f-NIGHTLY",
+    scalaVersion := "3.0.0-RC1-bin-20210126-a3b7ed6-NIGHTLY",
     libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.2" % "test").withDottyCompat(scalaVersion.value),
     libraryDependencies += ("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0").withDottyCompat(scalaVersion.value),
     scalacOptions ++= Seq("-deprecation","-feature"),
@@ -38,6 +38,6 @@ lazy val root = (project in file("."))
     parallelExecution in Test := false,
     testOptions in Test +=Tests.Argument("-s","100"),
     //scalacOptions ++= Seq("-indent","-rewrite")
-    javaOptions in run ++= Seq("-Xms256M", "-Xmx2G", "-XX:MaxPermSize=1024M", "-XX:+UseConcMarkSweepGC")
+    //javaOptions in run ++= Seq("-Xms1G", "-Xmx100G", "-XX:MaxPermSize=1024M", "-XX:+UseConcMarkSweepGC")
   )
 
