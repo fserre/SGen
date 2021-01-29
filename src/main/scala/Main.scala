@@ -186,6 +186,19 @@ object Main {
       pw.write(" */\n\n")
       pw.println(design.toVerilog)
       pw.flush()
+      archive.putNextEntry(new ZipEntry("readme.txt"))
+      io.Source.fromResource("logo.txt").getLines().foreach(l => pw.write(s"$l\n"))
+      io.Source.fromResource("license.txt").getLines().foreach(l => pw.write(s"$l\n"))
+      pw.println("This archive contains the following files:")
+      pw.println(" - readme.txt: this file,")
+      design.dependencies.foreach ((d) =>
+        pw.println(s" - $d: a third party library used by the design,")
+      )
+      pw.println(" - benchmark.v: a Verilog benchmark that can be used to test the design, and")
+      pw.println(" - design.v: the design itself, in Verilog.")
+      pw.println
+      pw.write(design.description.mkString("\n"))
+      pw.flush()
       if (testbench) {
         archive.putNextEntry(new ZipEntry("benchmark.v"))
         pw.write("/*\n")
