@@ -26,7 +26,7 @@ package spl
 import ir.rtl.{StreamingModule,RAMControl}
 import ir.rtl.hardwaretype.HW
 
-abstract class SPL[T](val n: Int) {
+abstract class SPL[T](val n: Int):
   val N: Int = 1 << n
 
   def eval(inputs: Seq[T], set: Int): Seq[T]
@@ -36,4 +36,4 @@ abstract class SPL[T](val n: Int) {
   def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
 
   //def eval(inputs:Seq[Int]):Seq[Int]
-}
+

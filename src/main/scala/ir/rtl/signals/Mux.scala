@@ -32,7 +32,7 @@ case class Mux[U] private(address: Sig[Int], inputs: Seq[Sig[U]]) extends Operat
   /** Returns whether the multiplexer is a ROM */
   def isRom: Boolean = inputs.forall(_.isInstanceOf[Const[?]])
 
-  override def implement(implicit cp: Sig[?] => Component): Component = new ir.rtl.Mux(cp(address), inputs.map(cp))
+  override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Mux(cp(address), inputs.map(cp))
 
   override val pipeline = 1
 

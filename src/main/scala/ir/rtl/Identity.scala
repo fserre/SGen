@@ -27,15 +27,18 @@ import ir.rtl.signals.Sig
 import ir.rtl.hardwaretype.HW
 import ir.rtl.{AcyclicStreamingModule, StreamingModule}
 import ir.spl.SPL
+import linalg.Fields.F2
+import linalg.Matrix
+import transforms.perm.Steady
 
-case class Identity[T:HW](override val t:Int,override val k:Int) extends AcyclicStreamingModule[T](t,k) {
+/*case class Identity[T:HW](override val t:Int,override val k:Int) extends AcyclicStreamingModule[T](t,k):
   override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = inputs
   override def spl: SPL[T] = ir.spl.Identity[T](t+k)
-}
-
-object Identity{
-  def unapply[T](arg: StreamingModule[T]):Boolean = arg match{
-    case _:Identity[T] => true
+*/
+object Identity:
+  def apply[T:HW](t: Int, k: Int) = Steady(Matrix.identity[F2](k), t)
+  def unapply[T](arg: StreamingModule[T]):Boolean = arg match
+    case Steady(p1, _) if p1.forall(_.isIdentity) => true   
+    //case _:Identity[T] => true
     case _ => false
-  }
-}
+  

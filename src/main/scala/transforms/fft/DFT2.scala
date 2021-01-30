@@ -41,7 +41,7 @@ class DFT2[T](implicit val num:Numeric[T]) extends SPL[T](1) with Repeatable[T]{
 
       override def spl: SPL[T] =DFT2[T]()
     }*/
-    Butterfly[T]
+    Butterfly[T]()
   }
 }
 

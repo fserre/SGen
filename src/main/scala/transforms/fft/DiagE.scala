@@ -30,21 +30,20 @@ import ir.spl.{Identity, Repeatable, SPL}
 import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
-case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
+case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]]:
   val num = Numeric[Complex[Double]]
   import num._
-  def pow(x: Int): Int = {
+  def pow(x: Int): Int = 
     val j = x % (1 << r)
     val i = (x >> r) % (1 << (n - r * (l + 1)))
     (i * j) << (r * l)
-  }
 
   def coef(i: Int): Complex[Double] = DFT.omega(n, pow(i))
 
   override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
 
-  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k) {
-    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = {
+  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k): 
+    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = 
       (0 until K).map(p => {
         val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
         val twiddleHW = hw match {
@@ -57,15 +56,15 @@ case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Compl
         val twiddle = ROM(twiddles, control)(twiddleHW)
         inputs(p) * twiddle
       })
-    }
 
     override def toString: String = "DiagE(" + this.n + "," + r + "," + l + "," + this.k + ")"
+
     override def spl: SPL[Complex[Double]] = DiagE(this.n, r, l)
-  }
-}
-object DiagE{
+  
+
+object DiagE:
   def apply(n: Int, r: Int, l: Int):SPL[Complex[Double]]=
-    if(n==r*(l+1))
-      Identity[Complex[Double]](n) else
-    new DiagE(n,r,l)
-}
+    if n==r*(l+1) then
+      Identity[Complex[Double]](n) 
+    else
+      new DiagE(n, r, l)

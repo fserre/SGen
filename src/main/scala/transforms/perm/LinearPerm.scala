@@ -30,7 +30,7 @@ import linalg.Fields.F2
 import linalg.{LUL, Matrix, Vec}
 import transforms.perm.{Spatial, Temporal}
 
-case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
+case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m):
   val ULU = false
   assert(P.forall(m => m.m == m.n))
   assert(P.forall(_.isInvertible))
@@ -38,8 +38,8 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
 
   override def eval(inputs: Seq[T], set: Int): Seq[T] = LinearPerm.permute(P(set % P.size), inputs) //inputs.grouped(N).toSeq.zipWithIndex.flatMap { case (inputs, s) => LinearPerm.permute(P(s % P.size), inputs) }
 
-  override def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = {
-    def unblock(P: Matrix[F2], t: Int) = {
+  override def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = 
+    def unblock(P: Matrix[F2], t: Int) = 
       assert(P.m == P.n)
       val k = P.m - t
       val P4 = P(0 until t, 0 until t)
@@ -47,7 +47,6 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
       val P2 = P(t until k + t, 0 until t)
       val P1 = P(t until k + t, t until k + t)
       (P1, P2, P3, P4)
-    }
 
     val t = n - k
 
@@ -56,7 +55,7 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
     val p2 = ps.map(_._2)
     val p3 = ps.map(_._3)
     val p4 = ps.map(_._4)
-    if (!ULU) {
+    if !ULU then 
       val L2 = P.map(p => new LUL(p, t, k).getSolution)
       val L1 = Vector.tabulate(P.size)(i => p1(i) + L2(i) * p3(i))
       val C4 = Vector.tabulate(P.size)(i => p4(i) + p3(i) * (p1(i) + L2(i) * p3(i)).inverse * (p2(i) + L2(i) * p4(i)))
@@ -67,8 +66,7 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
       Spatial(L1, L2) *
         Temporal(C3, C4,control) *
         Spatial(Vector.fill(P.size)(Matrix.identity[F2](k)), R2)
-    }
-    else {
+    else 
       val L = new LUL((p1.head :: p2.head) / (p3.head :: p4.head), k, t).getSolution
       val R3 = p3.head + L * p1.head
       val R4 = p4.head + L * p2.head
@@ -77,16 +75,12 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m) {
       Temporal(L, Matrix.identity[F2](t),control) *
         Spatial(C1, C2) *
         Temporal(R3, R4,control)
-    }
-  }
-}
 
-object LinearPerm {
-  def apply[T](P:Matrix[F2]):SPL[T]=LinearPerm[T](Seq(P))
-  def permute[T](P: Matrix[F2], v: Seq[T]): Seq[T] = {
+object LinearPerm:
+  def apply[T](P: Matrix[F2]): SPL[T] = LinearPerm[T](Seq(P))
+  def permute[T](P: Matrix[F2], v: Seq[T]): Seq[T] = 
     val Pinv = P.inverse
     Vector.tabulate(1 << P.m)(i => v(permute(Pinv, i)))
-  }
 
   def permute(P: Matrix[F2], i: Int): Int = (P * Vec.fromInt(P.m, i)).toInt
 
@@ -97,10 +91,3 @@ object LinearPerm {
   def Cmat(n: Int): Matrix[F2] = Matrix.tabulate[F2](n, n)((i, j) => F2((i + 1) % n == j))
 
   def stream[T](matrices: Seq[Matrix[F2]], k: Int, hw: HW[T], control:RAMControl): StreamingModule[T] = LinearPerm[T](matrices).stream(k,control)(hw)
-
-  //def L[DT](m: Int, n: Int) = LinearPerm[DT](Lmat(m, n))
-
-  //def Linv[DT](m: Int, n: Int) = LinearPerm[DT](Lmat(m, n).inverse)
-
-  //def R[DT](r: Int, n: Int) = LinearPerm[DT](Rmat(r, n))
-}

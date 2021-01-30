@@ -26,9 +26,11 @@ package ir.rtl
 import ir.rtl.hardwaretype.HW
 import ir.spl.SPL
 
-case class Delay[U: HW](override val t: Int, override val k: Int, override val latency: Int) extends StreamingModule[U](t, k) {
+
+/**
+Streaming module that delays its inputs.
+ */
+case class Delay[U: HW](override val t: Int, override val k: Int, override val latency: Int) extends StreamingModule[U](t, k):
   override def spl: SPL[U] = ir.spl.Identity[U](t + k)
 
   override def implement(rst: Component, token: Int => Component, inputs: Seq[Component]): Seq[Component] = inputs.map(i => (0 until latency).foldLeft(i)((x, _) => x.register))
-
-}
