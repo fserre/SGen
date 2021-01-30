@@ -107,5 +107,5 @@ abstract class AssociativeSig[T](override val list: Seq[Sig[T]], val op: String)
 /** Companion objects of associative (higher kinded) signals should inherit from this object. */
 abstract class AssociativeSigCompanionT[U[T]<:Sig[T] & AssociativeSig[T]] extends AssociativeNodeCompanionT[Sig,U]
 /** Companion objects of associative signals should inherit from this object. */
-abstract class AssociativeSigCompanion[T,U<:Sig[T]  & AssociativeSig[T]](create:Seq[Sig[T]]=>Sig[T], simplify:(Sig[T],Sig[T])=>Either[Sig[T],(Sig[T],Sig[T])]= (lhs:Sig[T], rhs:Sig[T])=>Right(lhs,rhs)) extends AssociativeNodeCompanion[Sig[T],U](create,simplify)
+abstract class AssociativeSigCompanion[T,U<:Sig[T]  & AssociativeSig[T]](create:Seq[Sig[T]]=>Sig[T]) extends AssociativeNodeCompanion[Sig[T],U](create)
 

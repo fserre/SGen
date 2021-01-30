@@ -78,29 +78,28 @@ trait AssociativeNode[S]  {that=>
   override def toString: String = that.getClass.getSimpleName+"("+list.map(_.toString()).mkString(", ")+")"
 }
 
-abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]](create:Seq[S]=>S,simplify:(S,S)=>Either[S,(S,S)]=(lhs:S,rhs:S)=>Right(lhs,rhs)) {
-  final def apply(lhs: S, rhs: S)(implicit ev:ClassTag[U]): S = simplify(lhs, rhs) match {
-    case Left(simple) => simple
-    case Right((lhs, rhs)) => (lhs, rhs) match {
-      case (ev(lhs), ev(rhs)) => apply(lhs.list ++ rhs.list)
-      case (lhs, ev(rhs)) => apply(lhs +: rhs.list)
-      case (ev(lhs), rhs) =>
+abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]](create:Seq[S]=>S):
+  def simplify(lhs: S, rhs: S): (S | (S, S))
+
+  final def apply(lhs: S, rhs: S)(using evS: ClassTag[S], evU: ClassTag[U]): S = simplify(lhs, rhs) match
+      case evS(res) => res
+      case (evU(lhs), evU(rhs)) => apply(lhs.list ++ rhs.list)
+      case (evS(lhs), evU(rhs)) => apply(lhs +: rhs.list)
+      case (evU(lhs), evS(rhs)) =>
         val lhsl :+ lhsr = lhs.list
-        simplify(lhsr, rhs) match {
-          case Left(rhs) => apply(apply(lhsl), rhs)
-          case Right((rhs1, rhs2)) => create(lhsl :+ rhs1 :+ rhs2)
-        }
-      case _ => create(Seq(lhs, rhs))
-    }
-  }
-  final def apply(inputs: Seq[S])(implicit ev:ClassTag[U]): S = {
+        simplify(lhsr, rhs) match
+          case evS(rhs) => apply(apply(lhsl), rhs)
+          case (evS(rhs1), evS(rhs2)) => create(lhsl :+ rhs1 :+ rhs2)
+      case (evS(lhs), evS(rhs)) => create(Seq(lhs, rhs))
+
+
+  final def apply(inputs: Seq[S])(using ClassTag[U], ClassTag[S]): S =
     require(inputs.nonEmpty)
     inputs.reduceLeft((lhs, rhs) => apply(lhs, rhs))
-  }
 
-  final def unapply(arg: U)(implicit ev:ClassTag[U]): Option[Seq[S]] = arg match {
+  final def unapply(arg: U)(using ev: ClassTag[U]): Option[Seq[S]] = arg match {
     case ev(arg) => Some(arg.list)
     case _ => None
   }
 
-}
+

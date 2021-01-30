@@ -39,18 +39,19 @@ final class And private (terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms
   override val pipeline = 1
 
 /** Companion object of class And */
-object And extends AssociativeSigCompanion[Int, And](arg => new And(arg), (lhs: Sig[Int], rhs: Sig[Int]) => 
-  require(lhs.hw == rhs.hw)
-  given HW[Int] = lhs.hw
-  def withConst(const:Int, input:Sig[Int]) =
-    val bits = lhs.hw.bitsOf(const)
-    Concat((0 until lhs.hw.size).reverse.map(i => if bits.testBit(i) then input(i) else Const(0)(Unsigned(1))))
-  (lhs, rhs) match
-    case (Const(lhs), Const(rhs)) => Left(Const(lhs & rhs))
-    case (_, Const(value)) => Left(withConst(value, lhs))
-    case (Const(value), _) => Left(withConst(value, rhs))
-    case (lhs, rhs) => Right(lhs, rhs)
-)
+object And extends AssociativeSigCompanion[Int, And](arg => new And(arg)):
+  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) = 
+    require(lhs.hw == rhs.hw)
+    given HW[Int] = lhs.hw
+    def withConst(const:Int, input:Sig[Int]) =
+      val bits = lhs.hw.bitsOf(const)
+      Concat((0 until lhs.hw.size).reverse.map(i => if bits.testBit(i) then input(i) else Const(0)(Unsigned(1))))
+    (lhs, rhs) match
+      case (Const(lhs), Const(rhs)) => Const(lhs & rhs)
+      case (_, Const(value)) => withConst(value, lhs)
+      case (Const(value), _) => withConst(value, rhs)
+      case (lhs, rhs) => (lhs, rhs)
+
 
 /** Binary not of a signal */
 case class Not private (input: Sig[Int]) extends Operator[Int](input)(input.hw):
@@ -74,18 +75,19 @@ final class Xor private (terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms
     case _ => false
 
 /** Companion object of class Xor */
-object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg), (lhs: Sig[Int], rhs: Sig[Int]) => 
-  require(lhs.hw == rhs.hw)
-  given HW[Int] = lhs.hw
-  def withConst(const:Int,input:Sig[Int]) =
-    val bits = lhs.hw.bitsOf(const)
-    Concat((0 until lhs.hw.size).reverse.map(i => if bits.testBit(i) then Not(input(i)) else input(i)))
-  (lhs, rhs) match
-    case (Const(lhs), Const(rhs)) => Left(Const(lhs ^ rhs))
-    case (_, Const(value)) => Left(withConst(value, lhs))
-    case (Const(value), _)=>Left(withConst(value, rhs))
-    case (lhs, rhs) => Right(lhs, rhs)
-)
+object Xor extends AssociativeSigCompanion[Int, Xor](arg => new Xor(arg)):
+  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) = 
+    require(lhs.hw == rhs.hw)
+    given HW[Int] = lhs.hw
+    def withConst(const:Int,input:Sig[Int]) =
+      val bits = lhs.hw.bitsOf(const)
+      Concat((0 until lhs.hw.size).reverse.map(i => if bits.testBit(i) then Not(input(i)) else input(i)))
+    (lhs, rhs) match
+      case (Const(lhs), Const(rhs)) => Const(lhs ^ rhs)
+      case (_, Const(value)) => withConst(value, lhs)
+      case (Const(value), _)=>withConst(value, rhs)
+      case (lhs, rhs) => (lhs, rhs)
+
 
 /** Computes a xor reduction of a signal */
 object RedXor:
@@ -103,14 +105,15 @@ final class Concat private(terms: Seq[Sig[Int]]) extends AssociativeSig[Int](ter
     case _ => false
   
 /** Companion object of class Concat */
-object Concat extends AssociativeSigCompanion[Int, Concat]({ (list: Seq[Sig[Int]]) => new Concat(list) }, (lhs: Sig[Int], rhs: Sig[Int]) => 
-  (lhs,rhs) match
-    case (lhs:Const[Int], rhs:Const[Int]) => Left(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size)))
-    case (_, Null()) => Left(lhs)
-    case (Null(),_) => Left(rhs)
-    case (Tap(lhs, lr), Tap(rhs, rr)) if lhs == rhs && rr.last + 1 == lr.start => Left(lhs(rr.start to lr.last))
-    case (lhs,rhs) => Right(lhs,rhs)
-)
+object Concat extends AssociativeSigCompanion[Int, Concat]((list: Seq[Sig[Int]]) => new Concat(list)):   
+  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) = 
+    (lhs,rhs) match
+      case (lhs:Const[Int], rhs:Const[Int]) => Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size))
+      case (_, Null()) => lhs
+      case (Null(),_) => rhs
+      case (Tap(lhs, lr), Tap(rhs, rr)) if lhs == rhs && rr.last + 1 == lr.start => lhs(rr.start to lr.last)
+      case (lhs,rhs) => (lhs, rhs)
+
 
 /** Selection of a range of bits in an unsigned signal */
 case class Tap private (input: Sig[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)):
