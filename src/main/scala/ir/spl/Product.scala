@@ -37,16 +37,16 @@ class Product[T] private(override val list: Seq[SPL[T]]) extends SPL[T](list.hea
   override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = ir.rtl.Product(list.map(_.stream(k,control)))
 }
 
-object Product extends AssociativeNodeCompanionT[SPL,Product] {
-  override def simplify[T](lhs: SPL[T], rhs: SPL[T]): Either[SPL[T], (SPL[T], SPL[T])] = {
+object Product extends AssociativeNodeCompanionT[SPL,Product]([T] => (inputs:Seq[SPL[T]]) => new Product(inputs)) {
+  override def simplify[T](lhs: SPL[T], rhs: SPL[T]) = {
     require(lhs.n==rhs.n)
     (lhs, rhs) match {
-      case (Identity(), rhs) => Left(rhs)
-      case (lhs, Identity()) => Left(lhs)
+      case (Identity(), _) => Some(rhs)
+      case (_, Identity()) => Some(lhs)
       case (LinearPerm(lhs), LinearPerm(rhs)) =>
         val size =Utils.lcm(lhs.size, rhs.size)
-        Left(perm.LinearPerm(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size))))
-      case _ => Right((lhs,rhs))
+        Some(perm.LinearPerm(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size))))
+      case _ => None
     }
     }
   /*def apply[T](lhs: SPL[T], rhs: SPL[T]): SPL[T] = {
@@ -74,5 +74,5 @@ object Product extends AssociativeNodeCompanionT[SPL,Product] {
   //def apply[T](factors: Seq[SPL[T]]): SPL[T] = factors.reduceLeft((lhs, rhs) => Product(lhs, rhs))
   def apply[T](nb:Int)(block:Int=>SPL[T]):SPL[T]=(0 until nb).map(block).reduceLeft(_ * _)
 
-  override def create[T](inputs: Seq[SPL[T]]): SPL[T] = new Product(inputs)
+  //override def create[T](inputs: Seq[SPL[T]]): SPL[T] = new Product(inputs)
 }

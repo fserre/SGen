@@ -51,10 +51,10 @@ class Product[U] private (override val list: Seq[StreamingModule[U]]) extends St
   override def hasSinglePortedMem: Boolean = list.exists(_.hasSinglePortedMem)
 }
 
-object Product extends AssociativeNodeCompanionT[StreamingModule,Product] {
-  override def create[T](inputs: Seq[StreamingModule[T]]): StreamingModule[T] = new Product(inputs)
+object Product extends AssociativeNodeCompanionT[StreamingModule,Product]([T] => (inputs:Seq[StreamingModule[T]]) => new Product(inputs)) {
+  //override def create[T](inputs: Seq[StreamingModule[T]]): StreamingModule[T] = new Product(inputs)
 
-  override def simplify[T](lhs: StreamingModule[T], rhs: StreamingModule[T]): Either[StreamingModule[T], (StreamingModule[T], StreamingModule[T])] = {
+  override def simplify[T](lhs: StreamingModule[T], rhs: StreamingModule[T]) = {
     val t=lhs.t
     val k=rhs.k
     implicit val hw: HW[T] =lhs.hw
@@ -62,11 +62,11 @@ object Product extends AssociativeNodeCompanionT[StreamingModule,Product] {
     require(rhs.k==k)
     require(lhs.hw==hw)
     (lhs,rhs) match {
-      case (_,Identity())=>Left(lhs)
-      case (Identity(),_)=>Left(rhs)
-      case(lhs:AcyclicStreamingModule[T],rhs:AcyclicStreamingModule[T])=>Left(AcyclicProduct(lhs,rhs))
+      case (_,Identity())=>Some(lhs)
+      case (Identity(),_)=>Some(rhs)
+      case(lhs:AcyclicStreamingModule[T],rhs:AcyclicStreamingModule[T])=>Some(AcyclicProduct(lhs,rhs))
 
-      case _ =>Right((lhs,rhs))
+      case _ =>None
     }
   }
 }
@@ -84,23 +84,23 @@ class AcyclicProduct[U] private(override val list: Seq[AcyclicStreamingModule[U]
   override def hasSinglePortedMem: Boolean = list.exists(_.hasSinglePortedMem)
 }
 
-object AcyclicProduct extends AssociativeNodeCompanionT[AcyclicStreamingModule,AcyclicProduct] {
-  override def simplify[T](lhs: AcyclicStreamingModule[T], rhs: AcyclicStreamingModule[T]): Either[AcyclicStreamingModule[T], (AcyclicStreamingModule[T], AcyclicStreamingModule[T])] = {
+object AcyclicProduct extends AssociativeNodeCompanionT[AcyclicStreamingModule,AcyclicProduct]([T] => (inputs:Seq[AcyclicStreamingModule[T]]) => new AcyclicProduct(inputs))  {
+  override def simplify[T](lhs: AcyclicStreamingModule[T], rhs: AcyclicStreamingModule[T]) = {
     require(lhs.t == rhs.t)
     require(lhs.k == rhs.k)
     require(lhs.hw == rhs.hw)
     implicit val hw: HW[T] = lhs.hw
     val t=lhs.t
     (lhs, rhs) match {
-      case (Identity(), rhs) => Left(rhs)
-      case (lhs, Identity()) => Left(lhs)
+      case (Identity(), _) => Some(rhs)
+      case (_, Identity()) => Some(lhs)
 
       case (Steady(lhs,_),Steady(rhs,_))=>
         val size =Utils.lcm(lhs.size, rhs.size)
-        Left(Steady(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size)),t))
+        Some(Steady(Seq.tabulate(size)(i => lhs(i % lhs.size) * rhs(i % rhs.size)),t))
       //todo:Add SLP
 
-      case _ => Right((lhs, rhs))
+      case _ => None
     }
   }
   /*def apply[U](lhs: SB[U], rhs: SB[U]): SB[U] = {
@@ -127,5 +127,5 @@ object AcyclicProduct extends AssociativeNodeCompanionT[AcyclicStreamingModule,A
   }*/
 
   //def apply[U: HW](factors: Seq[SB[U]]): SB[U] = factors.reduceLeft((lhs, rhs) => ProductSB(lhs, rhs))
-  override def create[T](inputs: Seq[AcyclicStreamingModule[T]]): AcyclicStreamingModule[T] = new AcyclicProduct[T](inputs)
+  //override def create[T](inputs: Seq[AcyclicStreamingModule[T]]): AcyclicStreamingModule[T] = new AcyclicProduct[T](inputs)
 }

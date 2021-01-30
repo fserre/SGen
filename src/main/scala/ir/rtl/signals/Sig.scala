@@ -29,7 +29,7 @@ import ir.rtl.hardwaretype.{HW, Unsigned}
 import ir.AssociativeNodeCompanion
 import linalg.Fields.{Complex, F2}
 import linalg._
-
+import scala.reflect._
 
 /**
  * Class that represent a node in an acyclic streaming module internal graph. These nodes are comparable to RTL components, but abstract the hardware numeric representation, and timing.
@@ -104,8 +104,4 @@ abstract class Operator[T: HW](operands: Sig[?]*) extends Sig[T]:
 
 /** Signal that represent an associative operator */
 abstract class AssociativeSig[T](override val list: Seq[Sig[T]], val op: String)(using hw: HW[T] = list.head.hw) extends Operator(list: _*) with AssociativeNode[Sig[T]]
-/** Companion objects of associative (higher kinded) signals should inherit from this object. */
-abstract class AssociativeSigCompanionT[U[T]<:Sig[T] & AssociativeSig[T]] extends AssociativeNodeCompanionT[Sig,U]
-/** Companion objects of associative signals should inherit from this object. */
-abstract class AssociativeSigCompanion[T,U<:Sig[T]  & AssociativeSig[T]](create:Seq[Sig[T]]=>Sig[T]) extends AssociativeNodeCompanion[Sig[T],U](create)
 

@@ -25,79 +25,89 @@ package ir
 
 import scala.reflect._
 
-/*trait AssociativeNodeT[T,S[_]]  {that=>
-  val list: Seq[S[T]]
-
-  override def toString: String = that.getClass.getSimpleName+"("+list.map(_.toString()).mkString(", ")+")"
-
-  def canEqual(other:Any)=other.isInstanceOf[that.type]
-
-  override def equals(obj: Any): Boolean = obj match{
-    case other:that.type => other.canEqual(that) && other.list==list
-    case _ => false
-  }
-
-  override val hashCode: Int = Seq(that.getClass.getSimpleName,list).hashCode()
-}*/
-
-abstract class AssociativeNodeCompanionT[S[_],U[T] <: S[T] & AssociativeNode[S[T]]] {
-  def create[T](inputs: Seq[S[T]]): S[T]
-
-  def simplify[T](lhs: S[T], rhs: S[T]): Either[S[T], (S[T], S[T])] = Right((lhs,rhs))
-
-  def apply[T](lhs: S[T], rhs: S[T])(implicit ev:ClassTag[U[T]]): S[T] = simplify(lhs, rhs) match {
-    case Left(simple) => simple
-    case Right((lhs, rhs)) => (lhs, rhs) match {
-      case (ev(lhs), ev(rhs)) => apply(lhs.list ++ rhs.list)
-      case (lhs, ev(rhs)) => apply(lhs +: rhs.list)
-      case (ev(lhs), rhs) =>
-        val lhsl :+ lhsr = lhs.list
-        simplify(lhsr, rhs) match {
-          case Left(rhs) => apply(apply(lhsl), rhs)
-          case Right((rhs1, rhs2)) => create(lhsl :+ rhs1 :+ rhs2)
-        }
-      case _ => create(Seq(lhs, rhs))
-    }
-  }
-  def apply[T](inputs: Seq[S[T]])(implicit ev:ClassTag[U[T]]): S[T] = {
-    require(inputs.nonEmpty)
-    inputs.reduceLeft((lhs, rhs) => apply(lhs, rhs))
-  }
-
-  def unapply[T](arg: U[T])(implicit ev:ClassTag[U[T]]): Option[Seq[S[T]]] = arg match {
-    case ev(arg) => Some(arg.list)
-    case _ => None
-  }
-
-}
-
-
-trait AssociativeNode[S]  {that=>
+/**
+ * Trait that represents a node in a graph that is associative on its parents.
+ * 
+ * @tparam S Node type
+ */
+trait AssociativeNode[S]: 
+  /** parent nodes */
   val list: Seq[S]
 
-  override def toString: String = that.getClass.getSimpleName+"("+list.map(_.toString()).mkString(", ")+")"
-}
+  override def toString: String = getClass.getSimpleName+"("+list.map(_.toString()).mkString(", ")+")"
 
-abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]](create:Seq[S]=>S):
-  def simplify(lhs: S, rhs: S): (S | (S, S))
-  
-  final def apply(lhs: S, rhs: S)(using evS: ClassTag[S], evU: ClassTag[U]): S = (lhs, rhs) match
-    case (evS(lhs), evU(rhs)) => apply(lhs +: rhs.list)
-    case (evU(lhs), evS(rhs)) =>
+/**
+ * Class that companion objects of associative nodes should extend.
+ * 
+ * @param create Function that creates a node U from a seq of S 
+ * @tparam S type of the nodes
+ * @tparam U type of this node
+ */
+abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]: ClassTag](create:Seq[S]=>U):
+  /**
+   * Simplify, if possible a pair of parents 
+   */
+  def simplify(lhs: S, rhs: S): Option[S] = None
+
+  /**
+   * Constructs a new simplified node 
+   */
+  final def apply(lhs: S, rhs: S): S = (lhs, rhs) match
+    case (_, rhs: U) => apply(lhs +: rhs.list)
+    case (lhs: U, _) =>
       val lhsl :+ lhsr = lhs.list
       simplify(lhsr, rhs) match
-        case evS(rhs) => apply(if lhsl.size == 1 then lhsl.head else create(lhsl), rhs)
-        case (evS(rhs1), evS(rhs2)) => create(lhsl :+ rhs1 :+ rhs2)
-    case _ => simplify(lhs, rhs) match
-      case evS(res) => res
-      case (evS(lhs), evS(rhs)) => create(Seq(lhs, rhs))
+        case Some(rhs) => apply(if lhsl.size == 1 then lhsl.head else create(lhsl), rhs)
+        case None => create(lhs.list :+ rhs)
+        case _ => simplify(lhs, rhs) match
+          case Some(res) => res
+          case None => create(Seq(lhs, rhs))
 
-  final def apply(inputs: Seq[S])(using ClassTag[U], ClassTag[S]): S =
+  /**
+   * Constructs a new simplified node 
+   */
+  final def apply(inputs: Seq[S]): S =
     require(inputs.nonEmpty)
     inputs.reduceLeft((lhs, rhs) => apply(lhs, rhs))
 
-  final def unapply(arg: U)(using ev: ClassTag[U]): Option[Seq[S]] = arg match
-    case ev(arg) => Some(arg.list)
-    case _ => None
+  final def unapply(arg: U): Option[Seq[S]] = Some(arg.list)
 
+
+
+/**
+ * Class that companion objects of associative nodes with dependent type should extend.
+ *
+ * @param create Function that creates a node U from a seq of S 
+ * @tparam S type of the nodes
+ * @tparam U type of this node
+ *           
+ */
+abstract class AssociativeNodeCompanionT[S[_],U[T] <: S[T] & AssociativeNode[S[T]]] (create:[T]=>Seq[S[T]]=>U[T]):
+  /**
+   * Simplify, if possible a pair of parents 
+   */
+  def simplify[T](lhs: S[T], rhs: S[T]): Option[S[T]] = None
+
+  /**
+   * Constructs a new simplified node 
+   */
+  final def apply[T](lhs: S[T], rhs: S[T])(using ev:ClassTag[U[T]]): S[T] = (lhs, rhs) match
+    case (_, ev(rhs)) => apply(lhs +: rhs.list)
+    case (ev(lhs), _) =>
+      val lhsl :+ lhsr = lhs.list
+      simplify(lhsr, rhs) match
+        case Some(rhs) => apply(if lhsl.size == 1 then lhsl.head else create(lhsl), rhs)
+        case None => create(lhs.list :+ rhs) 
+    case _ => simplify(lhs, rhs) match
+      case Some(res) => res
+      case None => create(Seq(lhs, rhs))
+
+  /**
+   * Constructs a new simplified node 
+   */
+  def apply[T](inputs: Seq[S[T]])(using ClassTag[U[T]]): S[T] =
+    require(inputs.nonEmpty)
+    inputs.reduceLeft((lhs, rhs) => apply(lhs, rhs))
+
+  def unapply[T](arg: U[T]): Option[Seq[S[T]]] = Some(arg.list)
 
