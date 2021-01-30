@@ -59,9 +59,9 @@ abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]: ClassTag]
       simplify(lhsr, rhs) match
         case Some(rhs) => apply(if lhsl.size == 1 then lhsl.head else create(lhsl), rhs)
         case None => create(lhs.list :+ rhs)
-        case _ => simplify(lhs, rhs) match
-          case Some(res) => res
-          case None => create(Seq(lhs, rhs))
+    case _ => simplify(lhs, rhs) match
+      case Some(res) => res
+      case None => create(Seq(lhs, rhs))
 
   /**
    * Constructs a new simplified node 
