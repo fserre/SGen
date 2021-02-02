@@ -77,7 +77,7 @@ object GenerateWeb extends App:
       println
       designSpace.filter((_,_n,_,_,_) => n == _n).par.foreach((transform, n, k, r, hw) =>
         val name = s"$transform-$n-$k-$r-$hw"
-        Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw ${if transform contains "wht" || transform contains "dft" then "complex " else ""} $hw $transform".split(" "))
+        Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw ${if (transform contains "wht") || (transform contains "dft") then "complex " else ""} $hw $transform".split(" "))
       )
     
     // tests small designs using Xilinx XSim
