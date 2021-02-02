@@ -62,6 +62,13 @@ object WHT {
     else
       ItProduct(n / r, ITensor(n - r, apply(r, 1)) * LinearPerm(LinearPerm.Lmat(r, n).inverse))
   }
-
+  def ItPeaseFused[T: Numeric](n: Int, r: Int): SPL[T] = {
+    assert(n % r == 0)
+    if (n == 1)
+      DFT2[T]()
+    else
+      ItProduct(n / r + 1, perm.LinearPerm(Seq.fill(n / r)(LinearPerm.Lmat(r, n).inverse) :+ LinearPerm.Rmat(r, n)), Some(ITensor(n - r, apply(r, 1))))
+  }
   def stream[T](n: Int, r: Int, k: Int, hw: HW[T],control:RAMControl): StreamingModule[T] = WHT[T](n, r)(using hw.num).stream(k,control)(using hw)
+  def streamcompact[T](n: Int, r: Int, k: Int, hw: HW[T]): StreamingModule[T] = WHT.ItPeaseFused[T](n, r)(using hw.num).stream(k,RAMControl.Dual)(using hw)
 }

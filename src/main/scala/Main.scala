@@ -146,6 +146,7 @@ object Main:
           case mat: String => throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
         _design = Some(LinearPerm.stream(matrices.toSeq, k, hw, control))
       case "wht" => _design = Some(WHT.stream(n, r, k, hw, control))
+      case "whtcompact" => _design = Some(WHT.streamcompact(n, r, k, hw))
       case "dft" => hw match
         case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.CTDFT(n, r).stream(k, control)(hw/*.asInstanceOf[ComplexHW[Double]]*/))
         case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")

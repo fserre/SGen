@@ -99,4 +99,25 @@ object WHTTest extends Properties("WHT")  {
         case _ => false
       }
     }
+
+  val itpeasefusedWHT = 
+    for 
+      t <- Gen.choose(1, 2)
+      k <- Gen.choose(1, 2)
+      n = t + k
+      r <- Gen.choose(1, n)
+      if n % r == 0
+      spl = WHT.ItPeaseFused[Double](n, r)
+      design = spl.stream(k,RAMControl.Dual)(FixedPoint(16, 0))
+    yield  
+      design
+
+
+  property("ItPeaseFusedWHT") =
+    forAll(itpeasefusedWHT) { (sb: StreamingModule[Double]) =>
+      sb.test() match {
+        case Some(value) if value < 0.01 => true
+        case _ => false
+      }
+    }
 }

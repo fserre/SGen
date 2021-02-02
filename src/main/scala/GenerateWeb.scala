@@ -53,7 +53,7 @@ object GenerateWeb extends App:
   else
     val designSpace =
       for
-        transform <- Vector("dft", "dftcompact")
+        transform <- Vector("dft", "dftcompact", "wht", "whtcompact")
         n <- 1 to 15
         k <- 1 to Math.min(n,8)
         r <- 1 to k
