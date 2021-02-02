@@ -23,9 +23,9 @@
 
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Flopoco, HW, IEEE754, Unsigned}
-import transforms.perm.{Spatial, Steady, SwitchArray, Temporal, SmallTemporal}
+import transforms.perm.{LinearPerm, SmallTemporal, Spatial, Steady, SwitchArray, Temporal}
 import ir.rtl._
-import transforms.fft.{DFT, Butterfly, DiagE}
+import transforms.fft.{Butterfly, DFT, DiagE}
 import linalg.Fields.{Complex, F2}
 import linalg.{Matrix, Vec}
 import backends.DOT._
@@ -33,6 +33,7 @@ import backends.SVG._
 import backends.Verilog._
 import backends.xilinx.Vivado._
 import backends.xilinx.Xsim._
+import transforms.wht.WHT
 
 import collection.parallel.CollectionConverters.VectorIsParallelizable
 import scala.sys.process._
@@ -52,7 +53,7 @@ object GenerateWeb extends App:
     graphDesign.showRTLGraph
   else
     val designSpace =
-      for
+      (for
         transform <- Vector("dft", "dftcompact", "wht", "whtcompact")
         n <- 1 to 15
         k <- 1 to Math.min(n,8)
@@ -60,7 +61,15 @@ object GenerateWeb extends App:
         if n % r == 0
         hw <- Vector("char","short","int","long","half","float","double","bfloat16")
       yield
-        (transform, n, k, r, hw)
+        (transform, n, k, r, hw)) ++ 
+      (for
+        transform <- Vector("bitrev", "stride")
+        n <- 2 to 15
+        k <- 1 to Math.min(n,8)
+        r <- 1 to n-1
+        hw <- Vector("char","short","int","long","half")
+      yield
+        (transform, n, k, r, hw))
 
     for n <- 1 to 15 do 
       println(s"Generating for n=$n")
@@ -68,35 +77,43 @@ object GenerateWeb extends App:
       println
       designSpace.filter((_,_n,_,_,_) => n == _n).par.foreach((transform, n, k, r, hw) =>
         val name = s"$transform-$n-$k-$r-$hw"
-        Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw complex $hw $transform".split(" "))
+        Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw ${if transform contains "wht" || transform contains "dft" then "complex " else ""} $hw $transform".split(" "))
       )
-
+    
+    // tests small designs using Xilinx XSim
     designSpace.filter((_,n,_,_,_) => n<8).foreach((transform, n, k, r, hw) =>  
       val name = s"$transform-$n-$k-$r-$hw"
-      if n < 8 then // tests small designs using Xilinx XSim
-        val rhw:HW[Double] = 
-          if hw == "char" then
-            FixedPoint(4, 4)
-          else if hw == "short" then
-            FixedPoint(8, 8)
-          else if hw == "int" then
-            FixedPoint(16, 16)
-          else if hw == "long" then
-            FixedPoint(32, 32)
-          else if hw == "half" then
-            IEEE754(5, 10)
-          else if hw == "float" then
-            IEEE754(8, 23)
-          else if hw == "double" then
-            IEEE754(11, 52)
-          else 
-            IEEE754(8, 7)
-        print(name + " - ")
-        val uut=
-          if transform=="dft" then
-            DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(rhw))
-          else
-            DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(rhw))
-        println(uut.test())
+      val rhw:HW[Double] = 
+        if hw == "char" then
+          FixedPoint(4, 4)
+        else if hw == "short" then
+          FixedPoint(8, 8)
+        else if hw == "int" then
+          FixedPoint(16, 16)
+        else if hw == "long" then
+          FixedPoint(32, 32)
+        else if hw == "half" then
+          IEEE754(5, 10)
+        else if hw == "float" then
+          IEEE754(8, 23)
+        else if hw == "double" then
+          IEEE754(11, 52)
+        else 
+          IEEE754(8, 7)
+      print(name + " - ")
+      val uut=
+        if transform=="dft" then
+          DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(rhw))
+        else if transform=="dftcompact" then
+          DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(rhw))
+        else if transform=="wht" then
+          WHT.stream(n,r,k,ComplexHW(rhw),RAMControl.Single)
+        else if transform=="whtcompact" then
+          WHT.streamcompact(n,r,k,ComplexHW(rhw))
+        else if transform=="stride" then
+          LinearPerm.stream(Seq(LinearPerm.Lmat(r,n)),k,rhw,RAMControl.Single)
+        else //bitrev
+          LinearPerm.stream(Seq(LinearPerm.Rmat(r,n)),k,rhw,RAMControl.Single)
+      println(uut.test())
     )
     

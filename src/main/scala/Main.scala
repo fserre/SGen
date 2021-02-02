@@ -145,6 +145,8 @@ object Main:
               throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
           case mat: String => throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
         _design = Some(LinearPerm.stream(matrices.toSeq, k, hw, control))
+      case "bitrev" => _design = Some(LinearPerm.stream(Seq(LinearPerm.Rmat(r,n)),k,hw,control))
+      case "stride" => _design = Some(LinearPerm.stream(Seq(LinearPerm.Lmat(r,n)),k,hw,control))  
       case "wht" => _design = Some(WHT.stream(n, r, k, hw, control))
       case "whtcompact" => _design = Some(WHT.streamcompact(n, r, k, hw))
       case "dft" => hw match
