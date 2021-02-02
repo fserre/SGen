@@ -154,6 +154,6 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE + wF + 3):
 
 /** Companion object of class Flopoco */
 object Flopoco:
-  val whm = mutable.WeakHashMap[(Int,Int), Flopoco]()
+  val whm = collection.concurrent.TrieMap[(Int,Int), Flopoco]() // doesn't use weakHashMap: not thread safe!
   /** Creates a new Flopoco HW */
   def apply(wE: Int, wF: Int) = whm.getOrElseUpdate((wE, wF), new Flopoco(wE, wF)) // speedup by using a single reference
