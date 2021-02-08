@@ -67,6 +67,7 @@ object GenerateWeb extends App:
         n <- 2 to 15
         k <- 1 to Math.min(n,8)
         r <- 1 to n-1
+        if transform=="stride" || n % r == 0
         hw <- Vector("char","short","int","long","half")
       yield
         (transform, n, k, r, hw))
