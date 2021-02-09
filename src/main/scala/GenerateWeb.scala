@@ -48,7 +48,7 @@ object GenerateWeb extends App:
     transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")
-    val graphDesign = transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).asInstanceOf[AcyclicStreamingModule[Complex[Double]]]
+    val graphDesign = transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).asInstanceOf[AcyclicStreamingModule[Complex[Double]]]
     graphDesign.showGraph
     graphDesign.showRTLGraph
   else
