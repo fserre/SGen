@@ -54,16 +54,20 @@ case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: I
   override def parents: Seq[(Sig[?], Int)] = Seq((trigger, 1 - delayTrigger), (reset, 1))
 
 /** Object that allows to create dataset counters.*/
-object Counter:
+object SetCounter:
   /**
     * Counter that counts the number of datasets that went through. It updates itself when a new dataset enters.  
     * 
     * @param limit Upper limit of the counter (goes from 0 to limit - 1)
     */
   def apply(limit: Int): Sig[Int] = if limit == 1 then signals.Const(0)(Unsigned(0)) else new Counter(limit, Next, Reset, limit - 1)
+  
+  def unapply(arg: Sig[?]) = arg match
+    case Counter(limit, signals.Next, signals.Reset, resetValue, delayTrigger) if resetValue == limit - 1 && delayTrigger==0 => Some(limit)
+    case _ => None
 
 /** Object that allows to create counters with a late update.*/
-object LateCounter:
+object LateSetCounter:
   /**
    * Counter that counts the number of datasets that went through. It updates when the previous dataset leaves.
    *
@@ -71,6 +75,10 @@ object LateCounter:
    * @param delay Duration of a dataset (AcyclicStreamingModule.T)
    */
   def apply(limit: Int, delay: Int): Sig[Int] = if limit == 1 then signals.Const(0)(Unsigned(0)) else new Counter(limit, Next, Reset, 0, delay)
+
+  def unapply(arg: Sig[?]) = arg match
+    case Counter(limit, signals.Next, signals.Reset, resetValue, delayTrigger) if resetValue == 0 => Some(limit, delayTrigger)
+    case _ => None
 
 /** Object that allows to create timers, i.e. signals that count the number of cycles since the last dataset entered.*/
 object Timer :

@@ -49,7 +49,7 @@ case class SmallTemporal[U: HW] (v3: Seq[Vec[F2]], v4: Seq[Vec[F2]]) extends SLP
 
   override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] =
     require(inputs.size == K)
-    val counter = Counter(size)
+    val counter = SetCounter(size)
     val timer = Timer(T)
     val timerH = timer(1 until t)
     val basis = Mux(counter, v4.map(timerH scalar _))
@@ -123,11 +123,11 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
     val basisListWrite = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const(m.row(c).toInt)(Unsigned(t-r)) scalar timerWriteL)))
 
 
-    val controlWriteH = LateCounter((basis.size+R-1)/R, T)
+    val controlWriteH = LateSetCounter((basis.size+R-1)/R, T)
     val controlWrite=controlWriteH::timerWriteH
     val basisWrite = Mux(controlWrite, basisListWrite)
 
-    val controlWrite2H = LateCounter((offsetLength+R-1)/R, T)
+    val controlWrite2H = LateSetCounter((offsetLength+R-1)/R, T)
     val controlWrite2=controlWrite2H::timerWriteH
     val offsetListWrite = offset2.map(i => ROM(i.map(x => x.toInt), controlWrite2)(Unsigned(t-r)))
 
@@ -139,11 +139,11 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
       val timerReadH=timerRead(t-r until t)
       val basisListRead = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const[Int](m.row(c).toInt)(Unsigned(t-r)) scalar timerReadL)))
 
-      val controlReadH = Counter((basis.size+R-1)/R)
+      val controlReadH = SetCounter((basis.size+R-1)/R)
       val controlRead=controlReadH::timerReadH
       val basisRead = Mux(controlRead, shift(basisListRead))
 
-      val controlRead2H = Counter((offsetLength+R-1)/R)
+      val controlRead2H = SetCounter((offsetLength+R-1)/R)
       val controlRead2 = controlRead2H::timerReadH
       val offsetListRead = offset2.map(i => ROM(shift(i).map(x => x.toInt), controlRead2)(Unsigned(t-r)))
 

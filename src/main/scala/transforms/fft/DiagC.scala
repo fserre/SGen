@@ -26,7 +26,7 @@ package transforms.fft
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, HW, Unsigned}
 import ir.rtl.{AcyclicStreamingModule,RAMControl}
 import ir.spl.{Repeatable, SPL}
-import ir.rtl.signals.{Const, Counter, ROM, Sig, Timer}
+import ir.rtl.signals.{Const, SetCounter, ROM, Sig, Timer}
 import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
@@ -90,7 +90,7 @@ case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]]
           val twiddle = ROM(twiddles, control)(twiddleHW, sb)*/
           val control1 = Timer(T) :: Const(p >> r)(Unsigned(this.k - r))
           //println(control1)
-          val control2a = Counter(this.n / r)
+          val control2a = SetCounter(this.n / r)
           val control2 = ROM(Vector.tabulate(this.n / r)(i => ((1 << (i * r)) - 1) ^ ((1 << (this.n - r)) - 1)), control2a)(Unsigned(this.n - r))
           val control = control1 & control2
           val twiddle = ROM(coefs, control)(twiddleHW)

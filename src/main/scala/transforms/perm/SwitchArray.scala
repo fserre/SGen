@@ -33,7 +33,7 @@ case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) exte
   override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] = 
     val timer = Timer(T)
     val vec = Vector.tabulate(v.size)(j => timer scalar v(j))
-    val set = Counter(size)
+    val set = SetCounter(size)
     val control = Mux(set, vec)
     inputs.indices.toVector.map(i => if (i % 2 == 0) control ? (inputs(i + 1), inputs(i)) else control ? (inputs(i - 1), inputs(i)))
 
