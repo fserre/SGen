@@ -143,8 +143,8 @@ object DOT:
         case signals.Reset =>
           consts.addOne("Reset")
           s"c${consts.size}"
-        case signals.Timer(limit) if limit == sb.T =>
-          consts.addOne("Timer")
+        case signals.Timer(limit) =>
+          consts.addOne(s"Timer($limit)")
           s"c${consts.size}"
         case _ => s"s${indexes(sig) + 1}"
 
@@ -152,7 +152,7 @@ object DOT:
       inline def node(sig:Sig[?], options: String) = Some(s"      ${getName(sig)}[$options];\n")
       val nodes=sigs.flatMap(cur => cur match
         case _: signals.Input[?] | _: signals.Const[?] | signals.Next | signals.Reset => None
-        case signals.Timer(limit) if limit == sb.T => None
+        case signals.Timer(limit) => None
         case cur:signals.AssociativeSig[?] => node(cur, s"""label="${cur.op}",shape=circle""")
         case cur:signals.Plus[?] => node(cur, s"""label="+",shape=circle""")
         case cur:signals.Minus[?] => node(cur, s"""label="-",shape=circle""")
@@ -168,7 +168,7 @@ object DOT:
       //Edges  
       inline def edge(from: Sig[?], to: String) = s"  ${getName(from)}:e -> $to[penwidth=${1 + BigInt(from.hw.size).bitLength}];\n"
       val edges=sigs.flatMap (cur => cur match
-        case signals.Timer(limit) if limit == sb.T => Seq()
+        case signals.Timer(limit) => Seq()
         case signals.ROM(_,address) => Seq(edge(address,s"${getName(cur)}:title:w"))
         case signals.Mux(address, inputs) => inputs.map(edge(_,s"${getName(cur)}:w")) :+ edge(address,s"${getName(cur)}:s")
         case signals.DualControlRAM(input,wr,rd,_) => Seq(edge(input,s"${getName(cur)}:data:w"),edge(wr,s"${getName(cur)}:wr:w"),edge(rd,s"${getName(cur)}:rd:w"))
