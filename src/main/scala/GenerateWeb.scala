@@ -45,10 +45,13 @@ import java.io.PrintWriter
  */
 object GenerateWeb extends App:
   if System.getProperty("os.name") contains "Windows" then
-    transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
-    transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
-    transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")
-    val graphDesign = transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(ComplexHW(FixedPoint(16,0))).asInstanceOf[AcyclicStreamingModule[Complex[Double]]]
+    transforms.fft.DFT(0,3).writeSVG("dft8basic.svg")
+    transforms.fft.DFT(1,2).writeSVG("dft8s4basic.svg")
+    transforms.fft.DFT(2,1).writeSVG("dft8s2basic.svg")
+    transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
+    transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
+    transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")
+    val graphDesign = transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).asInstanceOf[AcyclicStreamingModule[Complex[Double]]]
     graphDesign.showGraph
     graphDesign.showRTLGraph
   else
@@ -104,9 +107,9 @@ object GenerateWeb extends App:
       print(name + " - ")
       val uut=
         if transform=="dft" then
-          DFT.CTDFT(n,r).stream(k,RAMControl.Single)(ComplexHW(rhw))
+          DFT.CTDFT(n,r).stream(k,RAMControl.Single)(using ComplexHW(rhw))
         else if transform=="dftcompact" then
-          DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(ComplexHW(rhw))
+          DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(using ComplexHW(rhw))
         else if transform=="wht" then
           WHT.stream(n,r,k,ComplexHW(rhw),RAMControl.Single)
         else if transform=="whtcompact" then
