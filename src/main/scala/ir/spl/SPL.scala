@@ -31,7 +31,7 @@ abstract class SPL[T](val n: Int):
 
   def eval(inputs: Seq[T], set: Int): Seq[T]
 
-  def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T]
+  def stream(k: Int, control:RAMControl)(using hw: HW[T]): StreamingModule[T]
 
   def *(rhs:SPL[T]): SPL[T] = Product(this,rhs)
 

@@ -150,10 +150,10 @@ object Main:
       case "wht" => _design = Some(WHT.stream(n, r, k, hw, control))
       case "whtcompact" => _design = Some(WHT.streamcompact(n, r, k, hw))
       case "dft" => hw match
-        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.CTDFT(n, r).stream(k, control)(hw/*.asInstanceOf[ComplexHW[Double]]*/))
+        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.CTDFT(n, r).stream(k, control)(using hw/*.asInstanceOf[ComplexHW[Double]]*/))
         case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")
       case "dftcompact" => hw match
-        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(hw/*.asInstanceOf[ComplexHW[Double]]*/))
+        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(using hw/*.asInstanceOf[ComplexHW[Double]]*/))
         case _ => throw new IllegalArgumentException("Compact DFT requires a complex of fractional hardware datatype.")
       case arg => throw new IllegalArgumentException("Unknown argument: " + arg)
     

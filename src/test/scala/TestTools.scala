@@ -76,7 +76,7 @@ object TestTools {
     case ITensor(r, factor, k) if k > factor.n => (1 to k - factor.n).to(LazyList).map(i => ir.rtl.ITensor(r - i, factor, k - i))
     case ItProduct(r, factor: AcyclicProduct[T], endLoop) => shrinkSB[T].shrink(factor).to(LazyList).map(f => ir.rtl.ItProduct(r, f, endLoop))
     case ItProduct(r, factor, endLoop) => (1 until r).reverse.to(LazyList).map(i => ir.rtl.ItProduct(i, factor, endLoop))
-    case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k,if(input.hasSinglePortedMem) RAMControl.Single else RAMControl.Dual)(input.hw))
+    case input => (1 until input.k).reverse.to(LazyList).map(k => input.spl.stream(k,if(input.hasSinglePortedMem) RAMControl.Single else RAMControl.Dual)(using input.hw))
   }
 
 }

@@ -21,7 +21,7 @@
  *   
  */
 
-import ir.rtl.hardwaretype.FixedPoint
+import ir.rtl.hardwaretype.{FixedPoint, HW}
 import ir.rtl.{StreamingModule,RAMControl}
 import transforms.wht.WHT
 import linalg.{Matrix, Vec}
@@ -30,6 +30,7 @@ import org.scalacheck.{Gen, Properties, Shrink}
 import backends.xilinx.Xsim._
 
 object WHTTest extends Properties("WHT")  {
+  given HW[Double]=FixedPoint(16, 0)
   property("WHT conforms to the definition")=
     forAll (Gen.choose(1,10)){n=>
       val sb = WHT[Double](n, 1)
@@ -44,7 +45,7 @@ object WHTTest extends Properties("WHT")  {
     t <- Gen.choose(1, 2)
     k <- Gen.choose(1, 2)
     dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
-  } yield WHT[Double](t + k, 1).stream(k,dp)(FixedPoint(16, 0))
+  } yield WHT[Double](t + k, 1).stream(k,dp)
 
   property("CTWHT")=
     forAll(genSteady) {( sb:StreamingModule[Double]) => sb.test() match{
@@ -74,7 +75,7 @@ object WHTTest extends Properties("WHT")  {
     r <- Gen.choose(1, n)
     if n % r == 0
     dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
-  } yield WHT.Pease[Double](n, r).stream(k,dp)(FixedPoint(16, 0))
+  } yield WHT.Pease[Double](n, r).stream(k,dp)
 
   property("PeaseWHT") =
     forAll(peaseWHT) { (sb: StreamingModule[Double]) =>
@@ -90,7 +91,7 @@ object WHTTest extends Properties("WHT")  {
     n = t + k
     r <- Gen.choose(1, n)
     if n % r == 0
-  } yield WHT.ItPease[Double](n, r).stream(k,RAMControl.Dual)(FixedPoint(16, 0))
+  } yield WHT.ItPease[Double](n, r).stream(k,RAMControl.Dual)
 
   property("ItPeaseWHT") =
     forAll(itpeaseWHT) { (sb: StreamingModule[Double]) =>
@@ -108,7 +109,7 @@ object WHTTest extends Properties("WHT")  {
       r <- Gen.choose(1, n)
       if n % r == 0
       spl = WHT.ItPeaseFused[Double](n, r)
-      design = spl.stream(k,RAMControl.Dual)(FixedPoint(16, 0))
+      design = spl.stream(k,RAMControl.Dual)
     yield  
       design
 

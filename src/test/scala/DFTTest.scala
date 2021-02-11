@@ -32,7 +32,7 @@ import backends.xilinx.Xsim._
 
 object DFTTest extends Properties("DFT") {
   import TestTools.shrinkSB
-  implicit val cphw: ComplexHW[Double] = ComplexHW(FixedPoint(8, 8))
+  given ComplexHW[Double] = ComplexHW(FixedPoint(8, 8))
   property("CTDFT conforms to the definition")=forAll(for {
     n <- Gen.choose(2,10)
     r <- Gen.choose(1, n-1)
@@ -56,7 +56,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n)
     if n % r == 0
     dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
-  } yield DFT.CTDFT(n, r).stream(k,dp)(ComplexHW(FixedPoint(8, 8)))
+  } yield DFT.CTDFT(n, r).stream(k,dp)
   property("CTDFT") = forAll(genSteady) { (sb: StreamingModule[Complex[Double]]) =>
       sb.test() match {
         case Some(value) if value < 0.01 => true
@@ -72,7 +72,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n)
     if n % r == 0
     dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
-  } yield DFT.Pease(n, r).stream(k,dp)(ComplexHW(FixedPoint(8, 8)))
+  } yield DFT.Pease(n, r).stream(k,dp)
   property("Pease") =
 
     forAll(genPease) { (sb: StreamingModule[Complex[Double]]) =>
@@ -119,7 +119,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n - 1)
     if n % r == 0
     if k >= r
-  } yield DFT.ItPease(n, r).stream(k,RAMControl.Dual)(ComplexHW(FixedPoint(8, 8)))
+  } yield DFT.ItPease(n, r).stream(k,RAMControl.Dual)
   property("ItPease")= forAll(genItPease) { (sb: StreamingModule[Complex[Double]]) =>
     sb.test() match {
         case Some(value) if value < 0.01 => true
@@ -149,7 +149,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n - 1)
     if n % r == 0
     if k >= r
-  } yield DFT.ItPeaseFused(n, r).stream(k,RAMControl.Dual)(ComplexHW(FixedPoint(8, 8)))
+  } yield DFT.ItPeaseFused(n, r).stream(k,RAMControl.Dual)
   property("ItPeaseFused") = forAll(genItPeaseFused) { (sb: StreamingModule[Complex[Double]]) =>
     sb.test() match {
         case Some(value) if value < 0.01 => true
