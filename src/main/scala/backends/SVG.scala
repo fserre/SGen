@@ -25,9 +25,9 @@ package backends
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, Unsigned}
 import ir.rtl._
-import transforms.fft.{DFT, DiagE,Butterfly}
+import transforms.fft.{Butterfly, DFT, DiagE}
 import linalg.Vec
-import transforms.perm.LinearPerm
+import transforms.perm.{LinearPerm, SmallTemporal}
 
 import java.io.PrintWriter
 import scala.collection.mutable
@@ -105,26 +105,69 @@ object SVG {
         }
       }
       }.toSeq
+    case transforms.perm.SmallTemporal(v3, v4) =>
+      val res=Array.fill(sm.N)(el.head)
+      (0 until sm.N).foreach{i=>
+        val c=i/sm.K
+        val p=i%sm.K
+        val basis = v4(set) scalar Vec.fromInt(sm.t-1,c/2)
+        val offset = v3(set) scalar Vec.fromInt(sm.k,p)
+        if (basis + offset).value then
+          if (c & 1) == 0 then // even cycle
+            res(i+sm.K) = el(i)
+            el(i).move(6 * unit/10)
+            el(i).move(8 * unit/10)
+            el(i).stay
+            el(i).move(6 * unit/10)
+            el(i).stay
+          else
+            res(i-sm.K) = el(i)
+            el(i).move(dy = Element.size)
+            el(i).move(2 * unit)
+            el(i).move(dy = -Element.size)
+        else
+          res(i) = el(i)
+          el(i).move(6 * unit/10)
+          el(i).move(dy = Element.size)
+          el(i).move(14*unit/10)
+          el(i).move(dy = -Element.size)
+
+        /*
+          val off=sm.offset1(p)
+          val adr=(sm.basis(s%sm.basis.size)*Vec.fromInt(sm.t-sm.r, c%(1<<(sm.t-sm.r)))+off(s%off.size)).toInt+1
+          val nc=(p3.head*Vec.fromInt(sm.k, p)+p4.head*Vec.fromInt(sm.t,c)).toInt
+          val ni=nc*sm.K+p
+          res(ni)=el(i)
+          el(i).move(dy = -Element.size)
+          el(i).move(Element.size*3/2*(adr))
+          el(i).move(dy = Element.size)
+          //el(i).stay
+          (0 until (sm.innerLatency-c+nc)).foreach(_ => el(i).stay)
+          el(i).move(dy = Element.size)
+          el(i).move(length(sm)-Element.size*3/2*adr)
+          el(i).move(dy = -Element.size)*/
+      }
+      res.toSeq
     case sm@transforms.perm.Temporal(p3,p4,_) =>
       val res=Array.fill(sm.N)(el.head)
       (0 until sm.N).foreach{i=>
-      val c=i/sm.K
-      val p=i%sm.K
-      val s=(set<<sm.r)+(c>>(sm.t-sm.r))
-      val off=sm.offset1(p)
-      val adr=(sm.basis(s%sm.basis.size)*Vec.fromInt(sm.t-sm.r, c%(1<<(sm.t-sm.r)))+off(s%off.size)).toInt+1
-      val nc=(p3.head*Vec.fromInt(sm.k, p)+p4.head*Vec.fromInt(sm.t,c)).toInt
-      val ni=nc*sm.K+p
-      res(ni)=el(i)
-      el(i).move(dy = -Element.size)
-      el(i).move(Element.size*3/2*(adr))
-      el(i).move(dy = Element.size)
-      //el(i).stay
-      (0 until (sm.innerLatency-c+nc)).foreach(_ => el(i).stay)
-      el(i).move(dy = Element.size)
-      el(i).move(length(sm)-Element.size*3/2*adr)
-      el(i).move(dy = -Element.size)
-    }
+        val c=i/sm.K
+        val p=i%sm.K
+        val s=(set<<sm.r)+(c>>(sm.t-sm.r))
+        val off=sm.offset1(p)
+        val adr=(sm.basis(s%sm.basis.size)*Vec.fromInt(sm.t-sm.r, c%(1<<(sm.t-sm.r)))+off(s%off.size)).toInt+1
+        val nc=(p3.head*Vec.fromInt(sm.k, p)+p4.head*Vec.fromInt(sm.t,c)).toInt
+        val ni=nc*sm.K+p
+        res(ni)=el(i)
+        el(i).move(dy = -Element.size)
+        el(i).move(Element.size*3/2*(adr))
+        el(i).move(dy = Element.size)
+        //el(i).stay
+        (0 until (sm.innerLatency-c+nc)).foreach(_ => el(i).stay)
+        el(i).move(dy = Element.size)
+        el(i).move(length(sm)-Element.size*3/2*adr)
+        el(i).move(dy = -Element.size)
+      }
       res.toSeq
     case ITensor(r,factor,k) =>
       el.grouped(factor.N).toSeq.flatMap(animate(factor,_,set))
@@ -134,6 +177,11 @@ object SVG {
         el(1).move(unit/2, -unit/2)
         el(1).move(unit/2, unit/2)
       el
+    case DFT(t,k) =>
+      el.foreach(_.move(length(sm)/2))
+      (0 until (1<<(t+k))).foreach(_ => el.foreach(_.stay))
+      el.foreach(_.move(length(sm)/2))
+      el      
     case _ =>
       val l=length(sm)
       if(l>0)
@@ -141,17 +189,17 @@ object SVG {
       el
   }
 
-  def length[T](sm: StreamingModule[T]):Int= sm match{
-    case Product(list) => list.map(length).sum+(list.size-1)*unit
-    case AcyclicProduct(list) => list.map(length).sum+(list.size-1)*unit
-    case transforms.perm.Steady(_,_) => unit
-    case transforms.perm.SwitchArray(_,_) => unit//3*unit/2
-    case sm@transforms.perm.Temporal(p3,p4,_) => ((1<<sm.innerP4.head.m)+1)*3*Element.size/2
-    case ITensor(_,factor,_) => length(factor)
+  def length[T](sm: StreamingModule[T]): Int = sm match
+    case Product(list) => list.map(length).sum + (list.size - 1) * unit
+    case AcyclicProduct(list) => list.map(length).sum + (list.size - 1) * unit
+    case transforms.perm.Steady(_, _) => unit
+    case transforms.perm.SwitchArray(_, _) => unit
+    case sm@transforms.perm.Temporal(p3, p4, _) => ((1 << sm.innerP4.head.m) + 1) * 3 * Element.size / 2
+    case ITensor(_, factor, _) => length(factor)
     case Butterfly() => unit
     case sm if sm.spl.isInstanceOf[DiagE] => 0//unit/2
-    case _ => 2*unit
-  }
+    case DFT(_, k) => (1 << k) * unit
+    case _ => 2 * unit
 
 
   def static[T](sm: StreamingModule[T], pw:StringBuilder, x:Int, y:Int):Unit=sm match {
@@ -207,6 +255,12 @@ object SVG {
         else
           pw ++= s"""<text x="${x + l/2}" y="${y + i * unit + unit / 2}" text-anchor="middle" alignment-baseline="middle" style="fill:#025; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">RAM bank (${1<<(sm.t-sm.r)} elements)</text>"""
       }
+    case sm: SmallTemporal[T] =>
+      (0 until sm.K).foreach { i =>
+        pw ++= s"""<line x1="$x" y1="${y+i*unit+unit/2}" x2="${x+unit*2}" y2="${y+i*unit+unit/2}" stroke="#000"/>\n"""
+        pw ++= s"""<rect x="${x + unit * 0.4}" y="${y + i * unit + unit / 2 - unit * 0.2}" width="${unit * 0.4}" height="${unit * 0.4}" fill="#2f75b6"/>\n"""
+        pw ++= s"""<rect x="${x + unit * 1.2}" y="${y + i * unit + unit / 2 - unit * 0.2}" width="${unit * 0.4}" height="${unit * 0.4}" fill="#2f75b6"/>\n"""
+      }
     case ITensor(r,factor,k) =>
       if (k>factor.n)
       for(i<-0 until (sm.K/factor.K))
@@ -217,6 +271,7 @@ object SVG {
       pw ++= s"""<rect x="${x-0.25*unit}" y="${y+0.25*unit}" width="${unit*1.5}" height="${unit*1.5}" rx="10" style="fill:#a1e47e"/>"""
       //pw ++= s"""<text x="${x+0.5*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">Butterfly</text>"""
       pw ++= s"""<text x="${x+0.5*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:24px; font-weight: bold;font-style:italic;">DFT<tspan dy="10" style="font-size:18px;">2</tspan></text>"""
+    case DFT(t, k) => 
     case sm if sm.spl.isInstanceOf[DiagE] =>
       val de:DiagE=sm.spl.asInstanceOf[DiagE]
       (0 until sm.K).map{p =>
@@ -247,6 +302,15 @@ object SVG {
     case _ => pw ++= s"""<rect x="${x}" y="${y}" width="${2*unit}" height="${sm.K*unit}" rx="10" />"""
     }
 
+
+  def foreground[T](sm: StreamingModule[T], pw:StringBuilder, x:Int, y:Int):Unit = sm match
+    case DFT(t, k) =>
+      pw ++= s"""<rect x="${x}" y="${y}" width="${sm.K * unit}" height="${sm.K*unit}" rx="10" style="fill:#a1e47e"/>"""
+      pw ++= s"""<text x="${x+sm.K*unit/2}" y="${y+sm.K*unit/2}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:24px; font-weight: bold;font-style:italic;">DFT<tspan dy="10" style="font-size:18px;">${1 << (t+k)}</tspan></text>"""
+    case _ =>
+
+
+
   extension [T](sm: StreamingModule[T]) {
     def toSVG = {
       val res = new mutable.StringBuilder
@@ -259,11 +323,11 @@ object SVG {
       (0 until sm.K).foreach(i => res ++= s"""<line x1="${length(sm) + 2 * unit}" y1="${i * unit + unit / 2}" x2="${length(sm) + 3 * unit}" y2="${i * unit + unit / 2}" stroke="#000" marker-end="url(#triangle)"/>\n""")
       static(sm, res, 2 * unit, 0)
       
-      val elements = Seq.tabulate(sm.N) { i =>
+      val elements = Seq.tabulate(sm.N) {(i) =>
         val p = i % sm.K
         val c = i / sm.K
-        val res = Element(0, i * dyElements + unit/2-(height-sm.K*unit)/2)
-        (0 until (c+2)).foreach(_ => res.stay)
+        val res = Element(0, i * dyElements + unit / 2 - (height - sm.K * unit) / 2)
+        (0 until (c + 2)).foreach(_ => res.stay)
         res.moveTo(unit, p * unit + unit / 2)
         res.move(unit)
         res
@@ -271,11 +335,12 @@ object SVG {
       animate(sm, elements, 0).zipWithIndex.foreach { (e, i) =>
         val p = i % sm.K
         val c = i / sm.K
+        e.move(unit)
         e.moveTo(length(sm) + 4 * unit, i * dyElements + unit/2-(height-sm.K*unit)/2)
         (0 until (sm.T - c + 1)).foreach(_ => e.stay)
         e(res)
       }
-
+      foreground(sm, res, 2 * unit, 0)
       res ++= "</svg>\n"
       res.toString()
     }
