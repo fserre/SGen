@@ -131,21 +131,6 @@ object SVG {
           el(i).move(dy = Element.size)
           el(i).move(14*unit/10)
           el(i).move(dy = -Element.size)
-
-        /*
-          val off=sm.offset1(p)
-          val adr=(sm.basis(s%sm.basis.size)*Vec.fromInt(sm.t-sm.r, c%(1<<(sm.t-sm.r)))+off(s%off.size)).toInt+1
-          val nc=(p3.head*Vec.fromInt(sm.k, p)+p4.head*Vec.fromInt(sm.t,c)).toInt
-          val ni=nc*sm.K+p
-          res(ni)=el(i)
-          el(i).move(dy = -Element.size)
-          el(i).move(Element.size*3/2*(adr))
-          el(i).move(dy = Element.size)
-          //el(i).stay
-          (0 until (sm.innerLatency-c+nc)).foreach(_ => el(i).stay)
-          el(i).move(dy = Element.size)
-          el(i).move(length(sm)-Element.size*3/2*adr)
-          el(i).move(dy = -Element.size)*/
       }
       res.toSeq
     case sm@transforms.perm.Temporal(p3,p4,_) =>
@@ -198,7 +183,7 @@ object SVG {
     case ITensor(_, factor, _) => length(factor)
     case Butterfly() => unit
     case sm if sm.spl.isInstanceOf[DiagE] => 0//unit/2
-    case DFT(_, k) => (1 << k) * unit
+    case DFT(t, k) => (t+ k) * unit
     case _ => 2 * unit
 
 
@@ -305,8 +290,8 @@ object SVG {
 
   def foreground[T](sm: StreamingModule[T], pw:StringBuilder, x:Int, y:Int):Unit = sm match
     case DFT(t, k) =>
-      pw ++= s"""<rect x="${x}" y="${y}" width="${sm.K * unit}" height="${sm.K*unit}" rx="10" style="fill:#a1e47e"/>"""
-      pw ++= s"""<text x="${x+sm.K*unit/2}" y="${y+sm.K*unit/2}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:24px; font-weight: bold;font-style:italic;">DFT<tspan dy="10" style="font-size:18px;">${1 << (t+k)}</tspan></text>"""
+      pw ++= s"""<rect x="${x}" y="${y}" width="${sm.n * unit}" height="${sm.K*unit}" rx="10" style="fill:#a1e47e"/>"""
+      pw ++= s"""<text x="${x+sm.n*unit/2}" y="${y+sm.K*unit/2}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:24px; font-weight: bold;font-style:italic;">DFT<tspan dy="10" style="font-size:18px;">${1 << (t+k)}</tspan></text>"""
     case _ =>
 
 
@@ -314,21 +299,20 @@ object SVG {
   extension [T](sm: StreamingModule[T]) {
     def toSVG = {
       val res = new mutable.StringBuilder
-      val dyElements=Math.max(Element.size,sm.K*unit/sm.N)
-      val height = sm.N * dyElements //unit/2 up and down
-      val width = length(sm) + 4 * unit //unit on each side
-      res ++= s"""<?xml version="1.0" encoding="utf-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="${-Element.radius} 0 ${width+Element.size} ${height+Element.size}">\n"""
+      val height = Math.max(Element.size*sm.N,sm.K*unit)//sm.N * dyElements //unit/2 up and down
+      val width = length(sm) + 4 * unit+6 //unit on each side
+      res ++= s"""<?xml version="1.0" encoding="utf-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="${-Element.radius} 0 ${width+Element.size} ${height+Element.size}" height="${(height+Element.size)/2}">\n"""
       res ++= """<defs><marker id="triangle" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/> </marker><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7"/></marker></defs>"""
-      (0 until sm.K).foreach(i => res ++= s"""<line x1="$unit" y1="${i * unit + unit / 2}" x2="${2 * unit}" y2="${i * unit + unit / 2}" stroke="#000"/>\n""")
-      (0 until sm.K).foreach(i => res ++= s"""<line x1="${length(sm) + 2 * unit}" y1="${i * unit + unit / 2}" x2="${length(sm) + 3 * unit}" y2="${i * unit + unit / 2}" stroke="#000" marker-end="url(#triangle)"/>\n""")
-      static(sm, res, 2 * unit, 0)
+      (0 until sm.K).foreach(i => res ++= s"""<line x1="$unit" y1="${i * unit + (unit +height-sm.K*unit)/2}" x2="${2 * unit}" y2="${i * unit + (unit +height-sm.K*unit)/2}" stroke="#000"/>\n""")
+      (0 until sm.K).foreach(i => res ++= s"""<line x1="${length(sm) + 2 * unit}" y1="${i * unit + (unit +height-sm.K*unit)/2}" x2="${length(sm) + 3 * unit}" y2="${i * unit + (unit +height-sm.K*unit)/2}" stroke="#000" marker-end="url(#triangle)"/>\n""")
+      static(sm, res, 2 * unit, (height-sm.K*unit)/2)
       
       val elements = Seq.tabulate(sm.N) {(i) =>
         val p = i % sm.K
         val c = i / sm.K
-        val res = Element(0, i * dyElements + unit / 2 - (height - sm.K * unit) / 2)
+        val res = Element(2, i * Element.size + (height - sm.N*Element.size+ Element.size) / 2)
         (0 until (c + 2)).foreach(_ => res.stay)
-        res.moveTo(unit, p * unit + unit / 2)
+        res.moveTo(unit, p * unit + (unit +height-sm.K*unit)/2)
         res.move(unit)
         res
       }
@@ -336,11 +320,11 @@ object SVG {
         val p = i % sm.K
         val c = i / sm.K
         e.move(unit)
-        e.moveTo(length(sm) + 4 * unit, i * dyElements + unit/2-(height-sm.K*unit)/2)
+        e.moveTo(length(sm) + 4 * unit, i * Element.size + (height - sm.N*Element.size+Element.size) / 2)
         (0 until (sm.T - c + 1)).foreach(_ => e.stay)
         e(res)
       }
-      foreground(sm, res, 2 * unit, 0)
+      foreground(sm, res, 2 * unit, (height-sm.K*unit)/2)
       res ++= "</svg>\n"
       res.toString()
     }
