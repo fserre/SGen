@@ -26,6 +26,12 @@ package ir.rtl.hardwaretype
 import ir.rtl.{Component, Extern}
 import ir.rtl.signals._
 
+/**
+ * Floating point representation that uses IEEE754. 
+ * 
+ * @param wE number of bits for the exponent
+ * @param wF number of bits for the mantissa
+ */
 case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
   that =>
 

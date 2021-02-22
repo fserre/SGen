@@ -30,27 +30,34 @@ import linalg.Matrix
 import transforms.perm.LinearPerm
 
 
-case class ITensor[T] private (r:Int, factor:Repeatable[T]) extends SPL[T](factor.n+r) {
-  override def eval(inputs: Seq[T], set: Int): Seq[T] = //inputs.grouped(1<<n).toSeq.map(_.grouped(1<<factor.n).toVector).transpose.flatten.map(factor.eval).map(_.grouped(1<<factor.n).toVector).transpose.flatten.flatten
-    inputs.grouped(factor.N).toSeq.flatMap(factor.eval(_, set))
+/**
+ * SPL block that repeats another SPL block. Formally I_{2^r} tensor factor.
+ * 
+ * @param r log of the number of repetitions
+ * @param factor SPL that can be repeated
+ * @tparam T software datatype of the data
+ */
+case class ITensor[T] private (r: Int, factor: Repeatable[T]) extends SPL[T](factor.n + r):
+  override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs.grouped(factor.N).toSeq.flatMap(factor.eval(_, set))
 
-  override def stream(k: Int, control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = ir.rtl.ITensor(r,factor.stream(Math.min(factor.n,k),control),k)
-}
+  override def stream(k: Int, control:RAMControl)(using HW[T]): StreamingModule[T] = ir.rtl.ITensor(r, factor.stream(Math.min(factor.n, k), control), k)
 
-object ITensor{
-  def apply[T](r:Int, factor:Repeatable[T]):SPL[T]=apply(r,factor:SPL[T])
-  def apply[T](r:Int, factor:SPL[T]):SPL[T]=if(r==0)
-    factor
-  else
-    factor match{
-      case Product(factors) => Product(factors.map(ITensor(r, _)))
-      case ITensor(r2, factor) => ITensor(r + r2, factor)
-      case LinearPerm(matrices) => LinearPerm(matrices.map(m => Matrix.identity[F2](r) oplus m))
-    case factor:Repeatable[T] => new ITensor(r,factor)
-      case _ => throw new Exception("Non repeatable SPL used in ITensor: " + factor)
-  }
-}
 
-trait Repeatable[T] extends SPL[T]{
-  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): AcyclicStreamingModule[T]
-}
+/**
+ * Companion object of ITensor
+ */
+object ITensor:
+  def apply[T](r:Int, factor:SPL[T]): SPL[T] = 
+    if r == 0 then
+      factor
+    else
+      factor match
+        case Product(factors) => Product(factors.map(ITensor(r, _)))
+        case ITensor(r2, factor) => ITensor(r + r2, factor)
+        case LinearPerm(matrices) => LinearPerm(matrices.map(m => Matrix.identity[F2](r) oplus m))
+        case factor:Repeatable[T] => new ITensor(r,factor)
+        case _ => throw new Exception("Non repeatable SPL used in ITensor: " + factor)
+
+
+trait Repeatable[T] extends SPL[T]:
+  override def stream(k: Int, control: RAMControl)(using HW[T]): AcyclicStreamingModule[T]

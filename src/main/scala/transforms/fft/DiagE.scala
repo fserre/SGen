@@ -30,6 +30,13 @@ import ir.spl.{Identity, Repeatable, SPL}
 import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
+/**
+ * Twiddle factors for non-iterative Cooley-Tukey FFTs
+ * 
+ * @param n Log of the size of the transform
+ * @param r Log of the radix
+ * @param l Stage number
+ */
 case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]]:
   val num = Numeric[Complex[Double]]
   import num._
@@ -40,31 +47,26 @@ case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Compl
 
   def coef(i: Int): Complex[Double] = DFT.omega(n, pow(i))
 
-  override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
+  override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map((input, i) => input * coef(i % (1 << n)))
 
-  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k): 
-    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = 
-      (0 until K).map(p => {
-        val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
-        val twiddleHW = hw match {
-          case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
-          case _ => hw
-        }
-        val control = Timer(T)
-        /*println(twiddles)
-        println(twiddles.map(twiddleHW.bitsOf).map(twiddleHW.valueOf))*/
-        val twiddle = ROM(twiddles, control)(twiddleHW)
-        inputs(p) * twiddle
-      })
+  override def stream(k: Int,control:RAMControl)(using HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k): 
+    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = (0 until K).map(p => 
+      val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
+      val twiddleHW = hw match // The hardware datatype used for the twiddles is the same as the one used by the data, EXCEPT in case of FixedPoint: to maximize precision, we store as many fractional bits as possible, as twiddles are in the unit circle. 
+        case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
+        case _ => hw
+      val control = Timer(T)
+      val twiddle = ROM(twiddles, control)(twiddleHW)
+      inputs(p) * twiddle)
 
     override def toString: String = "DiagE(" + this.n + "," + r + "," + l + "," + this.k + ")"
 
     override def spl: SPL[Complex[Double]] = DiagE(this.n, r, l)
   
-
+/** Companion object of class DiagE */
 object DiagE:
   def apply(n: Int, r: Int, l: Int):SPL[Complex[Double]]=
-    if n==r*(l+1) then
+    if n == r * (l + 1) then
       Identity[Complex[Double]](n) 
     else
       new DiagE(n, r, l)

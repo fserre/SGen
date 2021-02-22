@@ -25,16 +25,13 @@ package spl
 import ir.rtl.hardwaretype.HW
 import ir.rtl.{StreamingModule,RAMControl}
 
-case class Identity[T](override val n:Int) extends SPL[T](n) {
+//todo: Change this to identity permutation
+case class Identity[T](override val n:Int) extends SPL[T](n):
   override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs
 
-  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = ???
-}
-object Identity{
+  override def stream(k: Int, control: RAMControl)(using HW[T]): StreamingModule[T] = ???
 
-
-  def unapply[T](arg: SPL[T]):Boolean = arg match{
-    case _:Identity[T] => true
+object Identity:
+  def unapply[T](arg: SPL[T]):Boolean = arg match
+    case _: Identity[T] => true
     case _ => false
-  }
-}

@@ -28,29 +28,37 @@ import ir.rtl.signals.{Plus, Sig}
 import linalg.Fields.Complex
 
 /**
- * Class that represents a hardware representation
+ * Class that represents a hardware representation. Used as a context bound for the type paramter of signals to indicate how to implement them in hardware.
  *
  * @tparam T Type of the equivalent software datatype. Used for computations with constants.
  * @param size Size in bits of the representation
  */
 abstract class HW[T: Numeric](val size: Int):
-  final val num = Numeric[T]
-
+  /** Text describing the hardware datatype */
   def description: String
 
+  /** return a Sig representing the sum of two sigs that have this as a context bound.  */
   def plus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
 
+  /** return a Sig representing the difference between two sigs that have this as a context bound.  */
   def minus(lhs: Sig[T], rhs: Sig[T]): Sig[T]
 
+  /** return a Sig representing the product of two sigs that have this as a context bound.  */
   def times(lhs: Sig[T], rhs: Sig[T]): Sig[T]
 
+  /** Gets the bit representation of a constant */
   def bitsOf(const: T): BigInt
 
+  /** Get the value of a constant from its bits */
   def valueOf(const: BigInt): T
+
+  /** Numeric context bound of T */
+  final val num = Numeric[T]
 
 object HW:
   inline def apply[T](using hw: HW[T]) = hw
   
+  /** HW of a Complex software datatype provide the underlying HW. */
   extension [T](x: HW[Complex[T]]) inline def innerHW: HW[T] = x match
     case x: ComplexHW[T] => x.hw
     case _ => throw new Exception("Invalid complex HW datatype")

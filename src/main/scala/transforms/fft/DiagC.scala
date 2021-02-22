@@ -30,77 +30,71 @@ import ir.rtl.signals.{Const, SetCounter, ROM, Sig, Timer}
 import linalg.Fields.Complex
 import linalg.Fields.Complex._
 
-case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
+
+/**
+ * Twiddle factors for non-iterative Pease FFTs
+ *
+ * @param n Log of the size of the transform
+ * @param r Log of the radix
+ * @param l Stage number
+ */
+case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]]:
   val num = Numeric[Complex[Double]]
   import num._
-  def pow(x: Int): Int = {
+  def pow(x: Int): Int = 
     val j = x % (1 << r)
     val i = ((x >> r) >> (r * l)) << (r * l)
     i * j
-  }
 
   def coef(i: Int): Complex[Double] = DFT.omega(n, pow(i))
 
-  override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n)) }
+  override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map ((input, i) => input * coef(i % (1 << n)))
 
-  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k) {
-    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = {
-      (0 until K).map(p => {
-        val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
-        val twiddleHW = hw match {
-          case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
-          case _ => hw
-        }
-        val control = Timer(T)
-        val twiddle = ROM(twiddles, control)(twiddleHW)
-        inputs(p) * twiddle
-      })
-    }
+  override def stream(k: Int,control:RAMControl)(using HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k):
+    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = (0 until K).map(p => 
+      val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
+      val twiddleHW = hw match
+        case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
+        case _ => hw
+      val control = Timer(T)
+      val twiddle = ROM(twiddles, control)(twiddleHW)
+      inputs(p) * twiddle)
 
     override def spl: SPL[Complex[Double]] = DiagC(this.n, r, l)
-  }
-}
 
-case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]] {
+/**
+ * Twiddle factors for iterative Pease FFTs
+ *
+ * @param n Log of the size of the transform
+ * @param r Log of the radix
+ */
+case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]](n) with Repeatable[Complex[Double]]:
   val num = Numeric[Complex[Double]]
   import num._
-  def pow(x: Int, l: Int): Int = {
+  def pow(x: Int, l: Int): Int = 
     val j = x % (1 << r)
     val i = ((x >> r) >> (r * l)) << (r * l)
     i * j
-  }
 
   def coef(i: Int, l: Int): Complex[Double] = DFT.omega(n, pow(i, l))
 
-  override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map { case (input, i) => input * coef(i % (1 << n), set % (n / r)) }
+  override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.zipWithIndex.map((input, i) => input * coef(i % (1 << n), set % (n / r)))
 
-  override def stream(k: Int,control:RAMControl)(implicit hw2: HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = {
-    //require(k>=r)
-    new AcyclicStreamingModule(n - k, k) {
-      override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = {
-        (0 until K).map(p => {
-          val j = p % (1 << r)
-          val coefs = Vector.tabulate(1 << (this.n - r))(i => DFT.omega(this.n, i * j))
-          //val twiddles = Vector.tabulate(T)(c => coef((c * K) + p))
-          val twiddleHW = hw match {
-            case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
-            case _ => hw
-          }
-          /*val control = Timer(T)
-          val twiddle = ROM(twiddles, control)(twiddleHW, sb)*/
-          val control1 = Timer(T) :: Const(p >> r)(Unsigned(this.k - r))
-          //println(control1)
-          val control2a = SetCounter(this.n / r)
-          val control2 = ROM(Vector.tabulate(this.n / r)(i => ((1 << (i * r)) - 1) ^ ((1 << (this.n - r)) - 1)), control2a)(Unsigned(this.n - r))
-          val control = control1 & control2
-          val twiddle = ROM(coefs, control)(twiddleHW)
-          inputs(p) * twiddle
-        })
-      }
+  override def stream(k: Int,control:RAMControl)(using HW[Complex[Double]]): AcyclicStreamingModule[Complex[Double]] = new AcyclicStreamingModule(n - k, k):
+    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = (0 until K).map(p => 
+      val j = p % (1 << r)
+      val coefs = Vector.tabulate(1 << (this.n - r))(i => DFT.omega(this.n, i * j))
+      val twiddleHW = hw match
+        case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
+        case _ => hw
+      val control1 = Timer(T) :: Const(p >> r)(Unsigned(this.k - r))
+      val control2a = SetCounter(this.n / r)
+      val control2 = ROM(Vector.tabulate(this.n / r)(i => ((1 << (i * r)) - 1) ^ ((1 << (this.n - r)) - 1)), control2a)(Unsigned(this.n - r))
+      val control = control1 & control2
+      val twiddle = ROM(coefs, control)(twiddleHW)
+      inputs(p) * twiddle)
 
-      override def toString: String = "StreamDiagC(" + this.n + "," + r + "," + this.k + ")"
+    override def toString: String = "StreamDiagC(" + this.n + "," + r + "," + this.k + ")"
 
-      override def spl: SPL[Complex[Double]] = StreamDiagC(this.n, r)
-    }
-  }
-}
+    override def spl: SPL[Complex[Double]] = StreamDiagC(this.n, r)
+    

@@ -26,6 +26,12 @@ package ir.rtl.hardwaretype
 import ir.rtl.signals._
 import linalg.Fields._
 
+/**
+ * Complex datatype: cartesian representation with the two components concatenated
+ * 
+ * @param hw HW bound of the components.
+ * @tparam T Type of the software datatype of the component.
+ */
 case class ComplexHW[T](hw: HW[T]) extends HW[Complex[T]](hw.size * 2) (using Complex.complexIsFractional[T](using hw.num)):
   override def plus(lhs: Sig[Complex[T]], rhs: Sig[Complex[T]]): Sig[Complex[T]] = Cpx(Re(lhs) + Re(rhs), Im(lhs) + Im(rhs))
 

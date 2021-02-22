@@ -26,16 +26,15 @@ package spl
 import ir.rtl.hardwaretype.HW
 import ir.rtl.{ItProduct, StreamingModule,RAMControl}
 
-case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = None) extends SPL[T](factor.n) {
+case class ItProduct[T](r: Int, factor: SPL[T], endLoopOpt: Option[SPL[T]] = None) extends SPL[T](factor.n):
   val endLoop: SPL[T] = endLoopOpt.getOrElse(Identity[T](n))
 
   override def eval(inputs: Seq[T], set: Int): Seq[T] = factor.eval((0 until (r - 1)).foldLeft(inputs)((endLoop * factor).eval), r - 1)
 
-  override def stream(k: Int,control:RAMControl)(implicit hw: HW[T]): StreamingModule[T] = {
-    require(control==RAMControl.Dual,"Iterative product requires a dual address control of memories.")
-    ir.rtl.ItProduct(r, factor.stream(k,RAMControl.Dual), endLoopOpt.map(_.stream(k,RAMControl.Dual)))
-  }
-}
+  override def stream(k: Int, control: RAMControl)(using HW[T]): StreamingModule[T] =
+    require(control == RAMControl.Dual,"Iterative product requires a dual address control of memories.")
+    ir.rtl.ItProduct(r, factor.stream(k, RAMControl.Dual), endLoopOpt.map(_.stream(k, RAMControl.Dual)))
+
 
 object ItProduct {
   //def apply[T](r: Int, factor: SPL[T]) = if (r == 1) factor else new ItProduct[T](r, factor)

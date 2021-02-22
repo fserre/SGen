@@ -34,8 +34,15 @@ import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
 
 
-abstract class AcyclicStreamingModule[U: HW](t: Int, k: Int) extends StreamingModule(t, k):
-  def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]]
+/**
+ * Node of the Streaming SPL IR.
+ * 
+ * @param t Log of the number of cycles needed to input a dataset
+ * @param k Log of the streaming width
+ * @tparam T (Software) datatype of the data. T must have a context bound HW indicating how to implement it in hardware. 
+ */
+abstract class AcyclicStreamingModule[T: HW](t: Int, k: Int) extends StreamingModule(t, k):
+  def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]]
 
   final lazy val inputSigs = (0 until K).map(c => Input(c))
   

@@ -26,54 +26,43 @@ package ir.rtl.hardwaretype
 import ir.rtl.Component
 import ir.rtl.signals.{Minus, Plus, Sig, Times}
 
-//todo:Check for negative numbers
-case class FixPlus(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Plus(lhs, rhs) {
-  //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
-  override def pipeline = 1
+/**
+ * Fixed point arithmetic representation
+ * 
+ * @param magnitude Number of bits of the integer part
+ * @param fractional Number of bits of the fractional part
+ */
+case class FixedPoint(magnitude: Int, fractional: Int) extends HW[Double](magnitude + fractional):
+  override def plus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = new Plus(lhs, rhs):
+    override def pipeline = 1
 
-  override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Plus(Seq(cp(lhs),cp(rhs)))
-}
+    override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Plus(Seq(cp(this.lhs), cp(this.rhs)))
 
-case class FixMinus(override val lhs: Sig[Double],override val rhs: Sig[Double]) extends Minus(lhs,rhs) {
-  //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
-  override def pipeline = 1
+  override def minus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = new Minus(lhs,rhs):
+    override def pipeline = 1
+  
+    override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Minus(cp(this.lhs), cp(this.rhs))
 
-  override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Minus(cp(lhs),cp(rhs))
-}
+  override def times(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = new Times(lhs, rhs):
+    override def pipeline = 3
+  
+    override def implement(implicit cp: Sig[?] => Component): Component =
+      val shift = this.rhs.hw.asInstanceOf[FixedPoint].fractional
+      new ir.rtl.Tap(new ir.rtl.Times(cp(this.lhs), cp(this.rhs)), shift until (shift + this.lhs.hw.size))
 
-case class FixTimes(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Times(lhs, rhs) {
-  //override def getVerilog(implicit v: Verilog): Unit = v.addComb("assign "+id+ " = "+terms.map(id).mkString(" + ")+";")
-  override def pipeline = 3
-
-  override def implement(implicit cp: Sig[?] => Component): Component = {
-    val shift = rhs.hw.asInstanceOf[FixedPoint].fractional
-    new ir.rtl.Tap(new ir.rtl.Times(cp(lhs), cp(rhs)), shift until (shift + lhs.hw.size))
-  }
-}
-
-case class FixedPoint(magnitude: Int, fractional: Int) extends HW[Double](magnitude+fractional) {
-
-
-  override def plus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FixPlus(lhs, rhs)
-
-
-  override def minus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FixMinus(lhs, rhs)
-
-  override def times(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FixTimes(lhs, rhs)
-
-  override def bitsOf(const: Double): BigInt = if(const<0)
-    (bitsOf(-const)^((BigInt(1)<<size)-1))+1
+  override def bitsOf(const: Double): BigInt = 
+    if const<0 then
+      (bitsOf(-const) ^ ((BigInt(1) << size) - 1)) + 1
     else
-    ((BigInt(1)<<fractional).toDouble*BigDecimal(const)).toBigInt
+      ((BigInt(1)<<fractional).toDouble*BigDecimal(const)).toBigInt
 
-  override def valueOf(const: BigInt): Double = {
-    if (const.testBit(size - 1))
+  override def valueOf(const: BigInt): Double = 
+    if const.testBit(size - 1) then
       -((const ^ ((BigInt(1) << size) - 1)) + 1).toDouble / Math.pow(2, fractional)
     else
       const.toDouble / Math.pow(2, fractional)
-  }
 
-  override def description: String = if (fractional==0) s"$magnitude-bits signed integer in two's complement format" else s"signed fixed-point number ($magnitude.$fractional bits representation)"
-}
+  override def description: String = if fractional==0 then s"$magnitude-bits signed integer in two's complement format" else s"signed fixed-point number ($magnitude. $fractional bits representation)"
+
 
 
