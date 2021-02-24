@@ -33,10 +33,11 @@ import scala.reflect._
 
 /**
  * Class that represent a node in an acyclic streaming module internal graph. These nodes are comparable to RTL components, but abstract the hardware numeric representation, and timing.
- * @tparam T Equivalent software datatype of the node
+ * Signals should be immutable.
+ * 
+ * @tparam T Equivalent software datatype of the node. A context bound HW indicating how to translate a T to hardware must be provided.
  */
 abstract class Sig[T: HW]:
-  val hash: Int
   /** Parent signals of the node (each given as a pair: Sig and number of cycles of advance this parent must have compared to this signal).*/
   def parents: Seq[(Sig[?], Int)]
   /** Number of registers that should be put after this signal.*/
@@ -51,7 +52,12 @@ abstract class Sig[T: HW]:
   final def -(lhs: Sig[T]):Sig[T] = Minus(this, lhs)
   /** Hardware datatype (given as an instance of HW[T])*/
   final val hw = HW[T]
+
+  /** value for hashCode (hashCode cannot be simply overriden as a val). As signals are immutable, it is better to not have a recursive def for performance. */
+  val hash: Int
   final override inline def hashCode() = hash
+  
+  
 
 /** Companion object of Sig */
 object Sig:
