@@ -12,10 +12,11 @@ SGen is a generator capable of producing efficient hardware designs for a variet
 
 The generator outputs a Verilog file that can be used for FPGAs.
 
-An overview of the architecture of this generator is available [here](https://acl.inf.ethz.ch/research/hardware), along with an interface to download various generated designs.
+* A technical overview and an interface to download various generated designs is available [here](https://acl.inf.ethz.ch/research/hardware).
+* Feel free to report any bug, issue, or suggestion to [François Serre](https://fserre.github.io/).
 
 ## Quick Start
-The easiest way to use SGen is by using [SBT](https://www.scala-sbt.org/):
+The easiest way to use SGen is by using [SBT](https://www.scala-sbt.org/). The following commands, in a Windows or Linux console, will generate a streaming Walsh-Hadamard transform on 8 points:
 
 ```
 git clone https://github.com/fserre/sgen.git
@@ -23,10 +24,10 @@ cd sgen
 sbt "run -n 3 wht"
 ```
 
-This generates a streaming Walsh-Hadamard transform on 8 points.
+The following section describes the different parameters that can be used.
 
 ## Command-line interface
-A command line consists of a list parameters followed by the desired transform. 
+A SGen command line consists of a list parameters followed by the desired transform. 
 
 ### Parameters
 The following parameters can be used:
