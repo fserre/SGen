@@ -45,9 +45,9 @@ import java.io.PrintWriter
  */
 object GenerateWeb extends App:
   if System.getProperty("os.name") contains "Windows" then
-    transforms.fft.DFT(0,3).writeSVG("dft8basic.svg")
-    transforms.fft.DFT(1,2).writeSVG("dft8s4basic.svg")
-    transforms.fft.DFT(2,1).writeSVG("dft8s2basic.svg")
+    transforms.fft.DFT(0,3).writeSVG("img/dft8basic.svg")
+    transforms.fft.DFT(1,2).writeSVG("img/dft8s4basic.svg")
+    transforms.fft.DFT(2,1).writeSVG("img/dft8s2basic.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
     transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")

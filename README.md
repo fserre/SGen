@@ -1,5 +1,10 @@
-# SGen
-SGen is a generator capable of producing efficient hardware designs operating on streaming datasets. “Streaming” means that the dataset is divided into several chunks that are processed during several cycles, thus allowing a reduced use of resources. The size of these chunks is referred as the streaming width. It outputs a Verilog file that can be used for FPGAs.
+<img src="img/sgen.png" alt="SGen" id="title"/>
+
+SGen is a generator capable of producing efficient hardware designs for a variety of signal processing transforms. These designs operate on *streaming* data, meaning that the dataset is divided into several chunks that are processed during several cycles, thus allowing a reduced use of resources. The size of these chunks is called the *streaming width*. As an example, the figures below represent three discrete Fourier transforms on 8 elements, with a streaming width of 8 (no streaming), 4 and 2.
+
+<div id="basic"><img src="img/dft8basic.svg" alt="Iterative Cooley-Tukey FFT on 8 points."/><img src="img/dft8s4basic.svg" alt="Iterative Cooley-Tukey FFT on 8 points, streamed with a streaming width of 4."/><img src="img/dft8s2basic.svg" alt="Iterative Cooley-Tukey FFT on 8 points, streamed with a streaming width of 2."/></div>
+
+The generator outputs a Verilog file that can be used for FPGAs.
 
 ## Quick Start
 The easiest way to use SGen is by using [SBT](https://www.scala-sbt.org/):

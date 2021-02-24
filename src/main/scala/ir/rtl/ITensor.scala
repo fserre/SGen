@@ -35,15 +35,15 @@ import ir.spl.SPL
  * @param k Log of the streaming width.
  * @tparam T Software datatype of the inputs/outputs
  */
-case class ITensor[T](r: Int, factor: AcyclicStreamingModule[T], override val k: Int) extends AcyclicStreamingModule[T](r + factor.n - k, k)(factor.hw) {
-//println("r:"+r+" k:"+k+" factor:"+factor)
-  require((k>factor.n && factor.n==factor.k) || factor.k==k)
-  override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = if(k>factor.n)
-    inputs.grouped(1<<factor.n).toSeq.flatMap(factor.implement(_))
-  else
-    factor.implement(inputs)
+case class ITensor[T](r: Int, factor: AcyclicStreamingModule[T], override val k: Int) extends AcyclicStreamingModule[T](r + factor.n - k, k)(factor.hw):
+  require((k > factor.n && factor.n == factor.k) || factor.k == k)
+  override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = 
+    if k > factor.n then
+      inputs.grouped(1 << factor.n).toSeq.flatMap(factor.implement(_))
+    else
+      factor.implement(inputs)
 
-  override def spl: SPL[T] = ir.spl.ITensor(r,factor.spl)
+  override def spl: SPL[T] = ir.spl.ITensor(r, factor.spl)
 
   override def hasSinglePortedMem: Boolean = factor.hasSinglePortedMem
-}
+

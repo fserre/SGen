@@ -88,7 +88,7 @@ object DFTTest extends Properties("DFT") {
     n = t + k
     r <- Gen.choose(1, n - 1)
     if n % r == 0
-  } yield StreamDiagC(n, r).stream(k,RAMControl.Single)(ComplexHW(FixedPoint(16, 16)))
+  } yield StreamDiagC(n, r).stream(k,RAMControl.Single)
   property("DiagC") = forAll(genDiagC) { (sb: StreamingModule[Complex[Double]]) =>
     sb.test() match {
         case Some(value) if value < 0.01 => true

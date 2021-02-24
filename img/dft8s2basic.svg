@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="-8 0 372 144" height="72">
+<defs><marker id="triangle" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/> </marker><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7"/></marker></defs><line x1="50" y1="39" x2="100" y2="39" stroke="#000"/>
+<line x1="50" y1="89" x2="100" y2="89" stroke="#000"/>
+<line x1="250" y1="39" x2="300" y2="39" stroke="#000" marker-end="url(#triangle)"/>
+<line x1="250" y1="89" x2="300" y2="89" stroke="#000" marker-end="url(#triangle)"/>
+<rect x="0" y="0" width="16" height="16" stroke="#000" style="fill:#1f407a" rx="5">
+<animateMotion dur="5s" values="-6,0;-6,0;-6,0;42,31;92,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;242,31;292,31;342,0;342,0;342,0;342,0;342,0;342,0" calcMode="linear" repeatCount="indefinite"/>
+</rect>
+<rect x="0" y="0" width="16" height="16" stroke="#000" style="fill:#3c3c3c" rx="5">
+<animateMotion dur="5s" values="-6,16;-6,16;-6,16;42,81;92,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;242,81;292,81;342,16;342,16;342,16;342,16;342,16;342,16" calcMode="linear" repeatCount="indefinite"/>
+</rect>
+<rect x="0" y="0" width="16" height="16" stroke="#000" style="fill:#def7de" rx="5">
+<animateMotion dur="5s" values="-6,32;-6,32;-6,32;-6,32;42,31;92,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;242,31;292,31;342,32;342,32;342,32;342,32;342,32" calcMode="linear" repeatCount="indefinite"/>
+</rect>
+<rect x="0" y="0" width="16" height="16" stroke="#000" style="fill:#a1e47e" rx="5">
+<animateMotion dur="5s" values="-6,48;-6,48;-6,48;-6,48;42,81;92,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;242,81;292,81;342,48;342,48;342,48;342,48;342,48" calcMode="linear" repeatCount="indefinite"/>
+</rect>
+<rect x="0" y="0" width="16" height="16" stroke="#000" style="fill:#FFF" rx="5">
+<animateMotion dur="5s" values="-6,64;-6,64;-6,64;-6,64;-6,64;42,31;92,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;242,31;292,31;342,64;342,64;342,64;342,64" calcMode="linear" repeatCount="indefinite"/>
+</rect>
+<rect x="0" y="0" width="16" height="16" stroke="#000" style="fill:#2f75b6" rx="5">
+<animateMotion dur="5s" values="-6,80;-6,80;-6,80;-6,80;-6,80;42,81;92,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;242,81;292,81;342,80;342,80;342,80;342,80" calcMode="linear" repeatCount="indefinite"/>
+</rect>
+<rect x="0" y="0" width="16" height="16" stroke="#000" style="fill:#df5963" rx="5">
+<animateMotion dur="5s" values="-6,96;-6,96;-6,96;-6,96;-6,96;-6,96;42,31;92,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;167,31;242,31;292,31;342,96;342,96;342,96" calcMode="linear" repeatCount="indefinite"/>
+</rect>
+<rect x="0" y="0" width="16" height="16" stroke="#000" style="fill:#5bd59b" rx="5">
+<animateMotion dur="5s" values="-6,112;-6,112;-6,112;-6,112;-6,112;-6,112;42,81;92,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;167,81;242,81;292,81;342,112;342,112;342,112" calcMode="linear" repeatCount="indefinite"/>
+</rect>
+<rect x="100" y="14" width="150" height="100" rx="10" style="fill:#a1e47e"/><text x="175" y="64" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:24px; font-weight: bold;font-style:italic;">DFT<tspan dy="10" style="font-size:18px;">8</tspan></text></svg>

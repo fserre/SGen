@@ -23,7 +23,7 @@
 package ir.rtl
 
 /**
- * Class that represent a node on an ir.rtl graph
+ * Class that represent a node on an RTL graph
  *
  * @param size Size of the node in bits
  * @param _parents Parent nodes
