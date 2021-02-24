@@ -1,12 +1,14 @@
-<img src="img/sgen.png" alt="SGen" style="width: 300px;padding: 0px 0px 50px 300px;"/>
+<p align="center">
+<img src="img/sgen.png" alt="SGen"/>
+</p>
 
 SGen is a generator capable of producing efficient hardware designs for a variety of signal processing transforms. These designs operate on *streaming* data, meaning that the dataset is divided into several chunks that are processed during several cycles, thus allowing a reduced use of resources. The size of these chunks is called the *streaming width*. As an example, the figures below represent three discrete Fourier transforms on 8 elements, with a streaming width of 8 (no streaming), 4 and 2.
 
-<div style="display: flex;justify-content: center;">
+<p style="display: flex;justify-content: center;" align="center">
 <img src="img/dft8basic.svg" alt="Iterative Cooley-Tukey FFT on 8 points." style="padding: 0 50px;"/>
 <img src="img/dft8s4basic.svg" alt="Iterative Cooley-Tukey FFT on 8 points, streamed with a streaming width of 4." style="padding: 0 50px;"/>
 <img src="img/dft8s2basic.svg" alt="Iterative Cooley-Tukey FFT on 8 points, streamed with a streaming width of 2." style="padding: 0 50px;"/>
-</div>
+</p>
 
 The generator outputs a Verilog file that can be used for FPGAs.
 
