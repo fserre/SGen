@@ -28,16 +28,16 @@ lazy val root = (project in file("."))
     organization := "fserre",
     version := "0.2",
     //scalaVersion := "3.0.0-M4-bin-20210208-8ff63f2-NIGHTLY",
-    //scalaVersion := "3.0.0-RC2-bin-20210220-5eb3258-NIGHTLY",
-    scalaVersion := dottyLatestNightlyBuild.get,
-    libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.2" % "test").withDottyCompat(scalaVersion.value),
-    libraryDependencies += ("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0").withDottyCompat(scalaVersion.value),
+    scalaVersion := "3.0.0-RC2-bin-20210220-5eb3258-NIGHTLY",
+    //scalaVersion := dottyLatestNightlyBuild.get,
+    libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.2" % "test").cross(CrossVersion.for3Use2_13),
+    libraryDependencies += ("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0").cross(CrossVersion.for3Use2_13),
     scalacOptions ++= Seq("-deprecation","-feature"),
     //scalacOptions ++= Seq("-source","3.1"),
-    mainClass in (Compile, run) := Some("Main"), 
+    Compile / run / mainClass := Some("Main"),
     fork := true,
-    parallelExecution in Test := false,
-    testOptions in Test +=Tests.Argument("-s","100"),
+    Test / parallelExecution := false,
+    Test / testOptions +=Tests.Argument("-s","100"),
     //scalacOptions ++= Seq("-indent","-rewrite")
     //javaOptions in run ++= Seq("-Xms1G", "-Xmx100G", "-XX:MaxPermSize=1024M", "-XX:+UseConcMarkSweepGC")
   )
