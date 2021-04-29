@@ -21,24 +21,18 @@
  *
  */
 
-//scalacOptions ++=  Seq("-doc-root-content", file("rootdoc.txt").getAbsolutePath)
 lazy val root = (project in file("."))
   .settings(
     name := "SGen",
     organization := "fserre",
     version := "0.2",
     scalaVersion := "3.0.1-RC1-bin-20210428-2d2038e-NIGHTLY",
-    //scalaVersion := "3.0.0-RC2-bin-20210220-5eb3258-NIGHTLY",
-    //scalaVersion := dottyLatestNightlyBuild.get,
-    libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.2" % "test").cross(CrossVersion.for3Use2_13),
-    libraryDependencies += ("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0").cross(CrossVersion.for3Use2_13),
+    libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.3" % "test").cross(CrossVersion.for3Use2_13),
+    libraryDependencies += ("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.2").cross(CrossVersion.for3Use2_13),
     scalacOptions ++= Seq("-deprecation","-feature"),
-    //scalacOptions ++= Seq("-source","3.1"),
     Compile / run / mainClass := Some("Main"),
     fork := true,
     Test / parallelExecution := false,
     Test / testOptions +=Tests.Argument("-s","100"),
-    //scalacOptions ++= Seq("-indent","-rewrite")
-    //javaOptions in run ++= Seq("-Xms1G", "-Xmx100G", "-XX:MaxPermSize=1024M", "-XX:+UseConcMarkSweepGC")
   )
 
