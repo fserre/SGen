@@ -106,7 +106,7 @@ object Verilog {
           case Mux(address, inputs) if address.size > 1 =>
             "always @(*)" +:
             s"  case(${getName(address)})" +:
-            inputs.zipWithIndex.map ((in, i) => s"    ${if (i == inputs.size - 1 && ((1 << address.size) != inputs.size)) "default" else i}: ${getName(cur)} <= ${getName(in)};" ) :+
+            inputs.zipWithIndex.map ((in, i) => s"    ${if (i == inputs.size - 1 && ((1 << address.size) != inputs.size)) "default" else i}: ${getName(cur)} = ${getName(in)};" ) :+
             "  endcase"
           case cur:Extern => 
             mod.dependencies.add(cur.filename)
