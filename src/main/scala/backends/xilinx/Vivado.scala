@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package backends.xilinx
@@ -45,9 +45,9 @@ object Vivado:
     pw.write(" */\n\n")
     pw.write(sm.toVerilog)
     pw.close()
-    // Write a TCL command batch  
+    // Write a TCL command batch
     val dependencies=sm.dependencies.map("read_vhdl ./"+_).mkString("\n")
-    pw = PrintWriter("test" + number + ".tcl") 
+    pw = PrintWriter("test" + number + ".tcl")
     pw.write(
       s"""proc reportCriticalPaths {} {
         |foreach path [get_timing_paths -delay_type max -max_paths 1 -nworst 1] {
@@ -92,22 +92,22 @@ object Vivado:
         |puts ""
         |puts ""
       """.stripMargin)
-    pw.close
-    
+    pw.close()
+
 
     var bestSlices = Int.MaxValue
     var bestBram = Float.MaxValue
     var bestLp = Float.MaxValue
     var bestDsp = Int.MaxValue
     var bestPower = Float.MaxValue
-    // Run place and route 3 times, and pick the best values.  
+    // Run place and route 3 times, and pick the best values.
     for _ <- 0 until 3 do
       // Write a configuration for the clock
-      pw = PrintWriter("clock" + number + ".xdc") 
-      pw.write("create_clock -name Clock -period " + (if (bestLp == Float.MaxValue) 1 else bestLp) + " [get_ports clk]\n");
-      pw.close
+      pw = PrintWriter("clock" + number + ".xdc")
+      pw.write("create_clock -name Clock -period " + (if (bestLp == Float.MaxValue) 1 else bestLp) + " [get_ports clk]\n")
+      pw.close()
       // Run vivado, and parse the result (in an ugly way )
-      Try(Xilinx.run("vivado", s"-source test$number.tcl -mode batch -notrace")) match 
+      Try(Xilinx.run("vivado", s"-source test$number.tcl -mode batch -notrace")) match
         case Success(synth) =>
           //val synth2 = synth.flatMap(c => if (c == '\r') None else Some(c))
           val synth2 = synth.replace("\r","")

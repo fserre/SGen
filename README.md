@@ -56,7 +56,7 @@ The following parameters can be used:
   * `bfloat16` bfloat16 floating point . Equivalent of `ieee754 8 7`.
   * `unsigned `*`size`* Unsigned integer of *size* bits.
   * `signed `*`size`* Signed integer of *size* bits. Equivalent of `fixedpoint `*`size`*` 0`.
-  * `fixedpoint `*`integer fractional`* Signed fixed-point representation with a integer part of *integer* bits and a fractional part of *fractional* bits.
+  * `fixedpoint `*`integer fractional`* Signed fixed-point representation with an integer part of *integer* bits and a fractional part of *fractional* bits.
   * `flopoco `*`wE wF`* [FloPoCo](http://flopoco.gforge.inria.fr/) floating point representation with an exponent size of *wE* bits, and a mantissa of *wF* bits. The resulting design will depend on the corresponding FloPoCo generated arithmetic operators, which must be placed in the `flopoco` folder. In the case where the corresponding vhdl file is not present, SGen provides the command line to generate it. Custom options (e.g. `frequency` or `target`) can be used.
   * `ieee754 `*`wE wF`* IEEE754 floating point representation with an exponent size of *wE* bits, and a mantissa of *wF* bits. Arithmetic operations are performed using [FloPoCo](http://flopoco.gforge.inria.fr/). Note that, unless otherwise specified when generating FloPoCo operators, denormal numbers are flushed to zero.
   * `complex `*`repr`* Cartesian complex number. Represented by the concatenation of its coordinates, each represented using *repr* arithmetic representation.
