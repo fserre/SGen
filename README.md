@@ -92,6 +92,13 @@ Fourier transforms (with an architecture that reuses several times the same hard
 sbt "run -n 10 -k 3 -hw complex fixedpoint 8 8 dftcompact"
 ```
 
+#### Inverse Fourier Transforms
+Inverse Fourier transforms with full-throughput (resp. compact design) can be generated using the `idft` command (resp. `idftcompact`):
+```
+# generates an inverse Fourier transform on 1024 points, streamed on 8 ports, with fixed-point complex datatype with a mantissa of 8 bits and an exponent of 8 bits.
+sbt "run -n 10 -k 3 -hw complex fixedpoint 8 8 idft"
+```
+
 ### RAM control
 In the case of a streaming design (n > k), memory modules may need to be used. In this case, SGen allows to choose the control strategy used for this module:
 * Dual RAM control: read and write addresses are computed independently. This offers the highest flexibility (a dataset can be input at any time after the previous one), but this uses more resources. It is automatically used for compact designs (`dftcompact`), but can be enabled for other designs using the `-dualRAMcontrol` parameter.

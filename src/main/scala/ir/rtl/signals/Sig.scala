@@ -90,6 +90,8 @@ object Sig:
     def re:Sig[T] = Re(lhs)
     /** Imaginary part */
     def im:Sig[T] = Im(lhs)
+    /** Swap real and imaginary parts */
+    def swap:Sig[Complex[T]] = Cpx(lhs.im, lhs.re) 
 
 /** Signals without parent node */
 abstract class Source[T: HW] extends Sig[T]:

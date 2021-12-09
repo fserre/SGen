@@ -24,24 +24,18 @@
 package transforms.fft
 
 import ir.rtl.hardwaretype.HW
-import ir.rtl.{AcyclicStreamingModule, StreamingModule, RAMControl}
+import ir.rtl.{AcyclicStreamingModule, Component, RAMControl, StreamingModule}
 import ir.rtl.signals.Sig
 import ir.spl.{Repeatable, SPL}
 import linalg.Fields.Complex
 
-class DFT2[T](implicit val num: Numeric[T]) extends SPL[T](1) with Repeatable[T]:
-  override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs
-    .grouped(2)
-    .toSeq
-    .flatMap(i => Seq(num.plus(i.head, i.last), num.minus(i.head, i.last)))
+/**
+ * SPL that swaps real and imaginary parts of its inputs
+ */
+case class Swap(override val n:Int) extends SPL[Complex[Double]](n):
+  override def eval(inputs: Seq[Complex[Double]], set: Int): Seq[Complex[Double]] = inputs.map(_.swap)
 
-  override def stream(k: Int, control: RAMControl)(implicit hw: HW[T]): AcyclicStreamingModule[T] =
-    require(k == 1)
-    Butterfly[T]()
+  override def stream(k: Int, control: RAMControl)(using HW[Complex[Double]]): StreamingModule[Complex[Double]] = new AcyclicStreamingModule[Complex[Double]](n - k, k):
+    override def implement(inputs: Seq[Sig[Complex[Double]]]): Seq[Sig[Complex[Double]]] = inputs.map(_.swap)
 
-object DFT2:
-  def apply[T: Numeric]() = new DFT2[T]()
-  def unapply[T](arg: SPL[T]): Boolean = arg match
-    case _: DFT2[T] => true
-    case _          => false
-
+    override def spl: SPL[Complex[Double]] = Swap(this.n)

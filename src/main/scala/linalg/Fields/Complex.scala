@@ -45,6 +45,8 @@ case class Complex[+T: Numeric](re: T, im: T):
   override def toString: String = re.toString + (if (im != implicitly[Numeric[T]].zero) "+" + im.toString + "i" else "")
 
   def conjugate: Complex[T] = Complex(re, -im)
+  
+  def swap: Complex[T] = Complex(im, re)
 
   def norm2: T = re * re + im * im
 
