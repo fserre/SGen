@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package backends
@@ -39,7 +39,7 @@ import sys.process._
  */
 object SVG:
   val unit=50
-  
+
   class Element(x: Int, y: Int, color: String):
     val path=ArrayBuffer[(Int,Int)]((x - Element.radius, y - Element.radius))
     def moveTo(x:Int,y:Int) = path += ((x - Element.radius, y - Element.radius))
@@ -142,7 +142,7 @@ object SVG:
       res.toSeq
     case ITensor(r, factor, k) =>
       el.grouped(factor.N).toSeq.flatMap(animate(factor, _, set))
-    case Butterfly() =>
+    case Butterfly(_) =>
       el(0).move(unit / 2, unit / 2)
       el(0).move(unit / 2, -unit / 2)
       el(1).move(unit / 2, -unit / 2)
@@ -152,7 +152,7 @@ object SVG:
       el.foreach(_.move(length(sm) / 2))
       (0 until (1 << (t + k))).foreach(_ => el.foreach(_.stay))
       el.foreach(_.move(length(sm) / 2))
-      el      
+      el
     case _ =>
       val l=length(sm)
       if(l>0)
@@ -166,7 +166,7 @@ object SVG:
     case transforms.perm.SwitchArray(_, _) => unit
     case sm@transforms.perm.Temporal(p3, p4, _) => ((1 << sm.innerP4.head.m) + 1) * 3 * Element.size / 2
     case ITensor(_, factor, _) => length(factor)
-    case Butterfly() => unit
+    case Butterfly(_) => unit
     case sm if sm.spl.isInstanceOf[DiagE] => 0//unit/2
     case DFT(t, k) => (t+ k) * unit
     case _ => 2 * unit
@@ -237,11 +237,11 @@ object SVG:
         static(factor,pw,x,y+i*(1<<factor.k)*unit)
       else
         static(factor,pw,x,y)
-    case Butterfly() =>
+    case Butterfly(_) =>
       pw ++= s"""<rect x="${x-0.25*unit}" y="${y+0.25*unit}" width="${unit*1.5}" height="${unit*1.5}" rx="10" style="fill:#a1e47e"/>"""
       //pw ++= s"""<text x="${x+0.5*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:18px; font-weight: bold;font-style:italic;">Butterfly</text>"""
       pw ++= s"""<text x="${x+0.5*unit}" y="${y+unit}" text-anchor="middle" alignment-baseline="middle" style="fill:#040; font-family:Futura,Calibri,Sans-serif; font-size:24px; font-weight: bold;font-style:italic;">DFT<tspan dy="10" style="font-size:18px;">2</tspan></text>"""
-    case DFT(t, k) => 
+    case DFT(t, k) =>
     case sm if sm.spl.isInstanceOf[DiagE] =>
       val de:DiagE=sm.spl.asInstanceOf[DiagE]
       (0 until sm.K).map{p =>
@@ -282,7 +282,7 @@ object SVG:
 
 
   extension [T](sm: StreamingModule[T])
-    def toSVG = 
+    def toSVG =
       val res = new mutable.StringBuilder
       val height = Math.max(Element.size*sm.N,sm.K*unit)//sm.N * dyElements //unit/2 up and down
       val width = length(sm) + 4 * unit+6 //unit on each side
@@ -291,7 +291,7 @@ object SVG:
       (0 until sm.K).foreach(i => res ++= s"""<line x1="$unit" y1="${i * unit + (unit +height-sm.K*unit)/2}" x2="${2 * unit}" y2="${i * unit + (unit +height-sm.K*unit)/2}" stroke="#000"/>\n""")
       (0 until sm.K).foreach(i => res ++= s"""<line x1="${length(sm) + 2 * unit}" y1="${i * unit + (unit +height-sm.K*unit)/2}" x2="${length(sm) + 3 * unit}" y2="${i * unit + (unit +height-sm.K*unit)/2}" stroke="#000" marker-end="url(#triangle)"/>\n""")
       static(sm, res, 2 * unit, (height-sm.K*unit)/2)
-      
+
       val elements = Seq.tabulate(sm.N)((i) =>
         val p = i % sm.K
         val c = i / sm.K
@@ -300,7 +300,7 @@ object SVG:
         res.moveTo(unit, p * unit + (unit + height - sm.K * unit) / 2)
         res.move(unit)
         res)
-      
+
       animate(sm, elements, 0).zipWithIndex.foreach((e, i) =>
         val p = i % sm.K
         val c = i / sm.K
@@ -308,11 +308,11 @@ object SVG:
         e.moveTo(length(sm) + 4 * unit, i * Element.size + (height - sm.N*Element.size+Element.size) / 2)
         (0 until (sm.T - c + 1)).foreach(_ => e.stay)
         e(res))
-      
+
       foreground(sm, res, 2 * unit, (height - sm.K * unit) / 2)
       res ++= "</svg>\n"
       res.toString()
-    
+
     def writeSVG(filename: String = "test.svg") =
       val pw = new PrintWriter(filename)
       pw.write(sm.toSVG)
@@ -321,4 +321,3 @@ object SVG:
     def showSVG(filename: String = "test.svg")=
       sm.writeSVG(filename)
       s"cmd /c start $filename".!!
-    

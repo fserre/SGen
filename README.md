@@ -34,6 +34,7 @@ The following parameters can be used:
 * `-n `*`n`* Logarithm of the size of the transform. As an example, `-n 3` means that the transform operates on 2^3=8 points. This parameter is required.
 * `-k `*`k`* Logarithm of the *streaming width* of the implementation. `-k 2` means that the resulting implementation will have 2^2=4 input ports and 4 output ports, and will perform a transform every 2^(*n*-*k*) cycles. In case where this parameter is not specified, the implementation is not *folded*, i.e. the implementation will have one input port and one output port for each data point, and will perform one transform per cycle.  
 * `-r `*`r`* Logarithm of the radix (for DFTs and WHTs). This parameter specifies the size of the base transform used in the algorithm. *r* must divide *n*, and, for compact designs (`dftcompact` and `whtcompact`), be smaller or equal to *k*. It is ignored by tranforms not requiring it (permutations). If this parameter is not specified, the highest possible radix is used.
+* `-sf `*`sf`* Scaling factor (for DFTs). At each stage of the DFT, each element is multiplied by *sf*. For example, `-sf 0.5 idft` will produce the inverse of an unscaled dft.   
 * `-o `*`filename`* Name of the output file.
 * `-benchmark` Adds a benchmark module in the generated design.
 * `-rtlgraph` Produces a [DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) graph representing the design.

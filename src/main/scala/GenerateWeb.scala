@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 
@@ -48,10 +48,10 @@ object GenerateWeb extends App:
     transforms.fft.DFT(0,3).writeSVG("img/dft8basic.svg")
     transforms.fft.DFT(1,2).writeSVG("img/dft8s4basic.svg")
     transforms.fft.DFT(2,1).writeSVG("img/dft8s2basic.svg")
-    transforms.fft.DFT.CTDFT(3,1).stream(3,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
-    transforms.fft.DFT.CTDFT(3,1).stream(2,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
-    transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")
-    val graphDesign = transforms.fft.DFT.CTDFT(3,1).stream(1,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).asInstanceOf[AcyclicStreamingModule[Complex[Double]]]
+    transforms.fft.DFT.CTDFT(3,1,1).stream(3,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8.svg")
+    transforms.fft.DFT.CTDFT(3,1,1).stream(2,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8s4.svg")
+    transforms.fft.DFT.CTDFT(3,1,1).stream(1,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).writeSVG("dft8s2.svg")
+    val graphDesign = transforms.fft.DFT.CTDFT(3,1,1).stream(1,RAMControl.Single)(using ComplexHW(FixedPoint(16,0))).asInstanceOf[AcyclicStreamingModule[Complex[Double]]]
     graphDesign.showGraph
     graphDesign.showRTLGraph
   else
@@ -64,7 +64,7 @@ object GenerateWeb extends App:
         if n % r == 0
         hw <- Vector("char","short","int","long","half","float","double","bfloat16")
       yield
-        (transform, n, k, r, hw)) ++ 
+        (transform, n, k, r, hw)) ++
       (for
         transform <- Vector("bitrev", "stride")
         n <- 2 to 15
@@ -75,7 +75,7 @@ object GenerateWeb extends App:
       yield
         (transform, n, k, r, hw))
 
-    for n <- 1 to 15 do 
+    for n <- 1 to 15 do
       println(s"Generating for n=$n")
       println(s"-------------------")
       println
@@ -83,11 +83,11 @@ object GenerateWeb extends App:
         val name = s"$transform-$n-$k-$r-$hw"
         Main.main(s"-zip -o $name.zip -testbench -n $n -k $k -r $r -hw ${if (transform contains "wht") || (transform contains "dft") then "complex " else ""}$hw $transform".split(" "))
       )
-    
+
     // tests small designs using Xilinx XSim
-    designSpace.filter((_,n,_,_,_) => n<8).foreach((transform, n, k, r, hw) =>  
+    designSpace.filter((_,n,_,_,_) => n<8).foreach((transform, n, k, r, hw) =>
       val name = s"$transform-$n-$k-$r-$hw"
-      val rhw:HW[Double] = 
+      val rhw:HW[Double] =
         if hw == "char" then
           FixedPoint(4, 4)
         else if hw == "short" then
@@ -102,14 +102,14 @@ object GenerateWeb extends App:
           IEEE754(8, 23)
         else if hw == "double" then
           IEEE754(11, 52)
-        else 
+        else
           IEEE754(8, 7)
       print(name + " - ")
       val uut=
         if transform=="dft" then
-          DFT.CTDFT(n,r).stream(k,RAMControl.Single)(using ComplexHW(rhw))
+          DFT.CTDFT(n,r,1).stream(k,RAMControl.Single)(using ComplexHW(rhw))
         else if transform=="dftcompact" then
-          DFT.ItPeaseFused(n,r).stream(k,RAMControl.Dual)(using ComplexHW(rhw))
+          DFT.ItPeaseFused(n,r,1).stream(k,RAMControl.Dual)(using ComplexHW(rhw))
         else if transform=="wht" then
           WHT.stream(n,r,k,ComplexHW(rhw),RAMControl.Single)
         else if transform=="whtcompact" then
@@ -120,4 +120,4 @@ object GenerateWeb extends App:
           LinearPerm.stream(Seq(LinearPerm.Rmat(r,n)),k,rhw,RAMControl.Single)
       println(uut.test())
     )
-    
+

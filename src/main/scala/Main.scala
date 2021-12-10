@@ -38,13 +38,14 @@ import backends.DOT.*
 import backends.Verilog.*
 
 object Main:
-  def main(args: Array[String]) =
+  def main(args: Array[String]):Unit =
     var testbench: Boolean = false
     var graph: Boolean = false
     var rtlgraph: Boolean = false
     var dualRAMControl: Boolean = false
     var singlePortedRAM: Boolean = false
     var zip = false
+    var scalingFactor = 1.0
 
     var _n: Option[Int] = None
     def n: Int = _n match
@@ -126,6 +127,7 @@ object Main:
       case "-r" => _r = Numeric[Int].parseString(argsQ.dequeue())
       case "-hw" => _hw = parseHW(argsQ)
       case "-o" => _filename = argsQ.removeHeadOption()
+      case "-sf" => scalingFactor = Numeric[Double].parseString(argsQ.dequeue()).getOrElse(1.0)
       case "-testbench" => testbench = true
       case "-dualramcontrol" => dualRAMControl = true
       case "-signleportedram" => singlePortedRAM = true
@@ -150,16 +152,16 @@ object Main:
       case "wht" => _design = Some(WHT.stream(n, r, k, hw, control))
       case "whtcompact" => _design = Some(WHT.streamcompact(n, r, k, hw))
       case "dft" => hw match
-        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.CTDFT(n, r).stream(k, control)(using hw))
+        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.CTDFT(n, r, scalingFactor).stream(k, control)(using hw))
         case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")
       case "dftcompact" => hw match
-        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(using hw))
+        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.ItPeaseFused(n, r, scalingFactor).stream(k, RAMControl.Dual)(using hw))
         case _ => throw new IllegalArgumentException("Compact DFT requires a complex of fractional hardware datatype.")
       case "idft" => hw match
-        case hw: ComplexHW[Double@unchecked] => _design = Some((Swap(n) * DFT.CTDFT(n, r) * Swap(n)).stream(k, control)(using hw))
+        case hw: ComplexHW[Double@unchecked] => _design = Some((Swap(n) * DFT.CTDFT(n, r, scalingFactor) * Swap(n)).stream(k, control)(using hw))
         case _ => throw new IllegalArgumentException("iDFT requires a complex of fractional hardware datatype.")
       case "idftcompact" => hw match
-        case hw: ComplexHW[Double@unchecked] => _design = Some((Swap(n) * DFT.ItPeaseFused(n, r) * Swap(n)).stream(k, RAMControl.Dual)(using hw))
+        case hw: ComplexHW[Double@unchecked] => _design = Some((Swap(n) * DFT.ItPeaseFused(n, r, scalingFactor) * Swap(n)).stream(k, RAMControl.Dual)(using hw))
         case _ => throw new IllegalArgumentException("Compact iDFT requires a complex of fractional hardware datatype.")
       case arg => throw new IllegalArgumentException("Unknown argument: " + arg)
 
@@ -242,6 +244,3 @@ object Main:
       println(s"Written design in $file.")
 
   var logoDisplayed = false
-
-
-

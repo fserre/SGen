@@ -24,29 +24,22 @@
 package transforms.fft
 
 import ir.rtl.hardwaretype.HW
-import ir.rtl.{AcyclicStreamingModule, StreamingModule, RAMControl}
-import ir.rtl.signals.Sig
+import ir.rtl.{AcyclicStreamingModule, RAMControl, StreamingModule}
+import ir.rtl.signals.{Const, Sig}
 import ir.spl.{Repeatable, SPL}
 import linalg.Fields.Complex
+import math.Numeric.Implicits.infixNumericOps
 
-class DFT2[T](implicit val num: Numeric[T]) extends SPL[T](1) with Repeatable[T]:
-  override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs.grouped(2).toSeq
-    .flatMap(i => Seq(num.plus(i.head, i.last), num.minus(i.head, i.last)))
+case class DFT2[T: Numeric](scalingFactor: T) extends SPL[T](1) with Repeatable[T]:
+  override def eval(inputs: Seq[T], set: Int): Seq[T] = inputs.grouped(2).toSeq.flatMap(i => Seq((i.head + i.last) * scalingFactor, (i.head - i.last) * scalingFactor))
 
-  override def stream(k: Int, control: RAMControl)(implicit hw: HW[T]): AcyclicStreamingModule[T] =
+  override def stream(k: Int, control: RAMControl)(using HW[T]): AcyclicStreamingModule[T] =
     require(k == 1)
-    Butterfly[T]()
+    Butterfly[T](scalingFactor)
 
-object DFT2:
-  def apply[T: Numeric]() = new DFT2[T]()
-  def unapply[T](arg: SPL[T]): Boolean = arg match
-    case _: DFT2[T] => true
-    case _          => false
-
-
-case class Butterfly[T:HW]() extends AcyclicStreamingModule[T](0,1):
+case class Butterfly[T: HW](scalingFactor: T) extends AcyclicStreamingModule[T](0, 1):
   override def toString: String = "F2"
 
-  override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i=>Seq(i.head+i.last,i.head-i.last))
+  override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = inputs.grouped(2).toSeq.flatMap(i => Seq((i.head + i.last) * Const(scalingFactor), (i.head - i.last) * Const(scalingFactor)))
 
-  override def spl: SPL[T] =DFT2[T]()(implicitly[HW[T]].num)
+  override def spl: SPL[T] = DFT2[T](scalingFactor)(using HW[T].num)

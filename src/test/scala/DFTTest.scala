@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 import ir.rtl.hardwaretype.{ComplexHW, FixedPoint}
@@ -38,7 +38,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n-1)
     if n % r == 0
   } yield (n,r)) { case (n,r) =>
-    val sb = DFT.CTDFT(n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
+    val sb = DFT.CTDFT(n, r, 1) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res = (0 until (1 << n)).map(j => Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Complex[Double]]](_ :: _)
@@ -56,7 +56,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n)
     if n % r == 0
     dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
-  } yield DFT.CTDFT(n, r).stream(k,dp)
+  } yield DFT.CTDFT(n, r, 1).stream(k,dp)
   property("CTDFT") = forAll(genSteady) { (sb: StreamingModule[Complex[Double]]) =>
       sb.test() match {
         case Some(value) if value < 0.01 => true
@@ -72,7 +72,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n)
     if n % r == 0
     dp <- Gen.oneOf(RAMControl.Dual,RAMControl.Single)
-  } yield DFT.Pease(n, r).stream(k,dp)
+  } yield DFT.Pease(n, r, 1).stream(k,dp)
   property("Pease") =
 
     forAll(genPease) { (sb: StreamingModule[Complex[Double]]) =>
@@ -103,7 +103,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n-1)
     if n % r == 0
   } yield (n,r)) { case (n,r) =>
-      val sb = DFT.ItPease(n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
+      val sb = DFT.ItPease(n, r, 1) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res = (0 until (1 << n)).map(j => Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Complex[Double]]](_ :: _)
@@ -119,7 +119,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n - 1)
     if n % r == 0
     if k >= r
-  } yield DFT.ItPease(n, r).stream(k,RAMControl.Dual)
+  } yield DFT.ItPease(n, r, 1).stream(k,RAMControl.Dual)
   property("ItPease")= forAll(genItPease) { (sb: StreamingModule[Complex[Double]]) =>
     sb.test() match {
         case Some(value) if value < 0.01 => true
@@ -133,7 +133,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n-1)
     if n % r == 0
   } yield (n,r)) { case (n,r) =>
-      val sb = DFT.ItPeaseFused(n, r) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
+      val sb = DFT.ItPeaseFused(n, r, 1) // Temporal(Vector(Vec.fromInt(2, 3)), Vector(Matrix[F2](2, 2, Vector(1, 1, 1, 0))))(Unsigned(16))
       val res = (0 until (1 << n)).map(j => Vec(sb.eval(
         Seq.tabulate(1 << n)(i => if (i == j) 1.0 else 0.0), 0
       ).toVector)).reduce[Matrix[Complex[Double]]](_ :: _)
@@ -149,7 +149,7 @@ object DFTTest extends Properties("DFT") {
     r <- Gen.choose(1, n - 1)
     if n % r == 0
     if k >= r
-  } yield DFT.ItPeaseFused(n, r).stream(k,RAMControl.Dual)
+  } yield DFT.ItPeaseFused(n, r, 1).stream(k,RAMControl.Dual)
   property("ItPeaseFused") = forAll(genItPeaseFused) { (sb: StreamingModule[Complex[Double]]) =>
     sb.test() match {
         case Some(value) if value < 0.01 => true
