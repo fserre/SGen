@@ -114,7 +114,6 @@ object Concat extends AssociativeNodeCompanion[Sig[Int], Concat](new Concat(_)):
       case (Tap(lhs, lr), Tap(rhs, rr)) if lhs == rhs && rr.last + 1 == lr.start => Some(lhs(rr.start to lr.last))
       case _ => None
 
-
 /** Selection of a range of bits in an unsigned signal */
 case class Tap private (input: Sig[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)):
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Tap(cp(input), range)

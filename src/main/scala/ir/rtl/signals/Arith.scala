@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package ir.rtl.signals
@@ -31,10 +31,10 @@ import scala.annotation.tailrec
 
 /**
   * Parent class of nodes that represent a sum of two nodes
-  * 
+  *
   * @param lhs First term
   * @param rhs Second term
-  * @tparam T Software datatype 
+  * @tparam T Software datatype
   */
 abstract class Plus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
 
@@ -57,7 +57,7 @@ object Plus:
  *
  * @param lhs First term
  * @param rhs Second term
- * @tparam T Software datatype 
+ * @tparam T Software datatype
  */
 abstract class Minus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
 
@@ -81,7 +81,7 @@ object Minus:
  *
  * @param lhs First term
  * @param rhs Second term
- * @tparam T Software datatype 
+ * @tparam T Software datatype
  */
 abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
 
@@ -101,7 +101,7 @@ object Times:
           case Zero() | One() | Opposite(One()) => false
           case _ => true
         }.distinct.size <= 1 => Mux(address,inputs.map(lhs * _))
-
+      case (Times(llhs, lrhs@Const(vl)), Const(vr)) if lrhs.hw == rhs.hw => llhs * Const(vl*vr)(using lrhs.hw)
       // Following cases may induce supplementary hardware in front of the node to implement the negation.
       // In case of FFTs, these reduce the number of multipliers used (triggers common subexpression elimination), and as butterflies come next, negation will be handled with no cost.
       case (_, Opposite(x)) => Opposite(lhs * x)
@@ -114,10 +114,12 @@ object Times:
         }.distinct.size == 1 => Mux(address, values.map(lhs * Const(_)(using rhs.hw)))
       case _ => lhs.hw.times(lhs, rhs)
 
+  def unapply[T](arg: Times[T]): Option[(Sig[T], Sig[T])] = Some(arg.lhs, arg.rhs)
+
 /** Sugar to create/identify zero-valued signals*/
 object Zero:
   /**
-    * Check if a node is the constant 0 
+    * Check if a node is the constant 0
     */
   def unapply[T](arg: Sig[T]): Boolean =
     val hw=arg.hw
@@ -125,14 +127,14 @@ object Zero:
       case Const(v) if hw.bitsOf(v) == hw.bitsOf(hw.num.zero) => true
       case _ => false
   /**
-   * Creates constant signal 0 
+   * Creates constant signal 0
    */
   inline def apply[T:HW]: Sig[T] = Const(HW[T].num.zero)
 
 /** Sugar to create/identify one-valued signals*/
 object One:
   /**
-    * Check if a node is the constant 1 
+    * Check if a node is the constant 1
      */
   def unapply[T](arg: Sig[T]): Boolean =
     val hw=arg.hw
@@ -140,7 +142,7 @@ object One:
       case Const(value) if hw.bitsOf(value) == hw.bitsOf(hw.num.one) => true
       case _ => false
   /**
-    * Creates constant signal 1 
+    * Creates constant signal 1
     */
   inline def apply[T: HW]: Sig[T] = Const(HW[T].num.one)
 
