@@ -36,7 +36,10 @@ import scala.annotation.tailrec
   * @param rhs Second term
   * @tparam T Software datatype
   */
-abstract class Plus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
+abstract class Plus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw):
+  final override def changeParent(parentId: Int, newParent: Sig[?]) = parentId match
+    case 0 => Plus(newParent.asInstanceOf[Sig[T]], rhs)
+    case 1 => Plus(lhs, newParent.asInstanceOf[Sig[T]])
 
 /** Companion object for Plus*/
 object Plus:
@@ -59,7 +62,10 @@ object Plus:
  * @param rhs Second term
  * @tparam T Software datatype
  */
-abstract class Minus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
+abstract class Minus[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw):
+  final override def changeParent(parentId: Int, newParent: Sig[?]) = parentId match
+    case 0 => Minus(newParent.asInstanceOf[Sig[T]], rhs)
+    case 1 => Minus(lhs, newParent.asInstanceOf[Sig[T]])
 
 /** Companion object for Minus*/
 object Minus:
@@ -83,7 +89,10 @@ object Minus:
  * @param rhs Second term
  * @tparam T Software datatype
  */
-abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw)
+abstract class Times[T](val lhs: Sig[T], val rhs: Sig[T]) extends Operator[T](lhs, rhs)(lhs.hw):
+  final override def changeParent(parentId: Int, newParent: Sig[?]) = parentId match
+    case 0 => Times(newParent.asInstanceOf[Sig[T]], rhs)
+    case 1 => Times(lhs, newParent.asInstanceOf[Sig[T]])
 
 /** Companion object for Times*/
 object Times:

@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package ir.rtl.signals
@@ -29,17 +29,18 @@ import linalg.Fields.Complex
 
 /**
  * Real part of a complex signal
- * 
+ *
  * @param input A complex signal
  * @tparam T Software datatype
  */
 case class Re[T] private (input: Sig[Complex[T]]) extends Operator[T](input)(using input.hw.innerHW):
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Tap(cp(input),0 until hw.size)
+  override def changeParent(parentId: Int, newParent: Sig[?]) = Re(newParent.asInstanceOf[Sig[Complex[T]]])
 
 /** Companion object of Re*/
 object Re:
   /**
-   * Get the real part of a complex signal 
+   * Get the real part of a complex signal
    */
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match
     case Const(value) => Const(value.re)(input.hw.innerHW)
@@ -54,11 +55,12 @@ object Re:
  */
 case class Im[T] private (input: Sig[Complex[T]]) extends Operator[T](input)(using input.hw.innerHW):
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Tap(cp(input),hw.size until (hw.size * 2))
+  override def changeParent(parentId: Int, newParent: Sig[?]) = Im(newParent.asInstanceOf[Sig[Complex[T]]])
 
 /** Companion object of Im*/
 object Im:
   /**
-   * Get the immaginary part of a complex signal 
+   * Get the immaginary part of a complex signal
    */
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match
     case Const(value) => Const(value.im)(input.hw.innerHW)
@@ -74,11 +76,14 @@ object Im:
  */
 case class Cpx[T] private (real: Sig[T], im: Sig[T]) extends Operator[Complex[T]](real, im)(using ComplexHW(real.hw)):
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Concat(Vector(cp(im),cp(real)))
+  override def changeParent(parentId: Int, newParent: Sig[?]) = parentId match
+    case 0 => Cpx(newParent.asInstanceOf[Sig[T]], im)
+    case 1 => Cpx(real, newParent.asInstanceOf[Sig[T]])
 
 /** Companion object of Cpx */
 object Cpx:
   /**
-   * Get a complex signal out of two signal components 
+   * Get a complex signal out of two signal components
    *
    * @param real Real part
    * @param im Immaginary part

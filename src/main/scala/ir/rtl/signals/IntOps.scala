@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package ir.rtl.signals
@@ -32,6 +32,7 @@ import scala.annotation.tailrec
 
 /** Signal that represents binary and of several signals */
 final class And private (terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms," & "):
+  override def changeParent(parentId: Int, newParent: Sig[_]): Sig[Int] = And(terms.updated(parentId,newParent.asInstanceOf[Sig[Int]]))
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.And(terms.map(cp))
   override def equals(other:Any) = other match
     case other:And => other.list == list
@@ -40,7 +41,7 @@ final class And private (terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms
 
 /** Companion object of class And */
 object And extends AssociativeNodeCompanion[Sig[Int], And](new And(_)):
-  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) = 
+  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) =
     require(lhs.hw == rhs.hw)
     given HW[Int] = lhs.hw
     def withConst(const:Int, input:Sig[Int]) =
@@ -57,6 +58,8 @@ object And extends AssociativeNodeCompanion[Sig[Int], And](new And(_)):
 case class Not private (input: Sig[Int]) extends Operator[Int](input)(input.hw):
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Not(cp(input))
 
+  override def changeParent(parentId: Int, newParent: Sig[_]): Sig[Int] = Not(newParent.asInstanceOf[Sig[Int]])
+
 /** Companion object of class Not */
 object Not:
   def apply(input: Sig[Int]): Sig[Int] =
@@ -68,6 +71,7 @@ object Not:
 
 /** Binary xor of several signals */
 final class Xor private (terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms, " ^ "):
+  override def changeParent(parentId: Int, newParent: Sig[_]): Sig[Int] = Xor(terms.updated(parentId, newParent.asInstanceOf[Sig[Int]]))
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Xor(terms.map(cp))
   override val pipeline = 1
   override def equals(other: Any) = other match
@@ -76,7 +80,7 @@ final class Xor private (terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms
 
 /** Companion object of class Xor */
 object Xor extends AssociativeNodeCompanion[Sig[Int], Xor](new Xor(_)):
-  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) = 
+  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) =
     require(lhs.hw == rhs.hw)
     given HW[Int] = lhs.hw
     def withConst(const:Int,input:Sig[Int]) =
@@ -91,7 +95,7 @@ object Xor extends AssociativeNodeCompanion[Sig[Int], Xor](new Xor(_)):
 
 /** Computes a xor reduction of a signal */
 object RedXor:
-  def apply(input: Sig[Int]): Sig[Int] = 
+  def apply(input: Sig[Int]): Sig[Int] =
     if input.hw.size == 0 then
       Const(0)(using Unsigned(1))
     else
@@ -99,14 +103,15 @@ object RedXor:
 
 /** Concatenation of several unsigned signals */
 final class Concat private(terms: Seq[Sig[Int]]) extends AssociativeSig[Int](terms," :: ")(using Unsigned(terms.map(_.hw.size).sum)):
+  override def changeParent(parentId: Int, newParent: Sig[_]): Sig[Int] = Concat(terms.updated(parentId,newParent.asInstanceOf[Sig[Int]]))
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Concat(terms.map(cp))
   override def equals(other:Any) = other match
     case other:Concat => other.list == list
     case _ => false
-  
+
 /** Companion object of class Concat */
-object Concat extends AssociativeNodeCompanion[Sig[Int], Concat](new Concat(_)):   
-  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) = 
+object Concat extends AssociativeNodeCompanion[Sig[Int], Concat](new Concat(_)):
+  override def simplify(lhs: Sig[Int], rhs: Sig[Int]) =
     (lhs,rhs) match
       case (lhs:Const[Int], rhs:Const[Int]) => Some(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size)))
       case (_, Null()) => Some(lhs)
@@ -116,19 +121,20 @@ object Concat extends AssociativeNodeCompanion[Sig[Int], Concat](new Concat(_)):
 
 /** Selection of a range of bits in an unsigned signal */
 case class Tap private (input: Sig[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)):
+  override def changeParent(parentId: Int, newParent: Sig[_]): Sig[Int] = Tap(newParent.asInstanceOf[Sig[Int]], range)
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Tap(cp(input), range)
 
 /** Companion object of class Tap */
 object Tap:
-  def apply(input: Sig[Int], range: Range): Sig[Int] = 
-    input match 
+  def apply(input: Sig[Int], range: Range): Sig[Int] =
+    input match
       case _ if range.isEmpty => Null()
       case _ if range.length == input.hw.size => input
       case Const(value) => Const(((((1 << range.length) - 1) << range.start) & value) >> range.start)(Unsigned(range.length))
       case Tap(input2, r2) => Tap(input2, (r2.start + range.start) to (r2.start + range.last))
       case Concat(signals: Seq[Sig[Int]]) =>
         @tailrec
-        def trimLeft(in: Seq[Sig[Int]], start: Int): Seq[Sig[Int]] = 
+        def trimLeft(in: Seq[Sig[Int]], start: Int): Seq[Sig[Int]] =
           if (in.head.hw.size <= start)
             trimLeft(in.tail, start - in.head.hw.size)
           else

@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package ir.rtl.signals
@@ -28,17 +28,17 @@ import ir.rtl.hardwaretype.{HW, Unsigned}
 
 /**
   * Counter signal
-  *  
+  *
   * @param limit Upper limit of the counter (goes from 0 to limit - 1)
   * @param trigger Signal to increment the counter
   * @param reset Signal to set the counter back to resetValue
   * @param resetValue Reset value
   * @param delayTrigger Advance that should be requested on the trigger signal
   */
-case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig(using Unsigned(BigInt(limit - 1).bitLength)):
+case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: Int, delayTrigger: Int = 0) extends Sig[Int](using Unsigned(BigInt(limit - 1).bitLength)):
   override val hash = Seq("Counter",limit,trigger,reset,resetValue,delayTrigger).hashCode()
-  
-  override def implement(cp: (Sig[?], Int) => Component): Component = 
+
+  override def implement(cp: (Sig[?], Int) => Component): Component =
     val prev = Wire(hw.size)
     val prevpp = Plus(Seq(prev, Const(hw.size,1)))
     val prevInc = if BigInt(limit).bitCount > 1 then
@@ -53,15 +53,20 @@ case class Counter(limit: Int, trigger: Sig[Int], reset: Sig[Int], resetValue: I
     res
   override def parents: Seq[(Sig[?], Int)] = Seq((trigger, 1 - delayTrigger), (reset, 1))
 
+  override def changeParent(parentId: Int, newParent: Sig[_]) = parentId match
+    case 0 => copy(trigger = newParent.asInstanceOf[Sig[Int]])
+    case 1 => copy(reset = newParent.asInstanceOf[Sig[Int]])
+
+
 /** Object that allows to create dataset counters.*/
 object SetCounter:
   /**
-    * Counter that counts the number of datasets that went through. It updates itself when a new dataset enters.  
-    * 
+    * Counter that counts the number of datasets that went through. It updates itself when a new dataset enters.
+    *
     * @param limit Upper limit of the counter (goes from 0 to limit - 1)
     */
   def apply(limit: Int): Sig[Int] = if limit == 1 then signals.Const(0)(Unsigned(0)) else new Counter(limit, Next, Reset, limit - 1)
-  
+
   def unapply(arg: Sig[?]) = arg match
     case Counter(limit, signals.Next, signals.Reset, resetValue, delayTrigger) if resetValue == limit - 1 && delayTrigger==0 => Some(limit)
     case _ => None

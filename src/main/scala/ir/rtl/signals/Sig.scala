@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package ir.rtl.signals
@@ -34,12 +34,14 @@ import scala.reflect._
 /**
  * Class that represent a node in an acyclic streaming module internal graph. These nodes are comparable to RTL components, but abstract the hardware numeric representation, and timing.
  * Signals should be immutable.
- * 
+ *
  * @tparam T Equivalent software datatype of the node. A context bound HW indicating how to translate a T to hardware must be provided.
  */
 abstract class Sig[T: HW]:
   /** Parent signals of the node (each given as a pair: Sig and number of cycles of advance this parent must have compared to this signal).*/
   def parents: Seq[(Sig[?], Int)]
+  /** Returns the node resulting of the change of one of the parent */
+  def changeParent(parentId: Int, newParent: Sig[?]): Sig[T]
   /** Number of registers that should be put after this signal.*/
   def pipeline = 0
   /** Implementation of this signal (using RTL components)*/
@@ -56,8 +58,8 @@ abstract class Sig[T: HW]:
   /** value for hashCode (hashCode cannot be simply overriden as a val). As signals are immutable, it is better to not have a recursive def for performance. */
   val hash: Int
   final override inline def hashCode() = hash
-  
-  
+
+
 
 /** Companion object of Sig */
 object Sig:
@@ -91,13 +93,14 @@ object Sig:
     /** Imaginary part */
     def im:Sig[T] = Im(lhs)
     /** Swap real and imaginary parts */
-    def swap:Sig[Complex[T]] = Cpx(lhs.im, lhs.re) 
+    def swap:Sig[Complex[T]] = Cpx(lhs.im, lhs.re)
 
 /** Signals without parent node */
 abstract class Source[T: HW] extends Sig[T]:
   /** RTL component that corresponds to this node. */
   def implement: Component
   final override val parents = Seq()
+  def changeParent(parentId: Int, newParent: Sig[?]) = this
   final override def implement(cp: (Sig[?], Int) => Component): Component = implement
 
 /** Signals that, when implemented in RTL, expect parents that arrive at the same time*/
