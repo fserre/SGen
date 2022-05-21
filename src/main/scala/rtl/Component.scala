@@ -9,18 +9,18 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
-package ir.rtl
+package rtl
 
 /**
  * Class that represent a node on an RTL graph
@@ -65,7 +65,7 @@ final class Wire(override val size: Int) extends Component(size):
   override val hashCode = Seq("Wire", size).hashCode()
 
   /**
-   * Checks for equality. We only check for reference equality of the input to prevent endless loop in case of cycles within the graph.  
+   * Checks for equality. We only check for reference equality of the input to prevent endless loop in case of cycles within the graph.
    */
   override def equals(that: Any) = that match
     case that:AnyRef => (this eq that) || (that match

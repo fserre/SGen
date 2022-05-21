@@ -9,16 +9,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 
@@ -45,7 +45,7 @@ case class Complex[+T: Numeric](re: T, im: T):
   override def toString: String = re.toString + (if (im != implicitly[Numeric[T]].zero) "+" + im.toString + "i" else "")
 
   def conjugate: Complex[T] = Complex(re, -im)
-  
+
   def swap: Complex[T] = Complex(im, re)
 
   def norm2: T = re * re + im * im
@@ -79,7 +79,7 @@ object Complex :
 
     override def fromInt(x: Int): Complex[T] = Complex(num.fromInt(x))
 
-    override def abs(x: Complex[T]): Complex[T] = Complex(Utils.sqrt((x * x.conjugate).re)) 
+    override def abs(x: Complex[T]): Complex[T] = ???
 
     override def parseString(str: String): Option[Complex[T]] = ???
 
@@ -91,7 +91,7 @@ object Complex :
 
     override def toDouble(x: Complex[T]): Double = num.toDouble(x.re)
 
-    override def lt(lhs: Complex[T], rhs: Complex[T]) = false 
+    override def lt(lhs: Complex[T], rhs: Complex[T]) = false
 
     override def compare(x: Complex[T], y: Complex[T]): Int = ???
 
