@@ -1,2 +1,0 @@
-This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it and to modify it under the terms of the GNU GPLv3+ <http://gnu.org/licenses/gpl.html>.
-
