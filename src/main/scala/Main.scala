@@ -8,8 +8,9 @@ def main=
   val c=Const(2.0)
   val s=Plus(c,c)
   given ExecutionContext=ExecutionContext.global
-  val res=s.implement((_:Sig[_], _:Int) => Seq(Future.successful(rtl.Const(3,3))))
-  println(res.map(Await.result(_, 0.nanos)))
+  val res=s.implement((_:Sig[_], _:Int) => Future.successful(Seq(rtl.Const(3,3))))
+  println(Await.result(res,Duration.Inf))
+  //println(res.map(Await.result(_, 0.nanos)))
   //val i = Input("test")(TimedDataset(3,0))
   /*println(i)
   def f[T,V](x:Sig[T]):Seq[Sig[V]]=x match

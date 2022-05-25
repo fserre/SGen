@@ -8,15 +8,15 @@ import scala.runtime.ScalaRunTime
 trait Sig[T: HW] extends Product:
   val hw = HW[T]
 
-  def implement(comp: (Sig[?], Int) => Seq[Future[rtl.Component]])(using ExecutionContext): Seq[Future[Component]]
+  def implement(comp: (Sig[?], Int) => Future[Seq[rtl.Component]])(using ExecutionContext): Future[Seq[Component]]
 
   final override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
 
 trait Expandable[T] extends Sig[T] :
   protected def expand[U](inputs: Sig[T] => Seq[Sig[U]])(using Composite[T, U]): Seq[Sig[U]]
-  protected def implement(comp: (Sig[?], Int) => Seq[Future[rtl.Component]])(using Unsigned, T =:= BigInt, ExecutionContext): Seq[Future[Component]]
+  protected def implement(comp: (Sig[?], Int) => Future[Seq[rtl.Component]])(using Unsigned, T =:= BigInt, ExecutionContext): Future[Seq[Component]]
 
-  override final def implement(comp: (Sig[?], Int) => Seq[Future[rtl.Component]])(using ExecutionContext) = hw match
+  override final def implement(comp: (Sig[?], Int) => Future[Seq[rtl.Component]])(using ExecutionContext) = hw match
     case hw: Composite[T, u] =>
       type U = u
       val cache=mutable.HashMap[Sig[T], Seq[Sig[U]]]()
@@ -25,20 +25,22 @@ trait Expandable[T] extends Sig[T] :
           case x: Expandable[T] => x.expand(f)(using chw)
           case _ =>
             case class PlaceHolder(pos: Int) extends Sig[U](using chw.inner):
-              override def implement(comp: (Sig[?], Int) => Seq[Future[rtl.Component]])(using ExecutionContext) =
-                val res = x.implement(comp)
-                val size = res.size / chw.arity
-                res.slice(pos * size, (pos + 1) * size)
+              override def implement(comp: (Sig[?], Int) => Future[Seq[rtl.Component]])(using ExecutionContext) =
+                x.implement(comp).map(res=>
+                  val size = res.size / chw.arity
+                  res.slice(pos * size, (pos + 1) * size)
+                )
             Seq.tabulate(chw.arity)(i => PlaceHolder(i))
         case _ => throw Exception(s"$hw is not a composite leading to a ${hw.inner.ct}"))
 
-      expand(f)(using hw).flatMap(_.implement(comp))
+      Future.sequence(expand(f)(using hw).map(_.implement(comp))).map(_.flatten)
     case hw: Unsigned => implement(comp)(using hw, summon, summon)
 
 
 object Sig:
-  extension (list: Seq[Sig[?]])
-    def implement(using ExecutionContext) = ???
+  /*extension (list: Seq[Sig[?]])
+    def implement(using ExecutionContext) =
+      val promises=mutable.HashMap[Sig[?],mutable.HashMap[Int,]]()*/
 
 
 
@@ -47,7 +49,7 @@ object Sig:
 
 case class Const[T: HW](value: T) extends Expandable[T] :
   override protected def expand[U](inputs: Sig[T] => Seq[Sig[U]])(using hw: Composite[T, U]) = hw.const(value).map(Const(_)(hw.inner))
-  override protected def implement(comp: (Sig[?], Int) => Seq[Future[rtl.Component]])(using Unsigned, T =:= BigInt, ExecutionContext) = Seq(Future.successful(rtl.Const(hw.bitSize, value)))
+  override protected def implement(comp: (Sig[?], Int) => Future[Seq[rtl.Component]])(using Unsigned, T =:= BigInt, ExecutionContext) = Future.successful(Seq(rtl.Const(hw.bitSize, value)))
 
 /*
 case class Const[T:HW](value: T) extends Sig[T]:
@@ -60,13 +62,15 @@ case class Input[T:HW](name: String) extends Sig[T] with Expandable[T] with Impl
 */
 case class Plus[T: HW](lhs: Sig[T], rhs: Sig[T]) extends Sig[T] with Expandable[T] :
   override protected def expand[U](inputs: Sig[T] => Seq[Sig[U]])(using hw: Composite[T, U]) = hw.asInstanceOf[NumericHW[T, U]].plus(inputs(lhs), inputs(rhs))
-  override protected def implement(comp: (Sig[?], Int) => Seq[Future[rtl.Component]])(using Unsigned, T =:= BigInt, ExecutionContext) =
-    for (flhs, frhs) <- comp(lhs, 0) zip comp(rhs, 0) yield
+  override protected def implement(comp: (Sig[?], Int) => Future[Seq[rtl.Component]])(using Unsigned, T =:= BigInt, ExecutionContext) =
       for
-        rlhs <- flhs
-        rrhs <- frhs
+        lhs <- comp(lhs, 0)
+        rhs <- comp(rhs, 0)
       yield
-        rtl.Plus(Seq(rlhs,rrhs))
+        for
+          (lhs, rhs) <- lhs zip rhs
+        yield
+          rtl.Plus(Seq(lhs,rhs))
 //override def implement(inputs: Sig[T] => rtl.Component)(using T =:= BigInt) = rtl.Plus(Seq(inputs(lhs), inputs(rhs)))
 //override def expand (inputs: Sig[T] => Seq[Sig[U]])=hw.plus(inputs(lhs), inputs(rhs))
 /*
