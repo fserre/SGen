@@ -1,10 +1,17 @@
 import scala.annotation.tailrec
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration._
 
 @main
 def main=
   given FixedPoint(1,1)
-  val i = Input("test")(TimedDataset(3,0))
-  println(i)
+  val c=Const(2.0)
+  val s=Plus(c,c)
+  given ExecutionContext=ExecutionContext.global
+  val res=s.implement((_:Sig[_], _:Int) => Seq(Future.successful(rtl.Const(3,3))))
+  println(res.map(Await.result(_, 0.nanos)))
+  //val i = Input("test")(TimedDataset(3,0))
+  /*println(i)
   def f[T,V](x:Sig[T]):Seq[Sig[V]]=x match
     case x:Expandable[T] => x.asInstanceOf[Expandable[T]{type U = V}].expand(f)
 
@@ -23,4 +30,4 @@ def main=
 
   val res=getImplementable(Seq(i))
   println(res.map(g))
-
+*/
