@@ -1,12 +1,16 @@
 import rtl.{Component, Const, Plus}
 
+
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
 
 trait Sig[T: HW] extends Product:
   val hw = HW[T]
+
+  val pipeline=0
 
   def implement(comp: (Sig[?], Int) => Future[Seq[rtl.Component]])(using ExecutionContext): Future[Seq[Component]]
 
@@ -38,9 +42,33 @@ trait Expandable[T] extends Sig[T] :
 
 
 object Sig:
-  /*extension (list: Seq[Sig[?]])
+  extension (list: Seq[Sig[?]])
     def implement(using ExecutionContext) =
-      val promises=mutable.HashMap[Sig[?],mutable.HashMap[Int,]]()*/
+      val promises=mutable.HashMap[Sig[?],mutable.HashMap[Int,Promise[Seq[Component]]]]()
+      val earliest=mutable.HashMap.from[Sig[?],Int](list.map(_->0))
+      val toImplement=mutable.Queue.from[Sig[?]](list)
+      val implemented=mutable.HashMap[Sig[?],Future[Seq[Component]]]()
+      while toImplement.nonEmpty do
+        val cur = toImplement.dequeue()
+        val implementTime = earliest(cur) + cur.pipeline
+        def f(sig: Sig[?], delay:Int): Future[Seq[rtl.Component]] =
+          val time=implementTime+delay
+          promises.getOrElseUpdate(sig,mutable.HashMap()).getOrElseUpdate(time,{
+            earliest.get(sig) match
+              case Some(t) if t>=time =>
+              case _ =>
+                implemented.remove(sig)
+                earliest.put(sig, time)
+                toImplement.enqueue(sig)
+            Promise()
+          }).future
+        implemented.put(cur, cur.implement(f))
+      for (sig, timedPromise) <- promises do
+        val earliestTime = earliest(sig)
+        val implementations=LazyList.iterate(implemented(sig))(_.map(_.map(_.register)))
+        for (time, cur) <- timedPromise do
+          cur.completeWith(implementations(earliestTime-time))
+      list.flatMap(sig=>Await.result(implemented(sig),Duration.Inf)    )
 
 
 

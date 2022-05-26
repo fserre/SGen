@@ -4,12 +4,21 @@ import scala.concurrent.duration._
 
 @main
 def main=
+
+  val m = scala.collection.mutable.LinkedHashMap[Int, Int](1 -> 1, 2 -> 2)
+  println(m)
+  m.foreach(p =>
+    println(p._1)
+    if(p._2==1) m.addOne(3->3))
+  println(m)
+
+
   given FixedPoint(1,1)
   val c=Const(2.0)
   val s=Plus(c,c)
   given ExecutionContext=ExecutionContext.global
-  val res=s.implement((_:Sig[_], _:Int) => Future.successful(Seq(rtl.Const(3,3))))
-  println(Await.result(res,Duration.Inf))
+  val res=Seq(s).implement
+  println(res)
   //println(res.map(Await.result(_, 0.nanos)))
   //val i = Input("test")(TimedDataset(3,0))
   /*println(i)
