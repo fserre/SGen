@@ -26,7 +26,7 @@ lazy val root = (project in file("."))
     name := "SGen",
     organization := "fserre",
     version := "0.2",
-    scalaVersion := "3.1.0",
+    scalaVersion := "3.7.1",
     libraryDependencies += ("org.scalacheck" %% "scalacheck" % "1.15.4" % "test"),
     libraryDependencies += ("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"),
     scalacOptions ++= Seq("-deprecation","-feature"),
@@ -35,4 +35,3 @@ lazy val root = (project in file("."))
     Test / parallelExecution := false,
     Test / testOptions +=Tests.Argument("-s","100"),
   )
-
