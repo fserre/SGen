@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,8 +27,8 @@ import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, HW, Unsigned}
 import ir.rtl.{AcyclicStreamingModule,RAMControl}
 import ir.spl.{Repeatable, SPL}
 import ir.rtl.signals.{Const, SetCounter, ROM, Sig, Timer}
-import linalg.Fields.Complex
-import linalg.Fields.Complex._
+import maths.fields.Complex
+import maths.fields.Complex._
 
 
 /**
@@ -57,7 +57,7 @@ case class DiagC(override val n: Int, r: Int, l: Int) extends SPL[Complex[Double
         case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
         case _ => hw
       val control = Timer(T)
-      val twiddle = ROM(twiddles, control)(twiddleHW)
+      val twiddle = ROM(twiddles, control)(using twiddleHW)
       inputs(p) * twiddle)
 
     override def spl: SPL[Complex[Double]] = DiagC(this.n, r, l)
@@ -87,11 +87,11 @@ case class StreamDiagC(override val n: Int, r: Int) extends SPL[Complex[Double]]
       val twiddleHW = hw match
         case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
         case _ => hw
-      val control1 = Timer(T) :: Const(p >> r)(Unsigned(this.k - r))
+      val control1 = Timer(T) :: Const(p >> r)(using Unsigned(this.k - r))
       val control2a = SetCounter(this.n / r)
-      val control2 = ROM(Vector.tabulate(this.n / r)(i => ((1 << (i * r)) - 1) ^ ((1 << (this.n - r)) - 1)), control2a)(Unsigned(this.n - r))
+      val control2 = ROM(Vector.tabulate(this.n / r)(i => ((1 << (i * r)) - 1) ^ ((1 << (this.n - r)) - 1)), control2a)(using Unsigned(this.n - r))
       val control = control1 & control2
-      val twiddle = ROM(coefs, control)(twiddleHW)
+      val twiddle = ROM(coefs, control)(using twiddleHW)
       inputs(p) * twiddle)
 
     override def toString: String = "StreamDiagC(" + this.n + "," + r + "," + this.k + ")"

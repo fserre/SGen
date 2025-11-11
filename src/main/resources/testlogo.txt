@@ -1,7 +1,7 @@
-   _____ ______          SGen v.0.2 - A Generator of Streaming Hardware
+   _____ ______          SGen v.{version} - A Generator of Streaming Hardware
   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
   \__ \/ / __/ _ \/ __ \
- ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
 /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
 
 This file has been generated to test SGen functionalities through a simulator.

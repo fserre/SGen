@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,12 +24,14 @@
 package ir.rtl.signals
 
 import ir.{AssociativeNode, AssociativeNodeCompanion, AssociativeNodeCompanionT}
-import ir.rtl.{Component, AcyclicStreamingModule}
+import ir.rtl.{AcyclicStreamingModule, Component}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 import ir.AssociativeNodeCompanion
-import linalg.Fields.{Complex, F2}
-import linalg._
-import scala.reflect._
+import maths.fields.{Complex, F2}
+import maths.*
+import maths.linalg.Vec
+
+import scala.reflect.*
 
 /**
  * Class that represent a node in an acyclic streaming module internal graph. These nodes are comparable to RTL components, but abstract the hardware numeric representation, and timing.
@@ -62,7 +64,7 @@ abstract class Sig[T: HW]:
 /** Companion object of Sig */
 object Sig:
   /** Conversion from vectors of bits to unsigned constants */
-  given Conversion[Vec[F2], Const[Int]] = (v: Vec[F2]) => Const(v.toInt)(Unsigned(v.m))
+  given Conversion[Vec[F2], Const[Int]] = (v: Vec[F2]) => Const(v.toInt)(using Unsigned(v.m))
   /** Additionnal operations for unsigned signals */
   extension [T](lhs: Sig[Int])
     /** Concatenation  */
@@ -72,7 +74,7 @@ object Sig:
     /** Binary xor */
     def ^(rhs: Sig[Int]): Sig[Int] = Xor(Vector(lhs, rhs))
     /** Reduction xor */
-    def unary_^ : Sig[Int] = RedXor(lhs)
+    private def unary_^ : Sig[Int] = RedXor(lhs)
     /** Binary not */
     def unary_~ : Sig[Int] = Not(lhs)
     /** Scalar product (in F2) */
@@ -90,6 +92,8 @@ object Sig:
     def re:Sig[T] = Re(lhs)
     /** Imaginary part */
     def im:Sig[T] = Im(lhs)
+    /** Swap real and imaginary parts */
+    def swap:Sig[Complex[T]] = Cpx(lhs.im, lhs.re) 
 
 /** Signals without parent node */
 abstract class Source[T: HW] extends Sig[T]:
@@ -105,9 +109,9 @@ abstract class Operator[T: HW](operands: Sig[?]*) extends Sig[T]:
   /** Implementation of this signal (using RTL components)*/
   def implement(implicit cp: Sig[?] => Component): Component
   final override def parents:Seq[(Sig[?],Int)] = operands.map((_, latency))
-  final override def implement(cp: (Sig[?], Int) => Component): Component = implement(sr => cp(sr, latency))
+  final override def implement(cp: (Sig[?], Int) => Component): Component = implement(using sr => cp(sr, latency))
   final override val hash = Seq(this.getClass().getSimpleName, parents).hashCode()
 
 /** Signal that represent an associative operator */
-abstract class AssociativeSig[T](override val list: Seq[Sig[T]], val op: String)(using hw: HW[T] = list.head.hw) extends Operator(list: _*) with AssociativeNode[Sig[T]]
+abstract class AssociativeSig[T](override val list: Seq[Sig[T]], val op: String)(using hw: HW[T] = list.head.hw) extends Operator(list*) with AssociativeNode[Sig[T]]
 

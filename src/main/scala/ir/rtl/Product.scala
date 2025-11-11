@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,7 @@ import ir.rtl.{Component, StreamingModule}
 import ir.spl.SPL
 import ir.AssociativeNode
 
-class Product[U] private (override val list: Seq[StreamingModule[U]]) extends StreamingModule(list.head.t, list.head.k)(list.head.hw) with AssociativeNode[StreamingModule[U]]{
+class Product[U] private (override val list: Seq[StreamingModule[U]]) extends StreamingModule(list.head.t, list.head.k)(using list.head.hw) with AssociativeNode[StreamingModule[U]]{
 
   override val spl: SPL[U] = ir.spl.Product(list.map(_.spl))
 
@@ -71,7 +71,7 @@ object Product extends AssociativeNodeCompanionT[StreamingModule,Product]([T] =>
   }
 }
 
-class AcyclicProduct[U] private(override val list: Seq[AcyclicStreamingModule[U]]) extends AcyclicStreamingModule[U](list.head.t, list.head.k)(list.head.hw) with AssociativeNode[AcyclicStreamingModule[U]] {
+class AcyclicProduct[U] private(override val list: Seq[AcyclicStreamingModule[U]]) extends AcyclicStreamingModule[U](list.head.t, list.head.k)(using list.head.hw) with AssociativeNode[AcyclicStreamingModule[U]] {
   assert(list.forall(_.t == t))
   assert(list.forall(_.k == k))
 

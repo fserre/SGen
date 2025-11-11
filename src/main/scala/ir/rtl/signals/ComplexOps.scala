@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@ package ir.rtl.signals
 
 import ir.rtl.Component
 import ir.rtl.hardwaretype.{ComplexHW, HW}
-import linalg.Fields.Complex
+import maths.fields.Complex
 
 /**
  * Real part of a complex signal
@@ -42,7 +42,7 @@ object Re:
    * Get the real part of a complex signal 
    */
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match
-    case Const(value) => Const(value.re)(input.hw.innerHW)
+    case Const(value) => Const(value.re)(using input.hw.innerHW)
     case Cpx(real,_) => real
     case _ => new Re(input)
 
@@ -61,7 +61,7 @@ object Im:
    * Get the immaginary part of a complex signal 
    */
   def apply[T](input:Sig[Complex[T]]): Sig[T] =input match
-    case Const(value) => Const(value.im)(input.hw.innerHW)
+    case Const(value) => Const(value.im)(using input.hw.innerHW)
     case Cpx(_,im) => im
     case _ => new Im(input)
 

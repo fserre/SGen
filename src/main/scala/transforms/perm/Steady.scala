@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,11 +26,11 @@ package transforms.perm
 import ir.rtl.{Identity, AcyclicStreamingModule, StreamingModule}
 import ir.rtl.hardwaretype.HW
 import ir.rtl.signals._
-import linalg.Fields.F2
-import linalg.Matrix
+import maths.fields.F2
+import maths.linalg.Matrix
 import transforms.perm.LinearPerm
 
-case class Steady[U: HW] (override val P1: Seq[Matrix[F2]], override val t: Int) extends SLP(t, P1.head.m, P1.size):
+case class Steady[U: HW] (override val P1: Seq[Matrix[F2]], _t: Int) extends SLP(_t, P1.head.m, P1.size):
   override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] =
     val set = SetCounter(size)
     Vector.tabulate(K)(i => Mux(set, Vector.tabulate(P.size)(j => inputs(LinearPerm.permute(P(j).inverse, i)))))

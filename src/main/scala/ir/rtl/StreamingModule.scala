@@ -2,23 +2,23 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package ir.rtl
@@ -42,15 +42,15 @@ abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
   final val K: Int = 1 << k
   final val T: Int = 1 << t
   final val hw = HW[U]
-  
+
   def spl: SPL[U]
-  
+
   override lazy val name: String = spl.getClass.getSimpleName.toLowerCase
 
   override def description: Iterator[String] = io.Source.fromResource("streaming.txt").getLines().
-    filterNot(s=>(s.contains ("full-throughput")) && minGap!=0).
-    filterNot(s=>(s.contains ("requires a delay")) && minGap==0).
-    filterNot(s=>((s.contains ("single RAM control")) || (s.contains("additional cycles"))|| (s.contains ("-dualRAMcontrol"))) && !hasSinglePortedMem).
+    filterNot(s=> s.contains ("full-throughput") && minGap!=0).
+    filterNot(s=> s.contains ("requires a delay") && minGap==0).
+    filterNot(s=>(s.contains ("single RAM control") || s.contains("additional cycles") || s.contains ("-dualRAMcontrol")) && !hasSinglePortedMem).
     map(_.
     replace("SIZE",N.toString).
     replace("DATADURATION",T.toString).
@@ -72,25 +72,25 @@ abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
 
   def hasSinglePortedMem:Boolean=false
 
-  final lazy val dataInputs: Vector[Input] = Vector.tabulate(K)(i => new Input(hw.size, "i" + i))
-  final val reset = new Input(1, "reset")
-  final val next = new Input(1, "next")
+  final lazy val dataInputs: Vector[Input] = Vector.tabulate(K)(i => Input(hw.size, "i" + i))
+  final val reset = Input(1, "reset")
+  final val next = Input(1, "next")
 
   def *(rhs: StreamingModule[U]): StreamingModule[U] = Product(this, rhs)
 
   final override lazy val inputs: Seq[Input] = reset +: next +: dataInputs
-  final override lazy val outputs: Seq[Output] = 
+  final override lazy val outputs: Seq[Output] =
     val tokens = mutable.Map[Int, Wire]()
 
     def getToken(time: Int) = tokens.getOrElseUpdate(time, Wire(1))
 
-    val res = implement(reset, getToken, dataInputs).zipWithIndex.map { case (comp, i) => new Output(comp, "o" + i) }
-    val next_out = new Output(getToken(latency), "next_out")
+    val res = implement(reset, getToken, dataInputs).zipWithIndex.map { case (comp, i) => Output(comp, "o" + i) }
+    val next_out = Output(getToken(latency), "next_out")
 
     val minTime = tokens.keys.min
-    
+
     if false then
-      val maxTime = tokens.keys.max  
+      val maxTime = tokens.keys.max
       val tokenComps: Vector[Component] = Vector.iterate[Component](next, maxTime - minTime + 1)(_.register)
       tokens.foreach { case (time, wire) => wire.input = tokenComps(time - minTime) }
     else
@@ -98,26 +98,24 @@ abstract class StreamingModule[U: HW](val t: Int, val k: Int) extends Module:
         val diff= time-prevTime
         assert(diff>=0)
         val res = if diff>0 then Register(prevComp, diff) else prevComp
-        wire.input = res 
+        wire.input = res
         (time, res)}
-        
+
     _nextAt = Some(minTime)
 
     next_out +: res
-  
-  
+
+
   final lazy val dataOutputs: Seq[Output] = outputs.drop(1)
-  
+
   final lazy val next_out: Output = outputs.head
-  
+
   private var _nextAt: Option[Int] = None
 
-  final def nextAt: Int = 
+  final def nextAt: Int =
     if (_nextAt.isEmpty) outputs
     _nextAt.get
 
-  final def eval(inputs: Seq[BigInt], set: Int): Seq[BigInt] = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
+  //final def eval(inputs: Seq[BigInt], set: Int): Seq[BigInt] = spl.eval(inputs.map(hw.valueOf), set).map(hw.bitsOf)
 
-  def testBenchInput(repeat:Int): Seq[BigInt]=(0 until repeat*N).map(i=>hw.bitsOf(hw.num.fromInt(i)))
-
-
+  def testBenchInput(repeat:Int): Seq[U]=(0 until repeat*N).map(i=>hw.num.fromInt(i))

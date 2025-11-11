@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,9 @@
 
 package ir.rtl.hardwaretype
 
+import Utils.BigIterator
 import ir.rtl.{Component, Extern}
-import ir.rtl.signals._
+import ir.rtl.signals.*
 
 /**
  * Floating point representation that uses IEEE754. 
@@ -126,12 +127,13 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
         -res
       else
         res
-    
+
+  override def MID_VALUE: Double = 1    
   
 
-  private case class IEEEToFlopoco private (input: Sig[Double]) extends Operator[Double](input)(Flopoco(wE, wF)):
+  private case class IEEEToFlopoco private (input: Sig[Double]) extends Operator[Double](input)(using Flopoco(wE, wF)):
     require(input.hw == that)
-    override def implement(implicit cp: Sig[?] => Component): Component = new Extern(hw.size, filename, "IEEE2Flopoco", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(input)))
+    override def implement(implicit cp: Sig[?] => Component): Component = Extern(hw.size, filename, "IEEE2Flopoco", "R", ("clk", ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(input)))
 
   private object IEEEToFlopoco:
     def apply(input: Sig[Double]):Sig[Double]=input match
@@ -146,9 +148,9 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
       case _ => None
       
   
-  private case class FlopocoToIEEE private (input: Sig[Double]) extends Operator[Double](input)(that):
+  private case class FlopocoToIEEE private (input: Sig[Double]) extends Operator[Double](input)(using that):
     require(input.hw == Flopoco(wE, wF))
-    override def implement(implicit cp: Sig[?] => Component): Component = new Extern(size, filename, "Flopoco2IEEE", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(input)))
+    override def implement(implicit cp: Sig[?] => Component): Component = Extern(size, filename, "Flopoco2IEEE", "R", ("clk", ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(input)))
   
   private object FlopocoToIEEE:
     def apply(input: Sig[Double]):Sig[Double]=input match
@@ -161,3 +163,21 @@ case class IEEE754(wE: Int, wF: Int) extends HW[Double](wE + wF + 1):
     def unapply(arg:Sig[Double]):Option[Sig[Double]]=arg match
       case arg:FlopocoToIEEE => Some(arg.input)
       case _ => None
+
+  override def MAX_VALUE: Double = valueOf((BigInt(1) << (wE + wF)) - 1)
+
+  override def values: Iterator[Double] = Iterator(0d, -0d) ++ (
+    for
+      s <- Iterator(0, 1)
+      e <- BigIterator(1, (BigInt(1) << wE) - 1)
+      m <- BigIterator(0, BigInt(1) << wF)
+    yield
+      valueOf(m + (e << wF) + (BigInt(s) << (wE + wF))))
+
+  override def toString: String = (wE, wF) match
+    case (8, 23) => "float"
+    case (11, 52) => "double"
+    case (5, 10) => "half"
+    case (4, 3) => "minifloat"
+    case (8, 7) => "bfloat16"
+    case _ => s"IEEE754($wE, $wF)"

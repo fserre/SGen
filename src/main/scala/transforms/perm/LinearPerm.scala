@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,13 +25,14 @@ package transforms.perm
 
 import ir.rtl.hardwaretype.HW
 import ir.rtl.{RAMControl, StreamingModule}
-import ir.spl.{SPL}
-import linalg.Fields.F2
-import linalg.{LUL, Matrix, Vec}
+import ir.spl.SPL
+import maths.fields.F2
+import maths.linalg.{LUL, Matrix, Vec}
+import transforms.Transform
 import transforms.perm.{Spatial, Temporal}
 
-case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m):
-  val ULU = false
+case class LinearPerm[T](P: Seq[Matrix[F2]]) extends Transform[T](P.head.m):
+  private val ULU = false
   assert(P.forall(m => m.m == m.n))
   assert(P.forall(_.isInvertible))
   assert(P.forall(m => m.m == n))
@@ -76,8 +77,18 @@ case class LinearPerm[T](P: Seq[Matrix[F2]]) extends SPL[T](P.head.m):
         Spatial(C1, C2) *
         Temporal(R3, R4,control)
 
+  override def testParams: PartialFunction[HW[T], (Seq[T], Double)] =
+    case hw =>
+      def rep: Iterator[T] = hw.values ++ rep
+      (rep.take((1 << n) * P.size * 5).toSeq, 0)
+
+
 object LinearPerm:
-  def apply[T](P: Matrix[F2]): SPL[T] = LinearPerm[T](Seq(P))
+  def apply[T](P: Matrix[F2]) = new LinearPerm[T](Seq(P))
+
+  given [T]: Conversion[Matrix[F2], Transform[T]] with
+    def apply(P: Matrix[F2]): Transform[T] = LinearPerm(Seq(P))
+
   def permute[T](P: Matrix[F2], v: Seq[T]): Seq[T] = 
     val Pinv = P.inverse
     Vector.tabulate(1 << P.m)(i => v(permute(Pinv, i)))
@@ -90,4 +101,9 @@ object LinearPerm:
 
   def Cmat(n: Int): Matrix[F2] = Matrix.tabulate[F2](n, n)((i, j) => F2((i + 1) % n == j))
 
-  def stream[T](matrices: Seq[Matrix[F2]], k: Int, hw: HW[T], control:RAMControl): StreamingModule[T] = LinearPerm[T](matrices).stream(k,control)(hw)
+  def Qmat(n: Int, r: Int, l: Int): Matrix[F2] =
+    val mat1 = Matrix.identity[F2](r * l) oplus Lmat(n - r * (l + 1), n - r * l)
+    val mat2 = Matrix.identity[F2](r * (l + 1)) oplus Lmat(r, n - r * (l + 1))
+    mat1 * mat2
+    
+  def stream[T](matrices: Seq[Matrix[F2]], k: Int, hw: HW[T], control:RAMControl): StreamingModule[T] = LinearPerm[T](matrices).stream(k,control)(using hw)

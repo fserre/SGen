@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -45,7 +45,7 @@ object And extends AssociativeNodeCompanion[Sig[Int], And](new And(_)):
     given HW[Int] = lhs.hw
     def withConst(const:Int, input:Sig[Int]) =
       val bits = lhs.hw.bitsOf(const)
-      Concat((0 until lhs.hw.size).reverse.map(i => if bits.testBit(i) then input(i) else Const(0)(Unsigned(1))))
+      Concat((0 until lhs.hw.size).reverse.map(i => if bits.testBit(i) then input(i) else Const(0)(using Unsigned(1))))
     (lhs, rhs) match
       case (Const(lhs), Const(rhs)) => Some(Const(lhs & rhs))
       case (_, Const(value)) => Some(withConst(value, lhs))
@@ -54,7 +54,7 @@ object And extends AssociativeNodeCompanion[Sig[Int], And](new And(_)):
 
 
 /** Binary not of a signal */
-case class Not private (input: Sig[Int]) extends Operator[Int](input)(input.hw):
+case class Not private (input: Sig[Int]) extends Operator[Int](input)(using input.hw):
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Not(cp(input))
 
 /** Companion object of class Not */
@@ -108,15 +108,14 @@ final class Concat private(terms: Seq[Sig[Int]]) extends AssociativeSig[Int](ter
 object Concat extends AssociativeNodeCompanion[Sig[Int], Concat](new Concat(_)):   
   override def simplify(lhs: Sig[Int], rhs: Sig[Int]) = 
     (lhs,rhs) match
-      case (lhs:Const[Int], rhs:Const[Int]) => Some(Const((lhs.value << rhs.hw.size) + rhs.value)(Unsigned(lhs.hw.size + rhs.hw.size)))
+      case (lhs:Const[Int], rhs:Const[Int]) => Some(Const((lhs.value << rhs.hw.size) + rhs.value)(using Unsigned(lhs.hw.size + rhs.hw.size)))
       case (_, Null()) => Some(lhs)
       case (Null(),_) => Some(rhs)
       case (Tap(lhs, lr), Tap(rhs, rr)) if lhs == rhs && rr.last + 1 == lr.start => Some(lhs(rr.start to lr.last))
       case _ => None
 
-
 /** Selection of a range of bits in an unsigned signal */
-case class Tap private (input: Sig[Int], range: Range) extends Operator[Int](input)(Unsigned(range.size)):
+case class Tap private (input: Sig[Int], range: Range) extends Operator[Int](input)(using Unsigned(range.size)):
   override def implement(implicit cp: Sig[?] => Component): Component = ir.rtl.Tap(cp(input), range)
 
 /** Companion object of class Tap */
@@ -125,7 +124,7 @@ object Tap:
     input match 
       case _ if range.isEmpty => Null()
       case _ if range.length == input.hw.size => input
-      case Const(value) => Const(((((1 << range.length) - 1) << range.start) & value) >> range.start)(Unsigned(range.length))
+      case Const(value) => Const(((((1 << range.length) - 1) << range.start) & value) >> range.start)(using Unsigned(range.length))
       case Tap(input2, r2) => Tap(input2, (r2.start + range.start) to (r2.start + range.last))
       case Concat(signals: Seq[Sig[Int]]) =>
         @tailrec

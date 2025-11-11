@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,8 @@
 
 package ir
 
-import scala.reflect._
+import scala.annotation.tailrec
+import scala.reflect.*
 
 /**
  * Trait that represents a node in a graph that is associative on its parents.
@@ -52,10 +53,12 @@ abstract class AssociativeNodeCompanion[S,U <: S & AssociativeNode[S]: ClassTag]
   /**
    * Constructs a new simplified node 
    */
+  @tailrec
   final def apply(lhs: S, rhs: S): S = (lhs, rhs) match
     case (_, rhs: U) => apply(lhs +: rhs.list)
     case (lhs: U, _) =>
-      val lhsl :+ lhsr = lhs.list
+      val lhsl = lhs.list.init
+      val lhsr = lhs.list.last
       simplify(lhsr, rhs) match
         case Some(rhs) => apply(if lhsl.size == 1 then lhsl.head else create(lhsl), rhs)
         case None => create(lhs.list :+ rhs)
@@ -91,10 +94,12 @@ abstract class AssociativeNodeCompanionT[S[_],U[T] <: S[T] & AssociativeNode[S[T
   /**
    * Constructs a new simplified node 
    */
+  @tailrec
   final def apply[T](lhs: S[T], rhs: S[T])(using ev:ClassTag[U[T]]): S[T] = (lhs, rhs) match
     case (_, ev(rhs)) => apply(lhs +: rhs.list)
     case (ev(lhs), _) =>
-      val lhsl :+ lhsr = lhs.list
+      val lhsl = lhs.list.init
+      val lhsr = lhs.list.last
       simplify(lhsr, rhs) match
         case Some(rhs) => apply(if lhsl.size == 1 then lhsl.head else create(lhsl), rhs)
         case None => create(lhs.list :+ rhs) 
