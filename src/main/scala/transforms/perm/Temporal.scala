@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,8 +26,8 @@ package transforms.perm
 import ir.rtl.{Identity, AcyclicStreamingModule, RAMControl}
 import ir.rtl.hardwaretype.{HW, Unsigned}
 import ir.rtl.signals._
-import linalg.Fields.F2
-import linalg.{Matrix, Vec}
+import maths.fields.F2
+import maths.linalg.{Matrix, Vec}
 
 import scala.annotation.tailrec
 import scala.language.implicitConversions
@@ -70,8 +70,8 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
   // look if we have a bit matrix in the form of I_r oplus P, which could reduce the memory size (as it happens on Cooley Tukey FFT)
   val r = (0 until t).find(i => P3.exists(p => p.row(i).toInt != 0) || P4.exists(p => p.row(i).toInt != (1 << (t - i - 1)) || p.col(i).toInt != (1 << (t - i - 1)))).get
 
-  val R=1<<r
-  val innerP3 = P3.flatMap(p => Seq.fill(R)(p(r until p.m, 0 until p.n))) // the matrices as if the identical cycles in the dataset would be different sets
+  private val R=1<<r
+  private val innerP3 = P3.flatMap(p => Seq.fill(R)(p(r until p.m, 0 until p.n))) // the matrices as if the identical cycles in the dataset would be different sets
   val innerP4 = P4.flatMap(p => Seq.fill(R)(p(r until p.m, r until p.n)))
 
   // latency due to the permutation
@@ -120,7 +120,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
     val timerWrite = Timer(T)
     val timerWriteL = timerWrite(0 until t-r)
     val timerWriteH = timerWrite(t-r until t)
-    val basisListWrite = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const(m.row(c).toInt)(Unsigned(t-r)) scalar timerWriteL)))
+    val basisListWrite = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const(m.row(c).toInt)(using Unsigned(t-r)) scalar timerWriteL)))
 
 
     val controlWriteH = LateSetCounter((basis.size+R-1)/R, T)
@@ -129,7 +129,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
 
     val controlWrite2H = LateSetCounter((offsetLength+R-1)/R, T)
     val controlWrite2=controlWrite2H::timerWriteH
-    val offsetListWrite = offset2.map(i => ROM(i.map(x => x.toInt), controlWrite2)(Unsigned(t-r)))
+    val offsetListWrite = offset2.map(i => ROM(i.map(x => x.toInt), controlWrite2)(using Unsigned(t-r)))
 
     val addressesWrite = offsetListWrite.map(_ ^ basisWrite)
 
@@ -137,7 +137,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
       val timerRead = Timer(T)
       val timerReadL=timerRead(0 until t-r)
       val timerReadH=timerRead(t-r until t)
-      val basisListRead = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const[Int](m.row(c).toInt)(Unsigned(t-r)) scalar timerReadL)))
+      val basisListRead = basis.map(m => Concat(Vector.tabulate(t-r)(c => Const[Int](m.row(c).toInt)(using Unsigned(t-r)) scalar timerReadL)))
 
       val controlReadH = SetCounter((basis.size+R-1)/R)
       val controlRead=controlReadH::timerReadH
@@ -145,7 +145,7 @@ case class Temporal[U: HW] private(override val P3: Seq[Matrix[F2]], override va
 
       val controlRead2H = SetCounter((offsetLength+R-1)/R)
       val controlRead2 = controlRead2H::timerReadH
-      val offsetListRead = offset2.map(i => ROM(shift(i).map(x => x.toInt), controlRead2)(Unsigned(t-r)))
+      val offsetListRead = offset2.map(i => ROM(shift(i).map(x => x.toInt), controlRead2)(using Unsigned(t-r)))
 
       val addressesRead = offsetListRead.map(_ ^ basisRead)
 
@@ -175,7 +175,7 @@ object Temporal:
     else if P3.forall(mat => mat.values.take((mat.m-1)*mat.n).forall(!_.value)) && P4.forall(mat => (0 until (mat.m-1)).forall(j => (0 until mat.n).forall(i => mat.values(j*mat.m+i).value== (i == j) ))) then 
       val v3 = P3.map(mat => mat.row(mat.m-1))
       val v4 = P4.map(mat => mat.row(mat.m-1)(0 until (mat.n-1)))
-      new SmallTemporal(v3, v4)
+      SmallTemporal(v3, v4)
     else
       new Temporal(P3, P4,control)
       

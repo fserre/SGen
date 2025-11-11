@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -35,11 +35,11 @@ import ir.spl.SPL
  * @param k Log of the streaming width.
  * @tparam T Software datatype of the inputs/outputs
  */
-case class ITensor[T](r: Int, factor: AcyclicStreamingModule[T], override val k: Int) extends AcyclicStreamingModule[T](r + factor.n - k, k)(factor.hw):
+case class ITensor[T](r: Int, factor: AcyclicStreamingModule[T], _k: Int) extends AcyclicStreamingModule[T](r + factor.n - _k, _k)(using factor.hw):
   require((k > factor.n && factor.n == factor.k) || factor.k == k)
   override def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]] = 
     if k > factor.n then
-      inputs.grouped(1 << factor.n).toSeq.flatMap(factor.implement(_))
+      inputs.grouped(1 << factor.n).toSeq.flatMap(factor.implement)
     else
       factor.implement(inputs)
 

@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,58 +21,68 @@
  *
  */
 
+import backends.DOT.*
+import backends.Verilog.*
+import buildinfo.BuildInfo
+import ir.rtl.hardwaretype.*
+import ir.rtl.{AcyclicStreamingModule, RAMControl, StreamingModule}
+import maths.fields.F2
+import maths.linalg.Matrix
+import transforms.Transform
+import transforms.fft.{CTDFT, DFT, ICTDFT, IItPeaseFused, ItPeaseFused, Swap}
+import transforms.perm.LinearPerm
+import transforms.wht
+
 import java.io.{BufferedInputStream, FileInputStream, FileOutputStream, PrintWriter}
 import java.util.zip.{ZipEntry, ZipOutputStream}
-import transforms._
-import ir.rtl.{RAMControl, AcyclicStreamingModule, StreamingModule}
-import ir.rtl.hardwaretype._
-import transforms.fft.DFT
-import transforms.perm.LinearPerm
-import transforms.wht.WHT
-import ir.spl._
-import linalg.Fields.F2
-import linalg._
-
 import scala.collection.mutable
-import backends.DOT._
-import backends.Verilog._
+import transforms.perm.LinearPerm
+import transforms.perm.LinearPerm.{*, given}
+
+import scala.language.implicitConversions
 
 object Main:
-  def main(args: Array[String]) =
+  def main(args: Array[String]):Unit =
     var testbench: Boolean = false
     var graph: Boolean = false
     var rtlgraph: Boolean = false
     var dualRAMControl: Boolean = false
     var singlePortedRAM: Boolean = false
     var zip = false
+    var logo = true
+    var scalingFactor = "1"
 
     var _n: Option[Int] = None
     def n: Int = _n match
-      case Some(n) => n
+      case Some(n) if n > 0 => n
+      case Some(n) => throw new IllegalArgumentException(s"Parameter n should be a strictly positive integer.")
       case _ => throw new IllegalArgumentException("Parameter required: -n")
-
+    def n_=(value:Int) = _n = Some(value)
+    
     var _k: Option[Int] = None
     def k: Int = _k match
-      case Some(k) => k
+      case Some(k) if k > 0 && k <= n => k
+      case Some(k) => throw new IllegalArgumentException(s"Parameter k should be a striclty positive integer lower or equal to n.")
       case _ => n
+    def k_=(value:Int) = _k = Some(value)
 
     var _r: Option[Int] = None
     def r: Int = _r match
-      case Some(r) => r
+      case Some(r) if r > 0 && r <= n => r
+      case Some(r) => throw new IllegalArgumentException(s"Parameter r should be a strictly positive integer lower or equal to n.")
       case _ => (1 to k).reverse.filter(n % _ == 0).head
+    def r_=(value:Int) = _r = Some(value)
 
     var _hw: Option[HW[?]] = None
     def hw: HW[?] = _hw match
       case Some(k) => k
       case _ => Unsigned(16)
+    def hw_=(value:HW[?]) = _hw = Some(value)
 
-    var _design: Option[StreamingModule[?]] = None
-    def design = _design match
-      case Some(d) => d
-      case None => throw new IllegalArgumentException("No design has been specified")
 
     var _filename: Option[String] = None
     def filename(default: String) = _filename.getOrElse(default)
+    def filename_=(value:String) = _filename = Some(value)
 
     def control = if singlePortedRAM then RAMControl.SinglePorted else if dualRAMControl then RAMControl.Dual else RAMControl.Single
 
@@ -115,23 +125,20 @@ object Main:
 
     val argsQ = mutable.Queue.from(args)
 
-    if !logoDisplayed then
-      io.Source.fromResource("logo.txt").getLines().foreach(println)
-      io.Source.fromResource("lic.txt").getLines().foreach(println)
-      logoDisplayed = true
-
     while argsQ.nonEmpty do argsQ.dequeue().toLowerCase match
       case "-n" => _n = Numeric[Int].parseString(argsQ.dequeue())
       case "-k" => _k = Numeric[Int].parseString(argsQ.dequeue())
       case "-r" => _r = Numeric[Int].parseString(argsQ.dequeue())
       case "-hw" => _hw = parseHW(argsQ)
       case "-o" => _filename = argsQ.removeHeadOption()
+      case "-sf" => scalingFactor = argsQ.dequeue()
       case "-testbench" => testbench = true
       case "-dualramcontrol" => dualRAMControl = true
-      case "-signleportedram" => singlePortedRAM = true
+      case "-singleportedram" => singlePortedRAM = true
       case "-graph" => graph = true
       case "-rtlgraph" => rtlgraph = true
       case "-zip" => zip = true
+      case "-nologo" => logo = false
       case "lp" =>
         val matrices = mutable.Queue[Matrix[F2]]()
         if (argsQ.isEmpty) throw new IllegalArgumentException("Invertible bit-matrices expected.")
@@ -144,98 +151,117 @@ object Main:
             else
               throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
           case mat: String => throw new IllegalArgumentException(s"Matrix is not invertible:\n$mat")
-        _design = Some(LinearPerm.stream(matrices.toSeq, k, hw, control))
-      case "bitrev" => _design = Some(LinearPerm.stream(Seq(LinearPerm.Rmat(r,n)),k,hw,control))
-      case "stride" => _design = Some(LinearPerm.stream(Seq(LinearPerm.Lmat(r,n)),k,hw,control))
-      case "wht" => _design = Some(WHT.stream(n, r, k, hw, control))
-      case "whtcompact" => _design = Some(WHT.streamcompact(n, r, k, hw))
+        finish(LinearPerm(matrices.toSeq), hw)
+      case "bitrev" => finish(Rmat(r,n), hw)
+      case "stride" => finish(Lmat(r,n), hw)
+      case "wht" => finish(wht.CTWHT(n, r, hw.num.parseString(scalingFactor).get)(using hw.num), hw.asInstanceOf)
+      case "whtcompact" => finish(wht.ItPeaseFused(n, r, hw.num.parseString(scalingFactor).get)(using hw.num), hw.asInstanceOf)
       case "dft" => hw match
-        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.CTDFT(n, r).stream(k, control)(using hw/*.asInstanceOf[ComplexHW[Double]]*/))
+        case hw: ComplexHW[Double@unchecked] => finish(CTDFT(n, r, hw.num.parseString(scalingFactor).get), hw)
         case _ => throw new IllegalArgumentException("DFT requires a complex of fractional hardware datatype.")
       case "dftcompact" => hw match
-        case hw: ComplexHW[Double@unchecked] => _design = Some(DFT.ItPeaseFused(n, r).stream(k, RAMControl.Dual)(using hw/*.asInstanceOf[ComplexHW[Double]]*/))
+        case hw: ComplexHW[Double@unchecked] => finish(ItPeaseFused(n, r, hw.num.parseString(scalingFactor).get), hw)
         case _ => throw new IllegalArgumentException("Compact DFT requires a complex of fractional hardware datatype.")
+      case "idft" => hw match
+        case hw: ComplexHW[Double@unchecked] => finish(ICTDFT(n, r, hw.num.parseString(scalingFactor).get), hw)
+        case _ => throw new IllegalArgumentException("iDFT requires a complex of fractional hardware datatype.")
+      case "idftcompact" => hw match
+        case hw: ComplexHW[Double@unchecked] => finish(IItPeaseFused(n, r, hw.num.parseString(scalingFactor).get), hw)
+        case _ => throw new IllegalArgumentException("Compact iDFT requires a complex of fractional hardware datatype.")
+      case "version" => println(BuildInfo.version)
       case arg => throw new IllegalArgumentException("Unknown argument: " + arg)
+    if logo then
+      print(Utils.readFromResources("logo"))
+      print(Utils.readFromResources("lic"))
 
-
-    if graph then
-      design match
-        case imp: AcyclicStreamingModule[?] =>
-          val file = filename("graph.gv")
-          val pw = new PrintWriter(file)
-          pw.write(imp.toGraph)
-          pw.close()
-          println(s"Written streaming block-level graph in $file.")
-        case _ => throw new Exception("Graphs can only be generated for non-iterative designs.")
-    else if rtlgraph then
-      val file = filename("rtl.gv")
-      val pw = new PrintWriter(file)
-      pw.write(design.toRTLGraph)
-      pw.close()
-      println(s"Written rtl-level graph in $file.")
-    else if zip then
-      val file = filename("design.zip")
-      val archive = new ZipOutputStream(new FileOutputStream(file))
-      archive.putNextEntry(new ZipEntry("design.v"))
-      val pw = new PrintWriter(archive)
-      pw.write("/*\n")
-      io.Source.fromResource("license.txt").getLines().foreach(l => pw.write(s" * $l\n"))
-      io.Source.fromResource("logo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
-      pw.write(" */\n\n")
-      pw.println(design.toVerilog)
-      pw.flush()
-      archive.putNextEntry(new ZipEntry("readme.txt"))
-      io.Source.fromResource("license.txt").getLines().foreach(l => pw.write(s"$l\n"))
-      io.Source.fromResource("logo.txt").getLines().foreach(l => pw.write(s"$l\n"))
-      pw.println("This archive contains the following files:")
-      pw.println(" - readme.txt: this file,")
-      design.dependencies.foreach ((d) =>
-        pw.println(s" - $d: a third party library used by the design,")
-      )
-      pw.println(" - benchmark.v: a Verilog benchmark that can be used to test the design, and")
-      pw.println(" - design.v: the design itself, in Verilog.")
-      pw.println()
-      pw.write(design.description.mkString("\n"))
-      pw.flush()
-      if testbench then
-        archive.putNextEntry(new ZipEntry("benchmark.v"))
+    def finish[T](design: Transform[T], hw: HW[T]): Unit =
+      if logo then
+        print(Utils.readFromResources("logo"))
+        print(Utils.readFromResources("lic"))
+      given HW[T] = hw
+      val imp = design.stream(k, control)
+      if graph then
+        imp match
+          case imp: AcyclicStreamingModule[?] =>
+            val file = filename("graph.gv")
+            val pw = new PrintWriter(file)
+            pw.write(imp.toGraph)
+            pw.close()
+            println(s"Written streaming block-level graph in $file.")
+          case _ => throw new Exception("Graphs can only be generated for non-iterative designs.")
+      else if rtlgraph then
+        val file = filename("rtl.gv")
+        val pw = new PrintWriter(file)
+        pw.write(design.stream(k, control).toRTLGraph)
+        pw.close()
+        println(s"Written rtl-level graph in $file.")
+      else if zip then
+        val file = filename("design.zip")
+        val archive = new ZipOutputStream(new FileOutputStream(file))
+        archive.setLevel(9)
+        archive.putNextEntry(new ZipEntry("design.v"))
+        val pw = new PrintWriter(archive)
         pw.write("/*\n")
-        io.Source.fromResource("license.txt").getLines().foreach(l => pw.write(s" * $l\n"))
-        io.Source.fromResource("logo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
+        pw.write(Utils.readFromResources("version", " * "))
+        pw.write(Utils.readFromResources("logo", " * "))
         pw.write(" */\n\n")
-        pw.write(design.getTestBench())
+        pw.println(imp.toVerilog)
         pw.flush()
-      design.dependencies.foreach { d =>
-        val fis = new FileInputStream(d)
-        archive.putNextEntry(new ZipEntry(d.split('/').last))
-        val bis = new BufferedInputStream(fis, 2048)
-        var data = new Array[Byte](2048)
-        var b = bis.read(data, 0, 2048)
-        while b != -1 do
-          archive.write(data, 0, b)
-          b = bis.read(data, 0, 2048)
-        bis.close()
-        //fis.transferTo(archive)
-        fis.close()
-        archive.closeEntry()
-      }
-      pw.close()
-      println(s"Written zip file in $file.")
-    else
-      val file = filename("design.v")
-      val pw = new PrintWriter(file)
-      pw.write("/*\n")
-      io.Source.fromResource("license.txt").getLines().foreach(l => pw.write(s" * $l\n"))
-      io.Source.fromResource("logo.txt").getLines().foreach(l => pw.write(s" * $l\n"))
-      design.description.foreach(l => pw.write(s" * $l\n"))
-      pw.write(" */\n\n")
-      pw.println(design.toVerilog)
-      if testbench then
-        pw.write(design.getTestBench())
-      pw.close()
-      println(s"Written design in $file.")
+        archive.putNextEntry(new ZipEntry("readme.txt"))
+        pw.write(Utils.readFromResources("version"))
+        pw.write(Utils.readFromResources("logo"))
+        pw.println("This archive contains the following files:")
+        pw.println(" - readme.txt: this file,")
+        imp.dependencies.foreach (d =>
+          pw.println(s" - $d: a third party library used by the design,")
+        )
+        if testbench && design.testParams.isDefinedAt(hw) then
+          pw.println(" - benchmark.v: a Verilog benchmark that can be used to test the design, and")
+        pw.println(" - design.v: the design itself, in Verilog.")
+        pw.println()
+        pw.write(imp.description.mkString("\n"))
+        pw.flush()
+        if testbench then
+          if design.testParams.isDefinedAt(hw) then
+            archive.putNextEntry(new ZipEntry("benchmark.v"))
+            pw.write("/*\n")
+            pw.write(Utils.readFromResources("version", " * "))
+            pw.write(Utils.readFromResources("logo", " * "))
+            pw.write(" */\n\n")
+            pw.write(imp.getTestBench(design))
+            pw.flush()
+          else
+            println(s"Warning: no testbench generated as no test parameters are defined for $design on $hw.")
+        imp.dependencies.foreach { d =>
+          val fis = new FileInputStream(d)
+          archive.putNextEntry(new ZipEntry(d.split('/').last))
+          val bis = new BufferedInputStream(fis, 2048)
+          val data = new Array[Byte](2048)
+          var b = bis.read(data, 0, 2048)
+          while b != -1 do
+            archive.write(data, 0, b)
+            b = bis.read(data, 0, 2048)
+          bis.close()
+          //fis.transferTo(archive)
+          fis.close()
+          archive.closeEntry()
+        }
+        pw.close()
+        println(s"Written zip file in $file.")
+      else
+        val file = filename("design.v")
+        val pw = new PrintWriter(file)
+        pw.write("/*\n")
+        pw.write(Utils.readFromResources("version", " * "))
+        pw.write(Utils.readFromResources("logo", " * "))
+        imp.description.foreach(l => pw.write(s" * $l\n"))
+        pw.write(" */\n\n")
+        pw.println(imp.toVerilog)
+        if testbench then
+          pw.write(imp.getTestBench(design))
+        pw.close()
+        println(s"Written design in $file.")
 
-  var logoDisplayed = false
 
 
 

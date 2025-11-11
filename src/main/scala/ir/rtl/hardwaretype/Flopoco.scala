@@ -2,30 +2,32 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *   
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *   
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *   
+ *
  */
 
 package ir.rtl.hardwaretype
 
+import Utils.BigIterator
 import ir.rtl.Component
-import ir.rtl.signals._
+import ir.rtl.signals.*
 
+import scala.+:
 import scala.collection.mutable
 import scala.io.Source
 
@@ -35,14 +37,14 @@ import scala.io.Source
  * http://flopoco.gforge.inria.fr/
  *
  * Corresponding files should be in the folder ./flopoco/. Otherwise, an error indicating the command line to generate the file is thrown.
- * 
+ *
  * @param wE number of bits for the exponent
  * @param wF number of bits for the mantissa
  */
 case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE + wF + 3):
   private val filename = s"flopoco/flopoco_${wE}_${wF}.vhdl"
-  
-  lazy private val (latPlus, latDiff, latMult) = 
+
+  lazy private val (latPlus, latDiff, latMult) =
     val path = java.nio.file.Paths.get(filename)
     if !java.nio.file.Files.isRegularFile(path) then
       println(s"Error: Flopoco file not found for wE=$wE and wF=$wF")
@@ -67,26 +69,26 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE + wF + 3):
     val latMult = flopoco.slice(pos, posEnd).toInt
     (latPlus, latDiff, latMult)
 
-  case class FloPlus(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Plus(lhs, rhs):
+  private case class FloPlus(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Plus(lhs, rhs):
     override def latency: Int = latPlus
 
     override def pipeline = 1
 
-    override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "add", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: Sig[?] => Component) = ir.rtl.Extern(lhs.hw.size, filename, "add", "R", ("clk", ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(lhs)), ("Y", cp(rhs)))
 
-  case class FloMinus(override val lhs: Sig[Double],override val rhs: Sig[Double]) extends Minus(lhs,rhs):
+  private case class FloMinus(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Minus(lhs,rhs):
     override def latency: Int = latDiff
 
     override def pipeline = 1
 
-    override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "diff", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: Sig[?] => Component) = ir.rtl.Extern(lhs.hw.size, filename, "diff", "R", ("clk", ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(lhs)), ("Y", cp(rhs)))
 
-  case class FloTimes(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Times(lhs, rhs):
+  private case class FloTimes(override val lhs: Sig[Double], override val rhs: Sig[Double]) extends Times(lhs, rhs):
     override def pipeline = 1
 
     override def latency: Int = latMult
 
-    override def implement(implicit cp: Sig[?] => Component) = new ir.rtl.Extern(lhs.hw.size, filename, "mult", "R", ("clk", new ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(lhs)), ("Y", cp(rhs)))
+    override def implement(implicit cp: Sig[?] => Component) = ir.rtl.Extern(lhs.hw.size, filename, "mult", "R", ("clk", ir.rtl.Input(1, "clk")), ("rst", cp(Reset)), ("X", cp(lhs)), ("Y", cp(rhs)))
 
   override def plus(lhs: Sig[Double], rhs: Sig[Double]): Sig[Double] = FloPlus(lhs, rhs)
 
@@ -118,10 +120,10 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE + wF + 3):
       if newExponent<0 then
         if const<0 then
           BigInt(1)<<(wE+wF)
-        else 
+        else
           BigInt(0)
       else if newExponent>=(BigInt(1)<<wE) then
-        if const<0 then 
+        if const<0 then
           BigInt(5)<<(wE+wF)
         else
           BigInt(4)<<(wE+wF)
@@ -151,9 +153,22 @@ case class Flopoco(wE: Int, wF: Int) extends HW[Double](wE + wF + 3):
 
   override def description: String = s"floating-point number in FloPoCo format (wE=$wE, wF=$wF)"
 
+  override def MID_VALUE: Double = 1
+  
+  override def MAX_VALUE: Double = valueOf((BigInt(3)<<(wE+wF)) - 1)
+
+  override def values: Iterator[Double] = Iterator(0d, -0d) ++ BigIterator(BigInt(0), BigInt(1) << (wE+wF+1)).map(x => valueOf((BigInt(2)<<(wE+wF))+x))
+
+  override def toString: String = (wE, wF) match
+    case (8, 23) => "flo-float"
+    case (11, 52) => "flo-double"
+    case (5, 10) => "flo-half"
+    case (4, 3) => "flo-minifloat"
+    case (8, 7) => "flo-bfloat16"
+    case _ => s"Flopoco($wE, $wF)"
 
 /** Companion object of class Flopoco */
 object Flopoco:
-  val whm = collection.concurrent.TrieMap[(Int,Int), Flopoco]() // doesn't use weakHashMap: not thread safe!
+  private val whm = collection.concurrent.TrieMap[(Int,Int), Flopoco]() // doesn't use weakHashMap: not thread safe!
   /** Creates a new Flopoco HW */
   def apply(wE: Int, wF: Int) = whm.getOrElseUpdate((wE, wF), new Flopoco(wE, wF)) // speedup by using a single reference

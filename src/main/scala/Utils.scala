@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,8 @@
  *   
  */
 
+import buildinfo.BuildInfo
+
 import scala.annotation.tailrec
 
 /** Helper functions and classes. */
@@ -38,3 +40,27 @@ package object Utils:
     case _ =>
       val num = Numeric[T]
       num.fromInt(Math.sqrt(num.toDouble(x)).toInt)
+
+  def readFromResources(name: String, indent: String = ""): String =
+    val source = scala.io.Source.fromResource(s"$name.txt")
+    val res = source.getLines.map(indent + _ + "\n").mkString
+    source.close
+    res.replace("{version}", BuildInfo.version)
+
+  /**
+   * Creates an iterator that generates `BigInt` values in a specified range.
+   * Needed because `BigInt` range method goes through NumericalRange which is limited in size.
+   *
+   * @param start The starting value of the iterator (inclusive).
+   * @param end The ending value of the iterator (exclusive).
+   * @return An iterator that generates `BigInt` values from `start` to `end - 1`.
+   */  
+  def BigIterator(start: BigInt, end: BigInt): Iterator[BigInt] =
+    new Iterator[BigInt]:
+      private var current = start
+      override def hasNext: Boolean = current < end
+      override def next(): BigInt =
+        if !hasNext then throw new NoSuchElementException("No more elements in the iterator")
+        val ret = current
+        current += 1
+        ret

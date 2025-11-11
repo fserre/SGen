@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,8 +27,8 @@ import ir.rtl.hardwaretype.{ComplexHW, FixedPoint, HW}
 import ir.rtl.{AcyclicStreamingModule, StreamingModule,RAMControl}
 import ir.rtl.signals.{ROM, Sig, Timer}
 import ir.spl.{Identity, Repeatable, SPL}
-import linalg.Fields.Complex
-import linalg.Fields.Complex._
+import maths.fields.Complex
+import maths.fields.Complex._
 
 /**
  * Twiddle factors for non-iterative Cooley-Tukey FFTs
@@ -56,7 +56,7 @@ case class DiagE private (override val n: Int, r: Int, l: Int) extends SPL[Compl
         case ComplexHW(FixedPoint(magnitude, fractional)) => ComplexHW(FixedPoint(2, magnitude + fractional - 2))
         case _ => hw
       val control = Timer(T)
-      val twiddle = ROM(twiddles, control)(twiddleHW)
+      val twiddle = ROM(twiddles, control)(using twiddleHW)
       inputs(p) * twiddle)
 
     override def toString: String = "DiagE(" + this.n + "," + r + "," + l + "," + this.k + ")"

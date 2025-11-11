@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,10 +26,10 @@ import scala.language.implicitConversions
 import ir.rtl.hardwaretype.HW
 import ir.rtl.{Identity, AcyclicStreamingModule}
 import ir.rtl.signals._
-import linalg.Fields.F2
-import linalg.{Matrix, Vec}
+import maths.fields.F2
+import maths.linalg.{Matrix, Vec}
 
-case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], override val k: Int) extends SLP(v.head.m, k, v.size):
+case class SwitchArray[U: HW] private(v: Seq[Vec[F2]], _k: Int) extends SLP(v.head.m, _k, v.size):
   override def implement(inputs: Seq[Sig[U]]): Seq[Sig[U]] = 
     val timer = Timer(T)
     val vec = Vector.tabulate(v.size)(j => timer scalar v(j))

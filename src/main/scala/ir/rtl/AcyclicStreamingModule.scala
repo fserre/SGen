@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -44,7 +44,7 @@ import scala.sys.process._
 abstract class AcyclicStreamingModule[T: HW](t: Int, k: Int) extends StreamingModule(t, k):
   def implement(inputs: Seq[Sig[T]]): Seq[Sig[T]]
 
-  final lazy val inputSigs = (0 until K).map(c => Input(c))
+  private final lazy val inputSigs = (0 until K).map(c => Input(c))
   
   final lazy val outputSigs = implement(inputSigs)
   

@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,8 +25,8 @@ package spl
 
 import ir.rtl.hardwaretype.HW
 import ir.rtl.{RAMControl, AcyclicStreamingModule, StreamingModule}
-import linalg.Fields.F2
-import linalg.Matrix
+import maths.fields.F2
+import maths.linalg.Matrix
 import transforms.perm.LinearPerm
 
 

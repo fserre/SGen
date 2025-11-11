@@ -1,0 +1,149 @@
+stages:
+  - build
+  - simulation and synthesis
+  - publish
+
+
+
+.scala:
+  image: sbtscala/scala-sbt:eclipse-temurin-alpine-24.0.1_9_1.11.6_3.7.3
+
+Build, test and generate test benches:
+  stage: build
+  extends: .scala
+  interruptible: true
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:compile[collapsed=true]\r\e[0KCompiling project"
+    - sbt compile
+    - echo -e "\e[0Ksection_end:`date +%s`:compile\r\e[0K"
+    - echo -e "\e[0Ksection_start:`date +%s`:compile_tests[collapsed=true]\r\e[0KCompiling tests"
+    - sbt Test/compile
+    - echo -e "\e[0Ksection_end:`date +%s`:compile_tests\r\e[0K"
+    - echo -e "\e[0Ksection_start:`date +%s`:tests[collapsed=true]\r\e[0KRunning tests"
+    - sbt RegularTest/test
+    - echo -e "\e[0Ksection_end:`date +%s`:tests\r\e[0K"
+    - |+
+      if [ "$RUN_SIM" != "true" ]; then
+        echo "Skipping simulation tests"
+      else
+        echo -e "\e[0Ksection_start:`date +%s`:simtests[collapsed=true]\r\e[0KGenerating test benches"
+        sbt SimTest/test
+        echo -e "\e[0Ksection_end:`date +%s`:simtests\r\e[0K"
+      fi
+    - |+ 
+      if [ "$RUN_SYNTH" != "true" ]; then
+          echo "Skipping synthesis tests"
+      else
+        echo -e "\e[0Ksection_start:`date +%s`:synthtests[collapsed=true]\r\e[0KGenerating synthesis tests"
+        sbt SynthTest/test
+        echo -e "\e[0Ksection_end:`date +%s`:synthtests\r\e[0K"
+      fi
+  artifacts:
+    reports:
+      junit: target/test-reports/*.xml
+    paths:
+      - test/**/*
+    expire_in: 1 day
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+      variables: 
+        RUN_SIM: true
+        RUN_SYNTH: true
+    - if: $CI_COMMIT_MESSAGE =~ /!sim/
+      variables: 
+        RUN_SIM: true
+    - if: $CI_COMMIT_MESSAGE =~ /!synth/
+      variables:
+        RUN_SYNTH: true
+
+.xilinx:
+  image:
+    # an image with Vivado I could find on Docker Hub
+    name: siliconbootcamp/xsim-synth-2024:stable
+    entrypoint: [ "" ]
+  stage: simulation and synthesis
+  needs:
+    - Build, test and generate test benches
+  interruptible: true
+  variables:
+    # The largest part supported by the free Vivado WebPACK license
+    XILINX_PART: xc7a200tffv1156-3
+    GIT_STRATEGY: none
+  before_script:
+    - PATH=/tools/Xilinx/Vivado/2024.1/bin:$PATH
+
+Run test benches:
+  extends: .xilinx
+  script:
+    - cd test/sim
+    - chmod a+x sim.sh
+    - ./sim.sh
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+    - if: $CI_COMMIT_MESSAGE =~ /!sim/
+  artifacts:
+    reports:
+      junit: test/sim/test-report.xml
+    paths:
+        - test/sim/**/output.txt
+    expire_in: 1 day
+      
+Run synthesis:
+  extends: .xilinx
+  script:
+    - cd test/synth
+    - chmod a+x synth.sh
+    - ./synth.sh || exit $?
+  artifacts:
+    reports:
+      junit: test/synth/test-report.xml
+    when: always
+    paths:
+      - test/synth/results.csv
+      - test/synth/**/output.txt
+    expire_in: 1 day
+  allow_failure:
+    exit_codes: 127
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+    - if: $CI_COMMIT_MESSAGE =~ /!synth/
+
+Publish:
+  stage: publish
+  extends: .scala
+  variables:
+    GIT_STRATEGY: fetch
+  script:
+    - apk add --no-cache curl
+    - sbt assembly
+    - version=$(./sgen.bat version)
+    - git config --global user.email "$GITHUB_EMAIL"
+    - git config --global user.name "$GITHUB_USER"
+    - git remote add github_origin $GITHUB_URL
+    - git fetch --prune --unshallow origin
+    - git fetch --prune github_origin
+    - git checkout "$CI_COMMIT_SHA"
+    - git branch -f "$CI_COMMIT_BRANCH" "$CI_COMMIT_SHA"
+    - git push --force-with-lease github_origin "$CI_COMMIT_BRANCH"
+    - body=$(printf '%s' "$CI_COMMIT_MESSAGE" | awk 'BEGIN{RS="";} {gsub(/\\/,"\\\\"); gsub(/"/,"\\\""); gsub(/\n/,"\\n"); gsub(/\r/,"\\r"); gsub(/\t/,"\\t"); print}')
+    - postdata=$(printf '{"tag_name":"v%s","target_commitish":"%s","name":"v%s","body":"%s","draft":false,"prerelease":false,"generate_release_notes":false}' "$version" "$CI_COMMIT_BRANCH" "$version" "$body")
+    - |+
+      release=$(wget \
+        --header='Accept: application/vnd.github+json' \
+        --header="Authorization: Bearer $GITHUB_TOKEN" \
+        --header='X-GitHub-Api-Version: 2022-11-28' \
+        --post-data="$postdata" \
+        $GITHUB_RELEASE_URL \
+        -O -)
+    - upload_url=$(printf '%s' "$release" | sed -n 's/.*"upload_url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    - upload_url=${upload_url%%\{*}
+    - |+
+      curl -X POST \
+      -H 'Accept: application/vnd.github+json' \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      -H 'X-GitHub-Api-Version: 2022-11-28' \
+      -H "Content-Type: application/octet-stream" \
+      --data-binary @"sgen.bat" \
+      "${upload_url}?name=sgen.bat"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"

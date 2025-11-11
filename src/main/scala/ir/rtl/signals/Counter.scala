@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -60,7 +60,7 @@ object SetCounter:
     * 
     * @param limit Upper limit of the counter (goes from 0 to limit - 1)
     */
-  def apply(limit: Int): Sig[Int] = if limit == 1 then signals.Const(0)(Unsigned(0)) else new Counter(limit, Next, Reset, limit - 1)
+  def apply(limit: Int): Sig[Int] = if limit == 1 then signals.Const(0)(using Unsigned(0)) else Counter(limit, Next, Reset, limit - 1)
   
   def unapply(arg: Sig[?]) = arg match
     case Counter(limit, signals.Next, signals.Reset, resetValue, delayTrigger) if resetValue == limit - 1 && delayTrigger==0 => Some(limit)
@@ -74,7 +74,7 @@ object LateSetCounter:
    * @param limit Upper limit of the counter (goes from 0 to limit - 1)
    * @param delay Duration of a dataset (AcyclicStreamingModule.T)
    */
-  def apply(limit: Int, delay: Int): Sig[Int] = if limit == 1 then signals.Const(0)(Unsigned(0)) else new Counter(limit, Next, Reset, 0, delay)
+  def apply(limit: Int, delay: Int): Sig[Int] = if limit == 1 then signals.Const(0)(using Unsigned(0)) else Counter(limit, Next, Reset, 0, delay)
 
   def unapply(arg: Sig[?]) = arg match
     case Counter(limit, signals.Next, signals.Reset, resetValue, delayTrigger) if resetValue == 0 => Some(limit, delayTrigger)
@@ -87,7 +87,7 @@ object Timer :
    *
    * @param limit Upper limit of the counter (goes from 0 to limit - 1)
    */
-  def apply(limit: Int): Sig[Int] = if limit == 1 then signals.Const(0)(Unsigned(0)) else new Counter(limit, One(using Unsigned(1)), Next, 0)
+  def apply(limit: Int): Sig[Int] = if limit == 1 then signals.Const(0)(using Unsigned(0)) else Counter(limit, One(using Unsigned(1)), Next, 0)
   def unapply(arg: Sig[?]) = arg match
     case Counter(limit, signals.One(), signals.Next, resetValue, delayTrigger) if resetValue == 0 && delayTrigger==0 => Some(limit)
     case _ => None

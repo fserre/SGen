@@ -2,7 +2,7 @@
  *    _____ ______          SGen - A Generator of Streaming Hardware
  *   / ___// ____/__  ____  Department of Computer Science, ETH Zurich, Switzerland
  *   \__ \/ / __/ _ \/ __ \
- *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2021 François Serre (serref@inf.ethz.ch)
+ *  ___/ / /_/ /  __/ / / / Copyright (C) 2020-2025 François Serre (serref@inf.ethz.ch)
  * /____/\____/\___/_/ /_/  https://github.com/fserre/sgen
  *
  * This program is free software; you can redistribute it and/or modify
@@ -46,11 +46,11 @@ abstract sealed class Component(val size: Int, _parents: Component*):
     else
       Register(this, cycles)
 
-abstract sealed class ImmutableComponent(size: Int, _parents: Component*) extends Component(size, _parents:_*):
+abstract sealed class ImmutableComponent(size: Int, _parents: Component*) extends Component(size, _parents*):
   override val hashCode = (parents +: this.getClass.getSimpleName).hashCode()
 
 final class Wire(override val size: Int) extends Component(size):
-  var _input: Option[Component] = None
+  private var _input: Option[Component] = None
 
   def input_=(comp: Component): Unit = {
     assert(_input.isEmpty)
@@ -92,31 +92,31 @@ case class Input(override val size: Int, name: String) extends ImmutableComponen
 
 case class Output(input: Component, name: String) extends ImmutableComponent(input.size, input)
 
-case class Plus(terms: Seq[Component]) extends ImmutableComponent(terms.head.size, terms: _*)
+case class Plus(terms: Seq[Component]) extends ImmutableComponent(terms.head.size, terms*)
 
 case class Minus(lhs: Component, rhs: Component) extends ImmutableComponent(lhs.size, lhs, rhs)
 
 case class Times(lhs: Component, rhs: Component) extends ImmutableComponent(lhs.size + rhs.size, lhs, rhs)
 
-case class And(terms: Seq[Component]) extends ImmutableComponent(terms.head.size, terms: _*)
+case class And(terms: Seq[Component]) extends ImmutableComponent(terms.head.size, terms*)
 
-case class Xor(inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, inputs: _*)
+case class Xor(inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, inputs*)
 
-case class Or(inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, inputs: _*)
+case class Or(inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, inputs*)
 
 case class Not(input: Component) extends ImmutableComponent(input.size, input)
 
 case class Equals(lhs: Component, rhs: Component) extends ImmutableComponent(1, lhs, rhs)
 
-case class Mux(address: Component, inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, address +: inputs: _*)
+case class Mux(address: Component, inputs: Seq[Component]) extends ImmutableComponent(inputs.head.size, address +: inputs*)
 
-case class Concat(inputs: Seq[Component]) extends ImmutableComponent(inputs.map(_.size).sum, inputs: _*)
+case class Concat(inputs: Seq[Component]) extends ImmutableComponent(inputs.map(_.size).sum, inputs*)
 
 case class Tap(input: Component, range: Range) extends ImmutableComponent(range.size, input)
 
 case class RAM(data: Component, wr: Component, rd: Component) extends ImmutableComponent(data.size, data, wr, rd)
 
-case class Extern(override val size:Int, filename:String, module:String, outputName:String, inputs:(String,Component)*) extends ImmutableComponent(size,inputs.map(_._2):_*)
+case class Extern(override val size:Int, filename:String, module:String, outputName:String, inputs:(String,Component)*) extends ImmutableComponent(size,inputs.map(_._2)*)
 
 object ROM:
   def unapply(arg:Mux) =
